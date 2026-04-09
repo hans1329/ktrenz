@@ -321,7 +321,7 @@ export default function Battle() {
             <ContentCarousel
               runItems={items[run.id] || []}
               starName={run.star?.display_name || "Unknown"}
-              contentScore={run.content_score}
+              contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
               scoreLabel={t("contentScore")}
               isPicked={pickedRunId === run.id}
               onPick={() => handlePick(run.id)}
