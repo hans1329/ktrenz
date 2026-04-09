@@ -267,8 +267,8 @@ function ArtistSection({
                 {sourceIcon(item.source)}
               </div>
               {/* title overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-8">
-                <p className="text-white text-[10px] font-medium leading-tight line-clamp-2">
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-10">
+                <p className="text-white text-xs font-medium leading-snug line-clamp-2">
                   {decodeHtml(item.title)}
                 </p>
               </div>
