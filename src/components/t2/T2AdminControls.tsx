@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
+import T2ManualKeywordDialog from "./T2ManualKeywordDialog";
 import {
   Popover,
   PopoverContent,
