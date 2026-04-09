@@ -36,10 +36,10 @@ interface B2Run {
 
 type Band = "steady" | "rising" | "surge";
 
-const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; multiplier: string }[] = [
-  { key: "steady", label: "Steady", range: "0–30%", icon: Sprout, iconColor: "text-emerald-500", multiplier: "×1.5" },
-  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, iconColor: "text-orange-500", multiplier: "×3.0" },
-  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, iconColor: "text-red-500", multiplier: "×6.0" },
+const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
+  { key: "steady", label: "Steady", range: "0–30%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
+  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, iconColor: "text-orange-500", reward: 300 },
+  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, iconColor: "text-red-500", reward: 1000 },
 ];
 
 function decodeHtml(str: string) {
@@ -537,7 +537,7 @@ export default function Battle() {
                       <BandIcon className={`w-8 h-8 mx-auto mb-1.5 ${band.iconColor}`} />
                       <span className="text-xs font-medium block">{bandLabel}</span>
                       <span className="text-lg font-extrabold block mt-1">{band.range}</span>
-                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{band.multiplier}</span>
+                      <span className="text-xs font-bold block mt-1 text-muted-foreground">+{band.reward.toLocaleString()} K</span>
                     </button>
                   );
                 })}
@@ -550,6 +550,11 @@ export default function Battle() {
             <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
               <Zap className="w-5 h-5 mr-2" />
               {t("submitPrediction")}
+              {selectedBand && (
+                <span className="ml-2 opacity-80">
+                  (+{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes)
+                </span>
+              )}
             </Button>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
@@ -565,7 +570,7 @@ export default function Battle() {
                     <p className="text-xs text-muted-foreground">{t("scoreLabel")}: {pickedRun?.content_score}</p>
                   </div>
                   <Badge variant="outline">
-                    {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
+                    {BANDS.find((b) => b.key === selectedBand)?.label} +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K
                   </Badge>
                 </div>
                 <div className="pt-2 border-t border-border mt-3">
