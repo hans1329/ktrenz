@@ -549,7 +549,7 @@ export default function Battle() {
                     <button
                       key={band.key}
                       onClick={() => handleBandSelect(band.key)}
-                      className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all border-2 bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-border hover:border-primary/30"}`}
+                      className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "ring-2 ring-primary scale-[1.03]" : "hover:ring-1 hover:ring-primary/30"}`}
                     >
                       <BandIcon className={`w-6 h-6 sm:w-8 sm:h-8 mb-1 ${band.iconColor}`} />
                       <span className="text-[10px] sm:text-xs font-medium">{bandLabel}</span>
