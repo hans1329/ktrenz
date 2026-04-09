@@ -510,7 +510,7 @@ export default function Battle() {
                   <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
                   <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
                 </div>
-                <Badge className={BANDS.find((b) => b.key === selectedBand)?.color || ""}>
+                <Badge variant="outline">
                   {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
                 </Badge>
               </div>
