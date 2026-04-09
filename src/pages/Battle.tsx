@@ -396,25 +396,24 @@ export default function Battle() {
                   <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
                 </div>
 
-                {/* Large thumbnail with artist+date overlay */}
-                <div className="relative rounded-2xl overflow-hidden bg-muted mb-4">
+                {/* Artist · Date */}
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  {starRun?.star?.display_name || ""}
+                  {drawerItem.published_at && (
+                    <span> · {(() => {
+                      const d = new Date(drawerItem.published_at);
+                      return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+                    })()}</span>
+                  )}
+                </p>
+
+                {/* Large thumbnail */}
+                <div className="rounded-2xl overflow-hidden bg-muted mb-4">
                   {drawerItem.thumbnail ? (
                     <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
                   ) : (
                     <div className="w-full aspect-video bg-muted" />
                   )}
-                  {/* Artist · Date overlay top-left */}
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-6">
-                    <p className="text-[11px] text-white/90 font-medium drop-shadow-md">
-                      {starRun?.star?.display_name || ""}
-                      {drawerItem.published_at && (
-                        <span> · {(() => {
-                          const d = new Date(drawerItem.published_at);
-                          return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
-                        })()}</span>
-                      )}
-                    </p>
-                  </div>
                 </div>
 
                 {/* Title */}
