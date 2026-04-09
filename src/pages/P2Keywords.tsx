@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import V3Header from "@/components/v3/V3Header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Search, RefreshCw, Loader2, Flame, ShoppingBag } from "lucide-react";
+import { TrendingUp, Search, RefreshCw, Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 
@@ -24,12 +23,8 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-type Tab = "google" | "naver";
-
 const P2Keywords = () => {
-  const [activeTab, setActiveTab] = useState<Tab>("google");
-
-  const { data: googleKw, isLoading: gLoading, refetch: gRefetch, isFetching: gFetching } = useQuery({
+  const { data: keywords, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["p2-google"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -45,45 +40,13 @@ const P2Keywords = () => {
     staleTime: 60000,
   });
 
-  const { data: naverKw, isLoading: nLoading, refetch: nRefetch, isFetching: nFetching } = useQuery({
-    queryKey: ["p2-naver"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("ktrenz_p2_keywords")
-        .select("*")
-        .eq("status", "active")
-        .eq("discover_source", "naver_shopping")
-        .order("discovered_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 60000,
-  });
-
-  const keywords = activeTab === "google" ? googleKw : naverKw;
-  const isLoading = activeTab === "google" ? gLoading : nLoading;
-  const isFetching = activeTab === "google" ? gFetching : nFetching;
-  const refetch = activeTab === "google" ? gRefetch : nRefetch;
-
-  // Group naver keywords by category
-  const naverByCategory = new Map<string, any[]>();
-  if (naverKw) {
-    for (const kw of naverKw) {
-      const cat = kw.category || "기타";
-      if (!naverByCategory.has(cat)) naverByCategory.set(cat, []);
-      naverByCategory.get(cat)!.push(kw);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <SEO title="Trending Now — Korea" description="Real-time trending keywords from Korea" />
       <V3Header />
 
       <main className="max-w-2xl mx-auto px-4 pb-24">
-        {/* Header */}
-        <div className="pt-6 pb-3">
+        <div className="pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -100,37 +63,6 @@ const P2Keywords = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4">
-          <button
-            onClick={() => setActiveTab("google")}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all",
-              activeTab === "google"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            Google Trends
-            {googleKw && <span className="text-[10px] opacity-60">({googleKw.length})</span>}
-          </button>
-          <button
-            onClick={() => setActiveTab("naver")}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all",
-              activeTab === "naver"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            Naver Shopping
-            {naverKw && <span className="text-[10px] opacity-60">({naverKw.length})</span>}
-          </button>
-        </div>
-
-        {/* Loading */}
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: 10 }).map((_, i) => (
@@ -139,11 +71,13 @@ const P2Keywords = () => {
           </div>
         )}
 
-        {/* Google Trends Tab */}
-        {!isLoading && activeTab === "google" && (
+        {!isLoading && (
           <div className="space-y-1.5">
             {(!keywords || keywords.length === 0) ? (
-              <EmptyState />
+              <div className="text-center py-12 text-muted-foreground">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No trending keywords found</p>
+              </div>
             ) : (
               keywords.map((kw: any, idx: number) => (
                 <GoogleTrendRow key={kw.id} kw={kw} idx={idx} />
@@ -152,42 +86,6 @@ const P2Keywords = () => {
           </div>
         )}
 
-        {/* Naver Shopping Tab */}
-        {!isLoading && activeTab === "naver" && (
-          <div className="space-y-5">
-            {naverByCategory.size === 0 ? (
-              <EmptyState />
-            ) : (
-              Array.from(naverByCategory.entries()).map(([cat, kws]) => (
-                <div key={cat}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShoppingBag className="w-3.5 h-3.5 text-primary" />
-                    <h3 className="text-xs font-bold text-foreground">{cat}</h3>
-                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{kws.length}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {kws.map((kw: any, idx: number) => (
-                      <div
-                        key={kw.id}
-                        className={cn(
-                          "px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors",
-                          idx < 3
-                            ? "bg-primary/5 border-primary/20 text-foreground"
-                            : "bg-card border-border/40 text-foreground/80 hover:border-border"
-                        )}
-                      >
-                        <span className="text-[10px] text-muted-foreground mr-1">{idx + 1}</span>
-                        {kw.keyword}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Footer */}
         {!isLoading && keywords && keywords.length > 0 && (
           <div className="mt-6 p-3 rounded-xl bg-muted/30 text-center">
             <p className="text-xs text-muted-foreground">
@@ -200,7 +98,6 @@ const P2Keywords = () => {
   );
 };
 
-/* ── Google Trends Row ── */
 const GoogleTrendRow = ({ kw, idx }: { kw: any; idx: number }) => {
   const volume = kw.raw_context?.search_volume;
   const articleTitles: string[] = kw.raw_context?.article_titles || [];
@@ -236,13 +133,5 @@ const GoogleTrendRow = ({ kw, idx }: { kw: any; idx: number }) => {
     </div>
   );
 };
-
-/* ── Empty State ── */
-const EmptyState = () => (
-  <div className="text-center py-12 text-muted-foreground">
-    <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
-    <p className="text-sm">No trending keywords found</p>
-  </div>
-);
 
 export default P2Keywords;
