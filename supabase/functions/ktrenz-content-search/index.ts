@@ -32,11 +32,16 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     if (ogMatch?.[1]) {
       const imgUrl = ogMatch[1];
-      // Ensure HTTPS
       return imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
     }
     return null;
   } catch { return null; }
+}
+
+// ── Extract first URL from text (for Reddit snippets) ──
+function extractUrlFromText(text: string): string | null {
+  const m = text.match(/https?:\/\/[^\s)"'<>\]]+/);
+  return m ? m[0] : null;
 }
 
 // ── Naver News + Blog ──
