@@ -26,7 +26,7 @@ const ContentSearchPage = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
-  const [activeSource, setActiveSource] = useState<SourceKey | "all">("all");
+  const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
