@@ -402,13 +402,21 @@ export default function Battle() {
                   )}
                 </div>
 
+                {/* Artist */}
+                {starRun?.star && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    by {starRun.star.display_name}
+                  </p>
+                )}
 
                 {/* Title */}
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{drawerItem.title}</h3>
 
                 {/* Description */}
                 {drawerItem.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{drawerItem.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    {drawerItem.description.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')}
+                  </p>
                 )}
 
                 {/* Stats grid */}
