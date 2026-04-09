@@ -469,7 +469,7 @@ export default function Battle() {
   }
 
   function handleNextBattle() {
-    if (currentPairIndex + 1 >= battlePairs.length || completedCount >= maxDaily) return;
+    if (currentPairIndex + 1 >= battlePairs.length || remainingTickets <= 0) return;
     setCurrentPairIndex((prev) => prev + 1);
     setPickedRunId(null);
     setSelectedBand(null);
@@ -478,7 +478,7 @@ export default function Battle() {
   }
 
   const pickedRun = runs.find((r) => r.id === pickedRunId);
-  const allBattlesDone = completedCount >= maxDaily || (submitted && currentPairIndex + 1 >= battlePairs.length);
+  const allBattlesDone = remainingTickets <= 0 || (submitted && currentPairIndex + 1 >= battlePairs.length);
 
   if (loading) {
     return (
