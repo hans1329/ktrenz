@@ -1227,20 +1227,42 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
         "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
         "김포국제공항", "대만", "일본", "중국", "미국", "한국",
-        // 일반 지명 (트렌드 가치 없음)
+        // 일반 지명
         "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
         "경기도", "강원도", "충청도", "전라도", "경상도", "제주도",
         "강남", "강남구", "서울 강남구", "서초구", "송파구", "종로구", "서울시 종로구",
         "홍대", "이태원", "명동", "동대문", "압구정", "청담",
         "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
         "airport", "인천공항", "공항", "출국", "입국",
-        // 일반 명사 (고유명사 아닌 단독 사용 시 트렌드 가치 없음)
+        // 일반 명사
         "게임", "game", "영상", "video", "콘텐츠", "content", "노래", "song",
         "춤", "dance", "운동", "exercise", "요리", "cooking", "여행", "travel",
         "사진", "photo", "영화", "movie", "드라마", "drama", "방송", "broadcast",
         "음악", "music", "공연", "performance", "무대", "stage",
         "채널", "channel", "라이브", "live", "스트리밍", "streaming",
-        // 반복 오수집 브랜드/플랫폼
+        // 엔터 포맷/장르 용어
+        "뮤직비디오", "music video", "mv", "티저", "teaser", "프리뷰", "preview",
+        "비하인드", "behind", "behind the scenes", "메이킹", "making",
+        "리액션", "reaction", "언박싱", "unboxing", "직캠", "fancam",
+        "교차편집", "crossedit", "cross edit", "ost", "리믹스", "remix",
+        "커버", "cover", "안무영상", "dance practice", "연습영상",
+        // 팬덤/커뮤니티 활동 용어
+        "팬클럽", "fan club", "fanclub", "기수 모집", "생일카페", "birthday cafe",
+        "조공", "총공", "스밍", "인증", "서포트", "support", "팬싸", "fansign",
+        "팬아트", "fan art", "fanart", "응원법", "떼창",
+        // 광고/미디어 일반 용어
+        "광고", "화보", "pictorial", "촬영", "shooting", "인터뷰", "interview",
+        "사복패션", "공항패션", "데일리룩", "daily look", "셀카", "selfie",
+        "브이로그", "vlog", "굿즈", "goods", "merch", "merchandise",
+        // 수식어/카테고리 지시어
+        "럭셔리", "luxury", "하이엔드", "high-end", "high end", "프리미엄", "premium",
+        "컬렉션", "collection", "시즌", "season", "에디션", "edition",
+        "리미티드", "limited", "콜라보", "collab", "collaboration",
+        "셀럽", "celeb", "celebrity", "플라워", "flower", "레터링", "lettering",
+        "뷰티", "beauty", "패션", "fashion",
+        // 방송/플랫폼 일반
+        "엠넷플러스", "mnet plus", "mbc m",
+        // 반복 오수집
         "오픈와이와이", "open yy", "openyy",
         "트리플엑스", "triple x", "triplex",
         "엑소시스템즈", "exo systems", "exosystems",
