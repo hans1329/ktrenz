@@ -345,19 +345,39 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
+    // Enrich naver news: og:image + body text scraping
+    const enrichNaverNews = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          let updated = { ...item };
+          // Scrape body text to replace API snippet
+          const bodyText = await scrapeBodyText(item.url, 500);
+          if (bodyText && bodyText.length > (item.description || "").length) {
+            updated.description = bodyText;
+          }
+          // og:image if missing
+          if (!updated.thumbnail) {
+            const ogImg = await extractOgImage(item.url);
+            if (ogImg) updated.thumbnail = ogImg;
+          }
+          return updated;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
     // Reddit: try og:image from embedded links in snippet, then from post URL itself
     const enrichReddit = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
         toEnrich.map(async (item: any) => {
           if (item.thumbnail) return item;
-          // First try: extract URL from snippet text and get its og:image
           const embeddedUrl = extractUrlFromText(item.description || "");
           if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
             const ogImg = await extractOgImage(embeddedUrl);
             if (ogImg) return { ...item, thumbnail: ogImg };
           }
-          // Fallback: og:image from the Reddit post itself
           const ogImg = await extractOgImage(item.url);
           return ogImg ? { ...item, thumbnail: ogImg } : item;
         })
@@ -366,7 +386,7 @@ Deno.serve(async (req) => {
     };
 
     const [naverNews, naverBlogEnriched, redditEnriched] = await Promise.all([
-      enrichWithOgImage(naverNewsDeduped, 10),
+      enrichNaverNews(naverNewsDeduped, 10),
       enrichWithOgImage(naverBlog, 10),
       enrichReddit(reddit, 7),
     ]);
