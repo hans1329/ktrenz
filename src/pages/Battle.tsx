@@ -230,6 +230,7 @@ export default function Battle() {
         .select("id, source, title, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
+        .not("source", "eq", "naver_blog")
         .order("engagement_score", { ascending: false })
         .limit(8);
       itemsByRun[run.id] = (runItems || []) as B2Item[];
