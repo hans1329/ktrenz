@@ -426,6 +426,8 @@ export default function Battle() {
               onPick={() => handlePick(run.id)}
               onCardTap={(item) => setDrawerItem(item)}
               disabled={submitted}
+              onActiveIndexChange={(i) => setCarouselIndices(prev => ({ ...prev, [run.id]: i }))}
+              scrollRefOut={{ current: scrollRefs.current[run.id] ?? null } as React.RefObject<HTMLDivElement>}
             />
             {idx === 0 && runs.length > 1 && (
               <div className="flex justify-center py-1">
@@ -434,6 +436,66 @@ export default function Battle() {
             )}
           </div>
         ))}
+
+        {/* Combined carousel indicators */}
+        {runs.length > 0 && (() => {
+          const allItems = runs.flatMap((run) => {
+            const runItemsList = items[run.id] || [];
+            return runItemsList.map((_, i) => ({ runId: run.id, index: i }));
+          });
+          if (allItems.length <= 1) return null;
+
+          let globalActive = 0;
+          let offset = 0;
+          for (const run of runs) {
+            const count = (items[run.id] || []).length;
+            const localIdx = carouselIndices[run.id] || 0;
+            globalActive = offset + localIdx;
+            offset += count;
+          }
+          // Use the first run's active for A dots, second for B dots
+          let currentGlobal = 0;
+          return (
+            <div className="flex items-center justify-center gap-1 pt-1">
+              {runs.map((run, runIdx) => {
+                const runItemsList = items[run.id] || [];
+                const localActive = carouselIndices[run.id] || 0;
+                return (
+                  <React.Fragment key={run.id}>
+                    {runIdx > 0 && (
+                      <span className="w-px h-2 bg-muted-foreground/20 mx-1" />
+                    )}
+                    {runItemsList.map((_, i) => {
+                      const isActive = i === localActive;
+                      return (
+                        <button
+                          key={`${run.id}-${i}`}
+                          className="p-0.5"
+                          aria-label={`Slide ${i + 1}`}
+                          onClick={() => {
+                            const el = scrollRefs.current[run.id];
+                            if (el) {
+                              const child = el.children[i] as HTMLElement;
+                              child?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                            }
+                          }}
+                        >
+                          <span
+                            className={`block rounded-full transition-all duration-300 ease-out ${
+                              isActive
+                                ? "w-5 h-1.5 bg-primary"
+                                : "w-1.5 h-1.5 bg-muted-foreground/25 hover:bg-muted-foreground/40"
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Band Selection */}
         {pickedRunId && !submitted && (
