@@ -419,24 +419,26 @@ export default function Battle() {
                 {/* Title */}
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(drawerItem.title)}</h3>
 
-                {/* Description + external link */}
-                <div className="relative mb-4">
-                  {drawerItem.description && (
-                    <p className="text-sm text-muted-foreground leading-relaxed pr-8">
-                      {decodeHtml(drawerItem.description)}
-                    </p>
-                  )}
-                  {(drawerItem.url || meta.url || meta.videoId) && (
+                {/* Description */}
+                {drawerItem.description && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                    {decodeHtml(drawerItem.description)}
+                  </p>
+                )}
+
+                {/* External link - separate row, right-aligned */}
+                {(drawerItem.url || meta.url || meta.videoId) && (
+                  <div className="flex justify-end mb-4">
                     <a
                       href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="absolute bottom-0 right-0 p-1 text-muted-foreground hover:text-primary transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
