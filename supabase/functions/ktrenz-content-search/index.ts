@@ -170,7 +170,6 @@ Deno.serve(async (req) => {
       .eq("id", star_id)
       .maybeSingle();
     if (starErr || !star) {
-    if (starErr || !star) {
       return new Response(JSON.stringify({ error: "Star not found", detail: starErr?.message }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
