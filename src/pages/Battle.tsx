@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -36,10 +36,10 @@ interface B2Run {
 
 type Band = "steady" | "rising" | "surge";
 
-const BANDS: { key: Band; label: string; range: string; color: string; multiplier: string }[] = [
-  { key: "steady", label: "🔵 Steady", range: "0–30%", color: "bg-primary/10 text-primary", multiplier: "×1.5" },
-  { key: "rising", label: "🟢 Rising", range: "30–80%", color: "bg-emerald-100 text-emerald-700", multiplier: "×3.0" },
-  { key: "surge", label: "🔴 Surge", range: "80%+", color: "bg-destructive/10 text-destructive", multiplier: "×6.0" },
+const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; multiplier: string }[] = [
+  { key: "steady", label: "Steady", range: "0–30%", icon: Sprout, multiplier: "×1.5" },
+  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, multiplier: "×3.0" },
+  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, multiplier: "×6.0" },
 ];
 
 function decodeHtml(str: string) {
@@ -317,7 +317,10 @@ export default function Battle() {
       nextSettlement: "Next settlement in",
       contentScore: "Score",
       pickWinner: "Who will grow more?",
-      predictGrowth: "How much will they grow?",
+      predictGrowth: "Your pick:",
+      bandSteady: "Steady",
+      bandRising: "Rising",
+      bandSurge: "Surge",
       submitPrediction: "Submit Prediction",
       predictionSubmitted: "Prediction Submitted!",
       waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
@@ -465,20 +468,23 @@ export default function Battle() {
           {pickedRunId && !submitted && (
             <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
               <p className="text-sm font-semibold text-foreground">
-                {t("predictGrowth")} — <span className="text-primary">{pickedRun?.star?.display_name}</span>
+                {t("predictGrowth")} <span className="text-primary">{pickedRun?.star?.display_name}</span>
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {BANDS.map((band) => {
                   const isSelected = selectedBand === band.key;
+                  const BandIcon = band.icon;
+                  const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
                   return (
                     <button
                       key={band.key}
                       onClick={() => handleBandSelect(band.key)}
-                      className={`rounded-xl px-3 py-3 text-center transition-all border-2 ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-transparent hover:border-border"} ${band.color}`}
+                      className={`rounded-xl px-3 py-4 text-center transition-all border-2 bg-white text-foreground ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-border hover:border-primary/30"}`}
                     >
-                      <span className="text-sm font-semibold block">{band.label}</span>
-                      <span className="text-[10px] opacity-70 block mt-0.5">{band.range}</span>
-                      <span className="text-xs font-bold block mt-1">{band.multiplier}</span>
+                      <BandIcon className="w-8 h-8 mx-auto mb-1.5 text-foreground" />
+                      <span className="text-xs font-medium block">{bandLabel}</span>
+                      <span className="text-lg font-extrabold block mt-1">{band.range}</span>
+                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{band.multiplier}</span>
                     </button>
                   );
                 })}
@@ -504,7 +510,7 @@ export default function Battle() {
                   <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
                   <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
                 </div>
-                <Badge className={BANDS.find((b) => b.key === selectedBand)?.color || ""}>
+                <Badge variant="outline">
                   {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
                 </Badge>
               </div>
