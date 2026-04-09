@@ -394,9 +394,13 @@ export default function Battle() {
 
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto mx-auto max-w-lg">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg" hideClose>
           {drawerItem && (
             <>
+              {/* Drag handle */}
+              <div className="flex justify-center pt-2 pb-3">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+              </div>
               {/* Close row */}
               <div className="flex justify-end pb-1">
                 <button
