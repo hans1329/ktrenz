@@ -254,22 +254,24 @@ function ArtistSection({
         {runItems.map((item) => (
           <div
             key={item.id}
-            className="snap-center flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
+            className="snap-center flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-              {item.thumbnail ? (
-                <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
-              )}
-              {/* source icon */}
-              <div className="absolute top-1.5 right-1.5">
-                {sourceIcon(item.source)}
+            <div className="rounded-xl overflow-hidden border border-border bg-white">
+              {/* Square image */}
+              <div className="relative aspect-square bg-muted">
+                {item.thumbnail ? (
+                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
+                )}
+                <div className="absolute top-1.5 right-1.5">
+                  {sourceIcon(item.source)}
+                </div>
               </div>
-              {/* title overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-10">
-                <p className="text-white text-xs font-medium leading-snug line-clamp-2">
+              {/* Content area */}
+              <div className="p-2.5">
+                <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">
                   {decodeHtml(item.title)}
                 </p>
               </div>
