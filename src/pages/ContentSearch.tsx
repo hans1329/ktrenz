@@ -212,6 +212,7 @@ function ContentCard({ item }: { item: any }) {
   const cfg = SOURCE_CONFIG[item.source as SourceKey];
   if (!cfg) return null;
   const Icon = cfg.icon;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <a
@@ -220,8 +221,20 @@ function ContentCard({ item }: { item: any }) {
       rel="noopener noreferrer"
       className="flex gap-3 p-3 rounded-xl bg-card border border-border/40 hover:border-border transition-colors group"
     >
-      {item.thumbnail && (
-        <img src={item.thumbnail} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
+      {/* Thumbnail or source icon placeholder */}
+      {item.thumbnail && !imgError ? (
+        <img
+          src={item.thumbnail}
+          alt=""
+          className="w-20 h-20 rounded-lg object-cover shrink-0 bg-muted"
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="w-20 h-20 rounded-lg bg-muted/60 shrink-0 flex items-center justify-center">
+          <Icon className={cn("w-6 h-6 opacity-40", cfg.color)} />
+        </div>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1">
