@@ -137,6 +137,7 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
     const url = new URL("https://serpapi.com/search.json");
     url.searchParams.set("engine", "google");
     url.searchParams.set("q", `site:reddit.com ${query}`);
+    url.searchParams.set("tbs", "qdr:d");
     url.searchParams.set("num", "15");
     url.searchParams.set("api_key", serpApiKey);
     const res = await fetchWithTimeout(url.toString(), {}, 12000);
