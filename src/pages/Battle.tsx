@@ -457,18 +457,27 @@ export default function Battle() {
 
     // Use ticket and save prediction
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
+      if (!user) {
+        console.warn("[Battle] No authenticated user found for ticket/prediction save");
+        return;
+      }
+      try {
         // Use prediction ticket
-        await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
+        const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
+        if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
+        else console.log("[Battle] ticket used:", ticketResult);
         // Refresh ticket count
-        loadTickets();
+        await loadTickets();
         // Save prediction
-        await supabase.from("b2_predictions").insert({
+        const { error: predError } = await supabase.from("b2_predictions").insert({
           user_id: user.id,
           picked_run_id: pickedRunId,
           opponent_run_id: opponentRun.id,
           band: selectedBand,
         });
+        if (predError) console.error("[Battle] prediction insert error:", predError);
+      } catch (e) {
+        console.error("[Battle] submit error:", e);
       }
     });
   }
