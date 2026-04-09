@@ -175,6 +175,7 @@ function ArtistSection({
   onPick,
   onCardTap,
   disabled,
+  index,
 }: {
   runItems: B2Item[];
   starName: string;
@@ -184,6 +185,7 @@ function ArtistSection({
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
   disabled: boolean;
+  index: number;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
