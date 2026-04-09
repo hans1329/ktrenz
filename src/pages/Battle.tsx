@@ -230,7 +230,7 @@ function ArtistSection({
           } ${disabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-extrabold text-foreground">{index === 0 ? "A" : "B"}:</span>
+            <span className="text-sm font-extrabold text-foreground">{index === 0 ? "A" : "B"} ·</span>
             <span className="text-xs text-muted-foreground">by</span>
             <span className="text-sm font-bold text-foreground">{starName}</span>
           </div>
