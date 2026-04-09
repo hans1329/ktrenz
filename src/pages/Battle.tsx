@@ -125,15 +125,12 @@ function FlipCard({ digit }: { digit: string }) {
   );
 }
 
-function FlipGroup({ value, label }: { value: string; label: string }) {
+function FlipGroup({ value }: { value: string }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="flex gap-1">
-        {value.split("").map((d, i) => (
-          <FlipCard key={`${label}-${i}`} digit={d} />
-        ))}
-      </div>
-      <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">{label}</span>
+    <div className="flex gap-1">
+      {value.split("").map((d, i) => (
+        <FlipCard key={`${value}-${i}`} digit={d} />
+      ))}
     </div>
   );
 }
@@ -159,11 +156,11 @@ function FlipTimer() {
 
   return (
     <div className="flex items-center justify-center gap-2.5 sm:gap-4">
-      <FlipGroup value={pad(time.h)} label="hrs" />
-      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.m)} label="min" />
-      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.s)} label="sec" />
+      <FlipGroup value={pad(time.h)} />
+      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+      <FlipGroup value={pad(time.m)} />
+      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+      <FlipGroup value={pad(time.s)} />
     </div>
   );
 }
