@@ -249,12 +249,12 @@ function ArtistSection({
       {/* Horizontal card carousel */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
+        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1 sm:max-w-[80%] sm:mx-auto"
       >
         {runItems.map((item) => (
           <div
             key={item.id}
-            className="snap-center flex-shrink-0 w-[85%] sm:w-72 lg:w-80 cursor-pointer"
+            className="snap-center flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
             <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
