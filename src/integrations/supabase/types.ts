@@ -3937,68 +3937,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ktrenz_p2_keywords: {
-        Row: {
-          category: string | null
-          created_at: string
-          discover_date: string
-          discover_source: string
-          discovered_at: string
-          id: string
-          keyword: string
-          keyword_en: string | null
-          keyword_ko: string | null
-          matched_star_id: string | null
-          promoted_to_keyword_id: string | null
-          raw_context: Json | null
-          relevance_score: number | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          discover_date?: string
-          discover_source?: string
-          discovered_at?: string
-          id?: string
-          keyword: string
-          keyword_en?: string | null
-          keyword_ko?: string | null
-          matched_star_id?: string | null
-          promoted_to_keyword_id?: string | null
-          raw_context?: Json | null
-          relevance_score?: number | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          discover_date?: string
-          discover_source?: string
-          discovered_at?: string
-          id?: string
-          keyword?: string
-          keyword_en?: string | null
-          keyword_ko?: string | null
-          matched_star_id?: string | null
-          promoted_to_keyword_id?: string | null
-          raw_context?: Json | null
-          relevance_score?: number | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_p2_keywords_matched_star_id_fkey"
-            columns: ["matched_star_id"]
-            isOneToOne: false
-            referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ktrenz_pipeline_state: {
         Row: {
           batch_size: number
