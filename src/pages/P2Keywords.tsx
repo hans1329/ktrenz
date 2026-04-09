@@ -39,7 +39,7 @@ function timeAgo(dateStr: string) {
 }
 
 const P2Keywords = () => {
-  const { lang } = useLanguage();
+  const { language: lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>("all");
 
   const { data: keywords, isLoading, refetch, isFetching } = useQuery({
