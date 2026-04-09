@@ -490,6 +490,6 @@ export default function Battle() {
           })()}
         </SheetContent>
       </Sheet>
+      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
     </div>
-  );
 }
