@@ -110,7 +110,7 @@ function ContentCarousel({
               className="snap-center flex-shrink-0 w-full cursor-pointer"
               onClick={() => onCardTap(item)}
             >
-              <div className="relative aspect-[3/4] bg-muted">
+              <div className="relative aspect-square bg-muted">
                 {item.thumbnail ? (
                   <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
