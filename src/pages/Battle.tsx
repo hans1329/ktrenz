@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import SmartImage from "@/components/SmartImage";
+import { usePageTranslation } from "@/hooks/usePageTranslation";
 
 interface B2Item {
   id: string;
