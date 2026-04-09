@@ -1,4 +1,5 @@
 // P2 Pipeline: TikTok Trending Korea via tiktok-api23 (RapidAPI)
+// Strategy: search popular Korean trend seed keywords → extract hashtags
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,6 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
+
+// Korean trend seed keywords to search
+const SEED_KEYWORDS = [
+  "한국 트렌드", "kpop", "viral korea", "틱톡 인기",
+  "korean fashion", "korean beauty", "먹방", "챌린지",
+  "korean drama", "핫플", "요즘 유행", "korean trend 2025",
+];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,98 +31,86 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("[p2-tiktok] Fetching trending from tiktok-api23...");
+    console.log("[p2-tiktok] Starting TikTok trending keyword extraction...");
 
-    // tiktok-api23: GET /api/trending/feed with country_code
-    const url = new URL("https://tiktok-api23.p.rapidapi.com/api/trending/feed");
-    url.searchParams.set("count", "30");
-    url.searchParams.set("region", "KR");
+    const tagMap = new Map<string, { views: number; desc: string; author: string; seedKeyword: string }>();
+    let totalVideos = 0;
+    let apiCalls = 0;
 
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        "x-rapidapi-host": "tiktok-api23.p.rapidapi.com",
-        "x-rapidapi-key": rapidApiKey,
-      },
-    });
+    for (const seed of SEED_KEYWORDS) {
+      try {
+        const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(seed)}&search_id=0`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "x-rapidapi-host": TIKTOK_API_HOST,
+            "x-rapidapi-key": rapidApiKey,
+          },
+        });
+        apiCalls++;
 
-    const statusCode = res.status;
-    const body = await res.text();
-
-    if (!res.ok) {
-      console.error(`[p2-tiktok] API error ${statusCode}:`, body);
-      return new Response(JSON.stringify({ 
-        error: `tiktok-api23 ${statusCode}`, 
-        detail: body.substring(0, 500) 
-      }), {
-        status: statusCode,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(body);
-    } catch {
-      console.error("[p2-tiktok] Invalid JSON response:", body.substring(0, 300));
-      return new Response(JSON.stringify({ error: "Invalid JSON", preview: body.substring(0, 300) }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Extract hashtags/keywords from trending videos
-    const items = data?.itemList || data?.items || data?.data?.items || [];
-    console.log(`[p2-tiktok] Got ${items.length} items. Keys: ${Object.keys(data).join(",")}`);
-
-    const tagMap = new Map<string, { views: number; desc: string; author: string }>();
-
-    for (const item of items) {
-      const desc: string = item.desc || "";
-      const views = item.stats?.playCount || item.playCount || 0;
-      const author = item.author?.uniqueId || item.author?.nickname || "";
-
-      // Extract hashtags from description
-      const hashtags = desc.match(/#[\w\uAC00-\uD7AF\u3040-\u30FF]+/g) || [];
-      for (const tag of hashtags) {
-        const clean = tag.replace("#", "").trim();
-        if (!clean || clean.length < 2) continue;
-        const existing = tagMap.get(clean);
-        if (!existing || views > existing.views) {
-          tagMap.set(clean, { views, desc: desc.substring(0, 100), author });
+        if (!res.ok) {
+          const errText = await res.text();
+          console.warn(`[p2-tiktok] Search "${seed}" failed ${res.status}: ${errText.substring(0, 200)}`);
+          continue;
         }
-      }
 
-      // Also extract from challenges/textExtra if available
-      const challenges = item.challenges || item.textExtra || [];
-      for (const c of challenges) {
-        const name = c.hashtagName || c.title || c.hashtagTitle || "";
-        if (!name || name.length < 2) continue;
-        const existing = tagMap.get(name);
-        if (!existing || views > existing.views) {
-          tagMap.set(name, { views, desc: desc.substring(0, 100), author });
+        const data = await res.json();
+        const items = data?.item_list || [];
+        totalVideos += items.length;
+
+        for (const item of items) {
+          const desc: string = item.desc || "";
+          const views = item.stats?.playCount || 0;
+          const author = item.author?.uniqueId || "";
+
+          // Extract hashtags from description
+          const hashtags = desc.match(/#[\w\uAC00-\uD7AF\u3040-\u30FF\u4E00-\u9FFF]+/g) || [];
+          for (const tag of hashtags) {
+            const clean = tag.replace("#", "").trim();
+            if (!clean || clean.length < 2) continue;
+            const existing = tagMap.get(clean);
+            if (!existing || views > existing.views) {
+              tagMap.set(clean, { views, desc: desc.substring(0, 100), author, seedKeyword: seed });
+            }
+          }
+
+          // Extract from challenges/textExtra
+          const challenges = item.challenges || item.textExtra || [];
+          for (const c of challenges) {
+            const name = c.hashtagName || c.title || "";
+            if (!name || name.length < 2) continue;
+            const existing = tagMap.get(name);
+            if (!existing || views > existing.views) {
+              tagMap.set(name, { views, desc: desc.substring(0, 100), author, seedKeyword: seed });
+            }
+          }
         }
+
+        console.log(`[p2-tiktok] "${seed}" → ${items.length} videos, running hashtags: ${tagMap.size}`);
+      } catch (err) {
+        console.warn(`[p2-tiktok] Error searching "${seed}":`, err);
       }
     }
 
     const sorted = Array.from(tagMap.entries())
       .sort((a, b) => b[1].views - a[1].views);
 
-    console.log(`[p2-tiktok] ${sorted.length} unique hashtags extracted`);
+    console.log(`[p2-tiktok] Done: ${apiCalls} API calls, ${totalVideos} videos, ${sorted.length} unique hashtags`);
 
-    // Return test result (don't save to DB yet)
     const result = {
       success: true,
       source: "tiktok_trending_kr",
-      api_response_keys: Object.keys(data),
-      items_count: items.length,
+      api_calls: apiCalls,
+      total_videos: totalVideos,
       unique_hashtags: sorted.length,
-      sample_hashtags: sorted.slice(0, 20).map(([tag, info]) => ({
+      top_100: sorted.slice(0, 100).map(([tag, info], idx) => ({
+        rank: idx + 1,
         tag,
         views: info.views,
         author: info.author,
+        seed: info.seedKeyword,
       })),
-      raw_first_item_keys: items.length > 0 ? Object.keys(items[0]) : [],
     };
 
     return new Response(JSON.stringify(result, null, 2), {
