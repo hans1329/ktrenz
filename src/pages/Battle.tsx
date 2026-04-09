@@ -44,12 +44,12 @@ function decodeHtml(str: string) {
   return str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
 }
 
+function sourceIcon(source: string) {
   switch (source) {
     case "youtube": return "▶️";
     case "tiktok": return "🎵";
     case "instagram": return "📷";
     case "naver_news": return "📰";
-    
     case "reddit": return "💬";
     default: return "📄";
   }
