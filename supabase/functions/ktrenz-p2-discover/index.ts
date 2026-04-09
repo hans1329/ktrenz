@@ -26,89 +26,70 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. 기존 데이터 삭제 (매 수집마다 fresh data)
-    const { error: delErr } = await supabase
-      .from("ktrenz_p2_keywords")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all
-    if (delErr) console.error("[p2-discover] Delete error:", delErr.message);
+    // 1. 기존 데이터 전체 삭제
+    await supabase.from("ktrenz_p2_keywords").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
     // 2. SerpAPI Google Trends Trending Now (Korea)
     console.log("[p2-discover] Fetching Google Trends Korea...");
-    const trendUrl = `https://serpapi.com/search.json?engine=google_trends_trending_now&geo=KR&api_key=${serpApiKey}`;
-    const trendRes = await fetch(trendUrl);
-    
+    const trendRes = await fetch(
+      `https://serpapi.com/search.json?engine=google_trends_trending_now&geo=KR&api_key=${serpApiKey}`
+    );
+
     if (!trendRes.ok) {
       const errText = await trendRes.text();
-      console.error(`[p2-discover] SerpAPI error: ${trendRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: `SerpAPI error: ${trendRes.status}` }), {
+      console.error(`[p2-discover] SerpAPI error: ${trendRes.status}`);
+      return new Response(JSON.stringify({ error: `SerpAPI ${trendRes.status}`, detail: errText.slice(0, 200) }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const trendData = await trendRes.json();
-    const trendingSearches = trendData.trending_searches || [];
+    const trends = trendData.trending_searches || [];
+    console.log(`[p2-discover] Got ${trends.length} trending searches`);
 
-    console.log(`[p2-discover] Got ${trendingSearches.length} trending searches`);
-
-    // 3. Parse and save keywords
+    // 3. Build batch rows (limit 50 most relevant)
     const today = new Date().toISOString().split("T")[0];
-    let saved = 0;
-    const keywordsList: { keyword: string; volume: string; articles: number }[] = [];
+    const rows = trends.slice(0, 50).map((t: any) => {
+      const keyword = t.query || t.title || "";
+      const articleTitles = (t.articles || []).slice(0, 3).map((a: any) => a.title).filter(Boolean);
+      return {
+        keyword,
+        keyword_ko: keyword,
+        discover_source: "google_trends_kr",
+        discover_date: today,
+        relevance_score: 0,
+        raw_context: {
+          search_volume: t.search_volume || t.formattedTraffic || "",
+          article_count: t.articles?.length || 0,
+          article_titles: articleTitles,
+        },
+        status: "active",
+      };
+    }).filter((r: any) => r.keyword.length > 0);
 
-    for (const trend of trendingSearches) {
-      const keyword = trend.query || trend.title;
-      if (!keyword) continue;
+    // 4. Batch upsert
+    const { error: insertErr, data: inserted } = await supabase
+      .from("ktrenz_p2_keywords")
+      .upsert(rows, { onConflict: "keyword,discover_source,discover_date", ignoreDuplicates: true })
+      .select("id");
 
-      const searchVolume = trend.search_volume || trend.formattedTraffic || "";
-      const articles = trend.articles?.length || 0;
-      const articleTitles = (trend.articles || [])
-        .slice(0, 3)
-        .map((a: any) => a.title)
-        .filter(Boolean);
-
-      const { error } = await supabase
-        .from("ktrenz_p2_keywords")
-        .upsert({
-          keyword,
-          keyword_ko: keyword,
-          keyword_en: null,
-          discover_source: "google_trends_kr",
-          discover_date: today,
-          category: null,
-          relevance_score: 0,
-          matched_star_id: null,
-          raw_context: {
-            search_volume: searchVolume,
-            article_count: articles,
-            article_titles: articleTitles,
-            source_url: trend.serpapi_link || null,
-          },
-          status: "active",
-        }, {
-          onConflict: "keyword,discover_source,discover_date",
-          ignoreDuplicates: true,
-        });
-
-      if (error) {
-        console.error(`[p2-discover] Insert error for "${keyword}":`, error.message);
-      } else {
-        saved++;
-        keywordsList.push({ keyword, volume: searchVolume, articles });
-      }
+    if (insertErr) {
+      console.error("[p2-discover] Batch insert error:", insertErr.message);
     }
 
-    const result = {
-      success: true,
-      source: "google_trends_kr",
-      total_trending: trendingSearches.length,
-      saved,
-      keywords: keywordsList.slice(0, 20),
-    };
-
+    const saved = inserted?.length || rows.length;
     console.log(`[p2-discover] Done: ${saved} keywords saved`);
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({
+      success: true,
+      source: "google_trends_kr",
+      total_from_api: trends.length,
+      saved,
+      keywords: rows.slice(0, 20).map((r: any) => ({
+        keyword: r.keyword,
+        volume: r.raw_context.search_volume,
+      })),
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
