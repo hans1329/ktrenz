@@ -37,6 +37,30 @@ const BANDS: { key: Band; label: string; range: string; color: string; multiplie
   { key: "surge", label: "🔴 Surge", range: "80%+", color: "bg-destructive/10 text-destructive", multiplier: "×6.0" },
 ];
 
+function sourceIcon(source: string) {
+  switch (source) {
+    case "youtube": return "▶️";
+    case "tiktok": return "🎵";
+    case "instagram": return "📷";
+    case "naver_news": return "📰";
+    case "naver_blog": return "📝";
+    case "reddit": return "💬";
+    default: return "📄";
+  }
+}
+
+function sourceLabel(source: string) {
+  switch (source) {
+    case "youtube": return "YouTube";
+    case "tiktok": return "TikTok";
+    case "instagram": return "Instagram";
+    case "naver_news": return "News";
+    case "naver_blog": return "Blog";
+    case "reddit": return "Reddit";
+    default: return source;
+  }
+}
+
 export default function Battle() {
   const navigate = useNavigate();
   const { t } = usePageTranslation({
@@ -55,7 +79,6 @@ export default function Battle() {
       predictionSubmitted: "Prediction Submitted!",
       waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
       dailyRemaining: "Daily free battles remaining:",
-      vs: "VS",
     },
   });
   const [runs, setRuns] = useState<B2Run[]>([]);
@@ -101,6 +124,7 @@ export default function Battle() {
         .select("id, source, title, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
+        .order("engagement_score", { ascending: false })
         .limit(6);
       itemsByRun[run.id] = (runItems || []) as B2Item[];
     }
@@ -159,8 +183,8 @@ export default function Battle() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-6">
-        {/* Instruction Card */}
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
+        {/* Instruction */}
         <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
           <p className="text-sm font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
@@ -175,63 +199,98 @@ export default function Battle() {
           </div>
         </div>
 
-        {/* Step 1: Pick Winner */}
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
-          <div className="flex gap-3 items-stretch">
-            {runs.map((run, idx) => {
-              const runItems = items[run.id] || [];
-              const isPicked = pickedRunId === run.id;
-              return (
-                <div key={run.id} className="flex-1 flex flex-col items-center gap-2">
-                  <button
-                    onClick={() => handlePick(run.id)}
-                    disabled={submitted}
-                    className={`
-                      w-full rounded-2xl bg-card border-2 p-4 transition-all text-center
-                      ${isPicked
-                        ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
-                        : "border-border hover:border-muted-foreground/30"
-                      }
-                      ${submitted ? "opacity-60" : ""}
-                    `}
-                  >
-                    {/* Thumbnail strip */}
-                    <div className="flex gap-1 justify-center mb-3">
-                      {runItems.slice(0, 3).map((item) => (
-                        <div key={item.id} className="w-14 h-14 rounded-lg overflow-hidden bg-muted">
-                          {item.thumbnail ? (
-                            <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-muted" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <h3 className="font-bold text-foreground text-sm">{run.star?.display_name || "Unknown"}</h3>
-                    <p className="text-[10px] text-muted-foreground">{run.star?.name_ko}</p>
-                    <div className="mt-2">
-                      <span className="text-2xl font-bold text-foreground">{run.content_score}</span>
-                      <p className="text-[10px] text-muted-foreground">{t("contentScore")}</p>
-                    </div>
-                  </button>
-                  {idx === 0 && runs.length > 1 && (
-                    <div className="absolute left-1/2 -translate-x-1/2 mt-[90px] z-10">
+        {/* Pick Winner Label */}
+        <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
+
+        {/* Battle Cards - side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          {runs.map((run) => {
+            const runItems = items[run.id] || [];
+            const isPicked = pickedRunId === run.id;
+            const topItem = runItems[0];
+
+            return (
+              <button
+                key={run.id}
+                onClick={() => handlePick(run.id)}
+                disabled={submitted}
+                className={`
+                  rounded-2xl bg-card border-2 overflow-hidden transition-all text-left
+                  ${isPicked
+                    ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
+                    : "border-border hover:border-muted-foreground/30"
+                  }
+                  ${submitted ? "opacity-60" : ""}
+                `}
+              >
+                {/* Main content thumbnail */}
+                <div className="relative aspect-[4/3] bg-muted">
+                  {topItem?.thumbnail ? (
+                    <SmartImage
+                      src={topItem.thumbnail}
+                      alt={topItem.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted" />
+                  )}
+                  {/* Artist name overlay - top left */}
+                  <div className="absolute top-2 left-2">
+                    <span className="text-[10px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
+                      by {run.star?.display_name}
+                    </span>
+                  </div>
+                  {/* Source badge - top right */}
+                  {topItem && (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[10px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
+                        {sourceIcon(topItem.source)} {sourceLabel(topItem.source)}
+                      </span>
                     </div>
                   )}
+                  {/* Score overlay - bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
+                    <div className="flex items-end justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium line-clamp-2 leading-tight">
+                          {topItem?.title || "No content"}
+                        </p>
+                      </div>
+                      <div className="ml-2 text-right flex-shrink-0">
+                        <span className="text-xl font-bold text-white">{run.content_score}</span>
+                        <p className="text-[9px] text-white/70">{t("contentScore")}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-          {/* VS badge */}
-          {runs.length === 2 && (
-            <div className="flex justify-center -mt-1">
-              <span className="text-xs font-black text-muted-foreground tracking-widest">{t("vs")}</span>
-            </div>
-          )}
+
+                {/* Bottom thumbnails strip */}
+                <div className="p-2">
+                  <div className="flex gap-1">
+                    {runItems.slice(1, 5).map((item) => (
+                      <div key={item.id} className="flex-1 aspect-square rounded-lg overflow-hidden bg-muted">
+                        {item.thumbnail ? (
+                          <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-muted" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Step 2: Band Selection (only after pick) */}
+        {/* VS divider */}
+        {runs.length === 2 && (
+          <div className="flex justify-center -mt-3 -mb-2">
+            <span className="text-xs font-black text-muted-foreground tracking-widest">VS</span>
+          </div>
+        )}
+
+        {/* Band Selection */}
         {pickedRunId && !submitted && (
           <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
             <p className="text-sm font-semibold text-foreground">
@@ -279,9 +338,7 @@ export default function Battle() {
               <Trophy className="w-4 h-4 text-primary" />
               {t("predictionSubmitted")}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {t("waitResult")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
             <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
               <div>
                 <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
@@ -291,7 +348,6 @@ export default function Battle() {
                 {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
               </Badge>
             </div>
-            {/* K-Cash Progress */}
             <div className="pt-2 border-t border-border mt-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground">🎧 Spotify Premium</span>
