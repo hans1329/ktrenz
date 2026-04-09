@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2 } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -44,14 +44,15 @@ function decodeHtml(str: string) {
   return str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
 }
 
-function sourceIcon(source: string) {
+function sourceIcon(source: string): ReactNode {
+  const cls = "w-4 h-4 text-white drop-shadow-md";
   switch (source) {
-    case "youtube": return "▶️";
-    case "tiktok": return "🎵";
-    case "instagram": return "📷";
-    case "naver_news": return "📰";
-    case "reddit": return "💬";
-    default: return "📄";
+    case "youtube": return <Play className={cls} />;
+    case "tiktok": return <Music className={cls} />;
+    case "instagram": return <Camera className={cls} />;
+    case "naver_news": return <Newspaper className={cls} />;
+    case "reddit": return <MessageCircle className={cls} />;
+    default: return <FileText className={cls} />;
   }
 }
 
@@ -118,7 +119,7 @@ function ContentCarousel({
                 )}
                 {/* source icon */}
                 <div className="absolute top-2.5 right-2.5">
-                  <span className="text-base drop-shadow-md">{sourceIcon(item.source)}</span>
+                  {sourceIcon(item.source)}
                 </div>
                 {/* title overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
