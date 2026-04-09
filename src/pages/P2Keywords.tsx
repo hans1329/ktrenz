@@ -1,32 +1,20 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import V3Header from "@/components/v3/V3Header";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import {
-  Flame, Sparkles, ShoppingBag, MapPin, Calendar, Tv, Music,
-  MessageCircle, Tag, TrendingUp, Search, RefreshCw, Loader2,
-  Star, Users,
-} from "lucide-react";
+import { TrendingUp, Search, RefreshCw, Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 
-const CATEGORY_CONFIG: Record<string, { icon: typeof Flame; label: string; color: string }> = {
-  brand: { icon: ShoppingBag, label: "Brand", color: "bg-blue-500/10 text-blue-600" },
-  product: { icon: Tag, label: "Product", color: "bg-emerald-500/10 text-emerald-600" },
-  fashion: { icon: Sparkles, label: "Fashion", color: "bg-pink-500/10 text-pink-600" },
-  beauty: { icon: Sparkles, label: "Beauty", color: "bg-purple-500/10 text-purple-600" },
-  event: { icon: Calendar, label: "Event", color: "bg-amber-500/10 text-amber-600" },
-  place: { icon: MapPin, label: "Place", color: "bg-teal-500/10 text-teal-600" },
-  media: { icon: Tv, label: "Media", color: "bg-red-500/10 text-red-600" },
-  music: { icon: Music, label: "Music", color: "bg-indigo-500/10 text-indigo-600" },
-  food: { icon: Flame, label: "Food", color: "bg-orange-500/10 text-orange-600" },
-  social: { icon: MessageCircle, label: "Social", color: "bg-cyan-500/10 text-cyan-600" },
-};
+function formatVolume(vol: string | number) {
+  const n = typeof vol === "string" ? parseInt(vol, 10) : vol;
+  if (!n || isNaN(n)) return "";
+  if (n >= 100000) return `${(n / 1000).toFixed(0)}K+`;
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+  return String(n);
+}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -36,96 +24,6 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-/* ── Keyword Card (shared) ── */
-const KeywordCard = ({ kw, idx, lang }: { kw: any; idx: number; lang: string }) => {
-  const cat = CATEGORY_CONFIG[kw.category] || CATEGORY_CONFIG.brand;
-  const CatIcon = cat.icon;
-  const context = kw.raw_context?.context || "";
-  const star = kw.matched_star;
-  const display = lang === "ko" ? (kw.keyword_ko || kw.keyword) : (kw.keyword_en || kw.keyword);
-
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-border transition-colors">
-      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-        <span className="text-[10px] font-bold text-muted-foreground">{idx + 1}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-sm text-foreground truncate">{display}</h3>
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0", cat.color)}>
-            <CatIcon className="w-2.5 h-2.5 mr-0.5" />
-            {cat.label}
-          </Badge>
-        </div>
-        {context && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{context}</p>}
-        <div className="flex items-center gap-3 mt-1.5">
-          <div className="flex items-center gap-1">
-            <div className="w-12 h-1 rounded-full bg-muted overflow-hidden">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${(kw.relevance_score || 0) * 100}%` }} />
-            </div>
-            <span className="text-[10px] text-muted-foreground">{Math.round((kw.relevance_score || 0) * 100)}%</span>
-          </div>
-          {star && (
-            <span className="text-[10px] text-primary flex items-center gap-0.5">
-              <Star className="w-2.5 h-2.5" />
-              {star.display_name}
-            </span>
-          )}
-          <span className="text-[10px] text-muted-foreground ml-auto">{timeAgo(kw.discovered_at)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ── Star-grouped card ── */
-const StarGroupCard = ({ starName, imageUrl, keywords, lang }: {
-  starName: string; imageUrl: string | null; keywords: any[]; lang: string;
-}) => (
-  <div className="rounded-xl bg-card border border-border/50 overflow-hidden">
-    <div className="flex items-center gap-3 px-4 py-3 bg-muted/30 border-b border-border/30">
-      <Avatar className="w-8 h-8 rounded-lg">
-        <AvatarImage src={imageUrl || undefined} className="object-cover" />
-        <AvatarFallback className="rounded-lg text-xs bg-primary/10 text-primary">{starName.slice(0, 2)}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-foreground truncate">{starName}</p>
-        <p className="text-[10px] text-muted-foreground">{keywords.length} keyword{keywords.length > 1 ? "s" : ""}</p>
-      </div>
-    </div>
-    <div className="divide-y divide-border/30">
-      {keywords.map((kw: any) => {
-        const cat = CATEGORY_CONFIG[kw.category] || CATEGORY_CONFIG.brand;
-        const CatIcon = cat.icon;
-        const display = lang === "ko" ? (kw.keyword_ko || kw.keyword) : (kw.keyword_en || kw.keyword);
-        return (
-          <div key={kw.id} className="flex items-center gap-2 px-4 py-2.5">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground truncate">{display}</span>
-                <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0", cat.color)}>
-                  <CatIcon className="w-2.5 h-2.5 mr-0.5" />
-                  {cat.label}
-                </Badge>
-              </div>
-              {kw.raw_context?.context && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{kw.raw_context.context}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${(kw.relevance_score || 0) * 100}%` }} />
-              </div>
-              <span className="text-[10px] text-muted-foreground w-7 text-right">{Math.round((kw.relevance_score || 0) * 100)}%</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
-/* ── Main Page ── */
 const P2Keywords = () => {
   const { language: lang } = useLanguage();
 
@@ -134,38 +32,19 @@ const P2Keywords = () => {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("ktrenz_p2_keywords")
-        .select("*, matched_star:ktrenz_stars!ktrenz_p2_keywords_matched_star_id_fkey(display_name, image_url)")
+        .select("*")
         .eq("status", "active")
-        .order("relevance_score", { ascending: false })
         .order("discovered_at", { ascending: false })
-        .limit(100);
+        .limit(50);
       if (error) throw error;
       return data || [];
     },
     staleTime: 60000,
   });
 
-  // Split into two groups
-  const topKeywords = (keywords || []).sort((a: any, b: any) => (b.relevance_score || 0) - (a.relevance_score || 0));
-  const starMapped = (keywords || []).filter((kw: any) => kw.matched_star_id && kw.matched_star);
-
-  // Group star-mapped by star
-  const starGroups = new Map<string, { starName: string; imageUrl: string | null; keywords: any[] }>();
-  for (const kw of starMapped) {
-    const sid = kw.matched_star_id;
-    if (!starGroups.has(sid)) {
-      starGroups.set(sid, {
-        starName: kw.matched_star.display_name,
-        imageUrl: kw.matched_star.image_url,
-        keywords: [],
-      });
-    }
-    starGroups.get(sid)!.keywords.push(kw);
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      <SEO title="P2 Trending Keywords" description="Discover trending K-pop keywords from external sources" />
+      <SEO title="Trending Now — Korea" description="Real-time trending keywords from Korea" />
       <V3Header />
 
       <main className="max-w-2xl mx-auto px-4 pb-24">
@@ -175,10 +54,10 @@ const P2Keywords = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                Trending Keywords
+                Trending Now
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Discovered from external sources · Updated daily
+                Google Trends Korea · Real-time rising searches
               </p>
             </div>
             <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full">
@@ -189,73 +68,90 @@ const P2Keywords = () => {
 
         {/* Loading */}
         {isLoading && (
-          <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
+          <div className="space-y-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
         )}
 
+        {/* Keywords List */}
         {!isLoading && (
-          <>
-            {/* ── Section 1: Top Keywords ── */}
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <h2 className="text-sm font-bold text-foreground">Hot Keywords</h2>
-                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{topKeywords.length}</span>
-              </div>
-
-              {topKeywords.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">No keywords discovered yet</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {topKeywords.map((kw: any, idx: number) => (
-                    <KeywordCard key={kw.id} kw={kw} idx={idx} lang={lang} />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* ── Section 2: Star-Mapped Keywords ── */}
-            {starGroups.size > 0 && (
-              <section className="mt-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-primary" />
-                  <h2 className="text-sm font-bold text-foreground">Artist-Linked Keywords</h2>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                    {starMapped.length} · {starGroups.size} artists
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {Array.from(starGroups.entries())
-                    .sort((a, b) => b[1].keywords.length - a[1].keywords.length)
-                    .map(([sid, group]) => (
-                      <StarGroupCard
-                        key={sid}
-                        starName={group.starName}
-                        imageUrl={group.imageUrl}
-                        keywords={group.keywords}
-                        lang={lang}
-                      />
-                    ))}
-                </div>
-              </section>
-            )}
-
-            {/* Stats */}
-            {keywords && keywords.length > 0 && (
-              <div className="mt-8 p-3 rounded-xl bg-muted/30 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {keywords.length} keywords discovered · {starMapped.length} linked to {starGroups.size} artists
-                </p>
+          <div className="space-y-1.5">
+            {(!keywords || keywords.length === 0) && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No trending keywords found</p>
               </div>
             )}
-          </>
+
+            {keywords?.map((kw: any, idx: number) => {
+              const volume = kw.raw_context?.search_volume;
+              const articleTitles: string[] = kw.raw_context?.article_titles || [];
+              const isTop3 = idx < 3;
+
+              return (
+                <div
+                  key={kw.id}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
+                    isTop3
+                      ? "bg-primary/5 border border-primary/10"
+                      : "bg-card border border-border/40 hover:border-border"
+                  )}
+                >
+                  {/* Rank */}
+                  <div className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+                    isTop3 ? "bg-primary text-primary-foreground" : "bg-muted"
+                  )}>
+                    {isTop3 ? (
+                      <Flame className="w-3.5 h-3.5" />
+                    ) : (
+                      <span className="text-[11px] font-bold text-muted-foreground">{idx + 1}</span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={cn(
+                      "text-sm truncate",
+                      isTop3 ? "font-bold text-foreground" : "font-medium text-foreground"
+                    )}>
+                      {kw.keyword}
+                    </h3>
+                    {articleTitles.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        {articleTitles[0]}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Volume */}
+                  {volume && (
+                    <div className="shrink-0 text-right">
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        isTop3 ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {formatVolume(volume)}
+                      </span>
+                      <p className="text-[9px] text-muted-foreground">searches</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Footer */}
+        {!isLoading && keywords && keywords.length > 0 && (
+          <div className="mt-6 p-3 rounded-xl bg-muted/30 text-center">
+            <p className="text-xs text-muted-foreground">
+              {keywords.length} trending keywords · Updated {timeAgo(keywords[0]?.discovered_at || "")}
+            </p>
+          </div>
         )}
       </main>
     </div>
