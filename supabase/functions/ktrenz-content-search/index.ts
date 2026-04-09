@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
         id: star.id,
         display_name: star.display_name,
         name_ko: star.name_ko,
-        group_name: star.group_name,
+        star_type: star.star_type,
       },
       sources: {
         naver_news: naverNews,
