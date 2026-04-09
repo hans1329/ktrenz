@@ -247,12 +247,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const naverNews = dedup(naverNewsRaw, true);
+    const naverNewsDeduped = dedup(naverNewsRaw, true);
     const naverBlog = dedup(naverBlogRaw);
     const youtube = dedup(youtubeRaw);
     const tiktok = dedup(tiktokRaw);
     const instagram = dedup(instagramRaw);
     const reddit = dedup(redditRaw);
+
+    // Enrich Naver News with og:image (parallel, up to 10)
+    const naverNews = await Promise.all(
+      naverNewsDeduped.slice(0, 10).map(async (item: any) => {
+        if (item.thumbnail) return item;
+        const ogImg = await extractOgImage(item.url);
+        return ogImg ? { ...item, thumbnail: ogImg } : item;
+      })
+    );
+    // Append remaining items without enrichment
+    if (naverNewsDeduped.length > 10) {
+      naverNews.push(...naverNewsDeduped.slice(10));
+    }
 
     const results = {
       star: {
