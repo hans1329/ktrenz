@@ -156,11 +156,11 @@ function FlipTimer() {
 
   return (
     <div className="flex items-center justify-center gap-2.5 sm:gap-4">
-      <FlipGroup value={pad(time.h)} label="hrs" />
-      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.m)} label="min" />
-      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.s)} label="sec" />
+      <FlipGroup value={pad(time.h)} />
+      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+      <FlipGroup value={pad(time.m)} />
+      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+      <FlipGroup value={pad(time.s)} />
     </div>
   );
 }
