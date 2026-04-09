@@ -520,7 +520,7 @@ export default function Battle() {
                   }`}
                 >
                   <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
-                  {hotVotes.has(drawerItem.id) ? "Hot! +0.2" : "Mark as Hot"}
+                  {hotVotes.has(drawerItem.id) ? "Hot!" : "Mark as Hot"}
                 </button>
               </>
             );
