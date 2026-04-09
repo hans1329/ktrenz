@@ -40,13 +40,16 @@ const BANDS: { key: Band; label: string; range: string; color: string; multiplie
   { key: "surge", label: "🔴 Surge", range: "80%+", color: "bg-destructive/10 text-destructive", multiplier: "×6.0" },
 ];
 
+function decodeHtml(str: string) {
+  return str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+}
+
 function sourceIcon(source: string) {
   switch (source) {
     case "youtube": return "▶️";
     case "tiktok": return "🎵";
     case "instagram": return "📷";
     case "naver_news": return "📰";
-    
     case "reddit": return "💬";
     default: return "📄";
   }
@@ -120,7 +123,7 @@ function ContentCarousel({
                 {/* title overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
                   <p className="text-white text-sm font-medium leading-snug line-clamp-3">
-                    {item.title}
+                    {decodeHtml(item.title)}
                   </p>
                 </div>
               </div>
@@ -402,13 +405,21 @@ export default function Battle() {
                   )}
                 </div>
 
+                {/* Artist */}
+                {starRun?.star && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    by {starRun.star.display_name}
+                  </p>
+                )}
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{drawerItem.title}</h3>
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(drawerItem.title)}</h3>
 
                 {/* Description */}
                 {drawerItem.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{drawerItem.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    {decodeHtml(drawerItem.description)}
+                  </p>
                 )}
 
                 {/* Stats grid */}
