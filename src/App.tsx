@@ -109,7 +109,7 @@ const App = () => (
                 <Route path="/t2/grades" element={<T2TrendGrades />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
-                
+                <Route path="/key" element={<ContentSearch />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
