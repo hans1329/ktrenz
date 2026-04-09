@@ -472,6 +472,11 @@ export default function Battle() {
 
   function handlePick(runId: string) {
     if (submitted) return;
+    if (!user) {
+      toast({ title: "Please log in to participate.", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
     setPickedRunId(runId);
     setSelectedBand(null);
   }
