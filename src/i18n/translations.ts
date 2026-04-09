@@ -798,6 +798,32 @@ const translations: Record<string, Record<Language, string>> = {
   "t2.detail.explosive": { en: "Explosive", ko: "폭발적", ja: "爆発的", zh: "爆发" },
   "t2.detail.mildThreshold": { en: "<15% rise", ko: "<15% 상승", ja: "<15% 上昇", zh: "<15% 上升" },
   "t2.detail.strongThreshold": { en: "15~100% rise", ko: "15~100% 상승", ja: "15~100% 上昇", zh: "15~100% 上升" },
+
+  // ── Battle ──
+  "battle.loading": { en: "Loading battles...", ko: "배틀 로딩 중...", ja: "バトルを読み込み中...", zh: "加载对战中..." },
+  "battle.title": { en: "Trend Battle", ko: "트렌드 배틀", ja: "トレンドバトル", zh: "趋势对战" },
+  "battle.subtitle": { en: "Predict the next content surge", ko: "다음 콘텐츠 급상승을 예측하세요", ja: "次のコンテンツ急上昇を予測", zh: "预测下一个内容爆发" },
+  "battle.howItWorks": { en: "How it works", ko: "참여 방법", ja: "遊び方", zh: "玩法介绍" },
+  "battle.instruction": { en: "Pick the artist you think will grow more, then predict their growth band. The tighter the band, the bigger the reward!", ko: "더 성장할 아티스트를 선택한 후, 성장 구간을 예측하세요. 구간이 좁을수록 보상이 커집니다!", ja: "成長すると思うアーティストを選び、成長幅を予測しましょう。幅が狭いほど報酬が大きくなります！", zh: "选择你认为增长更快的艺人，然后预测增长区间。区间越窄，奖励越大！" },
+  "battle.nextSettlement": { en: "Next settlement in", ko: "다음 정산까지", ja: "次の精算まで", zh: "距下次结算" },
+  "battle.contentScore": { en: "Score", ko: "점수", ja: "スコア", zh: "分数" },
+  "battle.pickWinner": { en: "Who will grow more?", ko: "어떤 트렌드가 내일 더 유행할까요?", ja: "どちらがもっと成長する？", zh: "谁会增长更多？" },
+  "battle.predictGrowth": { en: "Your pick:", ko: "당신의 선택:", ja: "あなたの選択:", zh: "你的选择:" },
+  "battle.bandSteady": { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" },
+  "battle.bandRising": { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
+  "battle.bandSurge": { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" },
+  "battle.bandRange030": { en: "0–30%", ko: "0–30%", ja: "0–30%", zh: "0–30%" },
+  "battle.bandRange3080": { en: "30–80%", ko: "30–80%", ja: "30–80%", zh: "30–80%" },
+  "battle.bandRange80": { en: "80%+", ko: "80%+", ja: "80%+", zh: "80%+" },
+  "battle.submitPrediction": { en: "Submit Prediction", ko: "예측 제출", ja: "予測を送信", zh: "提交预测" },
+  "battle.predictionSubmitted": { en: "Prediction Submitted!", ko: "예측이 제출되었습니다!", ja: "予測が送信されました！", zh: "预测已提交！" },
+  "battle.waitResult": { en: "Results will be settled after the next content scan. Check back in ~24 hours.", ko: "다음 콘텐츠 스캔 후 결과가 정산됩니다. 약 24시간 후 확인하세요.", ja: "次回のコンテンツスキャン後に結果が確定します。約24時間後にご確認ください。", zh: "结果将在下次内容扫描后结算，请约24小时后查看。" },
+  "battle.dailyRemaining": { en: "Daily free battles remaining:", ko: "오늘 남은 무료 배틀:", ja: "残りの無料バトル:", zh: "今日剩余免费对战:" },
+  "battle.contentDetail": { en: "Content Detail", ko: "콘텐츠 상세", ja: "コンテンツ詳細", zh: "内容详情" },
+  "battle.source": { en: "Source", ko: "출처", ja: "ソース", zh: "来源" },
+  "battle.published": { en: "Published", ko: "게시일", ja: "公開日", zh: "发布日期" },
+  "battle.scoreLabel": { en: "Score", ko: "점수", ja: "スコア", zh: "分数" },
+  "battle.rewardProgress": { en: "Reward Progress", ko: "리워드 진행", ja: "リワード進捗", zh: "奖励进度" },
 };
 
 export default translations;
