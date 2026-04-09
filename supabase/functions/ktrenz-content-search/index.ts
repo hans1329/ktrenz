@@ -317,7 +317,7 @@ Deno.serve(async (req) => {
       },
       sources: {
         naver_news: naverNews,
-        naver_blog: naverBlog,
+        naver_blog: naverBlogEnriched,
         youtube,
         tiktok,
         instagram,
