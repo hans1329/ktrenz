@@ -619,8 +619,8 @@ export default function Battle() {
           )}
 
           <div className="text-center pb-2">
-            <p className="text-xs text-muted-foreground">
-              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingTickets} / {totalTickets}</span>
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+              {t("dailyRemaining")} <Ticket className="w-3.5 h-3.5 text-primary" /> <span className="font-bold text-foreground">{remainingTickets}</span>
             </p>
           </div>
 
