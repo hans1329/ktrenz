@@ -218,30 +218,32 @@ function ArtistSection({
 
   return (
     <div className="space-y-2">
-      {/* Pick bar — name + score */}
-      <button
-        onClick={onPick}
-        disabled={disabled}
-        className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all border ${
-          isPicked ? "bg-primary/5 border-primary/30" : "bg-card border-transparent hover:bg-muted/50"
-        } ${disabled ? "opacity-60" : ""}`}
-      >
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">by</span>
-          <span className="text-sm font-bold text-foreground">{starName}</span>
-        </div>
-        <div
-          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-            isPicked ? "bg-primary" : "bg-muted"
-          }`}
+      {/* Pick bar — constrained width */}
+      <div className="max-w-lg mx-auto px-2 sm:px-0">
+        <button
+          onClick={onPick}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all border ${
+            isPicked ? "bg-primary/5 border-primary/30" : "bg-card border-transparent hover:bg-muted/50"
+          } ${disabled ? "opacity-60" : ""}`}
         >
-          {isPicked && (
-            <svg className="w-3.5 h-3.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-        </div>
-      </button>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">by</span>
+            <span className="text-sm font-bold text-foreground">{starName}</span>
+          </div>
+          <div
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+              isPicked ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            {isPicked && (
+              <svg className="w-3.5 h-3.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        </button>
+      </div>
 
       {/* Horizontal card carousel */}
       <div
