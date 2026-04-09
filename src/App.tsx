@@ -67,6 +67,7 @@ import T2CategoryDetail from "./pages/T2CategoryDetail";
 import About from "./pages/About";
 import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
+import Battle from "./pages/Battle";
 
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
