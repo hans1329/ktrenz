@@ -19,6 +19,26 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOU
   }
 }
 
+// ── Extract og:image from a page ──
+async function extractOgImage(pageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(pageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+    }, 5000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Extract og:image from meta tags
+    const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (ogMatch?.[1]) {
+      const imgUrl = ogMatch[1];
+      // Ensure HTTPS
+      return imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
+    }
+    return null;
+  } catch { return null; }
+}
+
 // ── Naver News + Blog ──
 async function searchNaver(
   clientId: string, clientSecret: string, endpoint: "news" | "blog", query: string, display = 20,
@@ -150,7 +170,7 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
       title: r.title || "",
       description: r.snippet || "",
       url: r.link,
-      thumbnail: r.thumbnail || null,
+      thumbnail: r.thumbnail || r.rich_snippet?.top?.detected_extensions?.thumbnail || null,
       date: r.date || null,
       metadata: { subreddit: r.link?.match(/reddit\.com\/r\/([^/]+)/)?.[1] || "" },
     }));
@@ -227,12 +247,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const naverNews = dedup(naverNewsRaw, true);
+    const naverNewsDeduped = dedup(naverNewsRaw, true);
     const naverBlog = dedup(naverBlogRaw);
     const youtube = dedup(youtubeRaw);
     const tiktok = dedup(tiktokRaw);
     const instagram = dedup(instagramRaw);
     const reddit = dedup(redditRaw);
+
+    // Enrich Naver News & Reddit with og:image (parallel, up to 10 each)
+    const enrichWithOgImage = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          if (item.thumbnail) return item;
+          const ogImg = await extractOgImage(item.url);
+          return ogImg ? { ...item, thumbnail: ogImg } : item;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
+    const [naverNews, redditEnriched] = await Promise.all([
+      enrichWithOgImage(naverNewsDeduped, 10),
+      enrichWithOgImage(reddit, 7),
+    ]);
 
     const results = {
       star: {
@@ -247,7 +285,7 @@ Deno.serve(async (req) => {
         youtube,
         tiktok,
         instagram,
-        reddit,
+        reddit: redditEnriched,
       },
       counts: {
         naver_news: naverNews.length,
@@ -255,8 +293,8 @@ Deno.serve(async (req) => {
         youtube: youtube.length,
         tiktok: tiktok.length,
         instagram: instagram.length,
-        reddit: reddit.length,
-        total: naverNews.length + naverBlog.length + youtube.length + tiktok.length + instagram.length + reddit.length,
+        reddit: redditEnriched.length,
+        total: naverNews.length + naverBlog.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
       },
     };
 
