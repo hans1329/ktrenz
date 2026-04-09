@@ -125,15 +125,12 @@ function FlipCard({ digit }: { digit: string }) {
   );
 }
 
-function FlipGroup({ value, label }: { value: string; label: string }) {
+function FlipGroup({ value }: { value: string }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="flex gap-1">
-        {value.split("").map((d, i) => (
-          <FlipCard key={`${label}-${i}`} digit={d} />
-        ))}
-      </div>
-      <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">{label}</span>
+    <div className="flex gap-1">
+      {value.split("").map((d, i) => (
+        <FlipCard key={`${value}-${i}`} digit={d} />
+      ))}
     </div>
   );
 }
