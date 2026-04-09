@@ -429,7 +429,12 @@ export default function Battle() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-foreground leading-snug mb-3">{drawerItem.title}</h3>
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{drawerItem.title}</h3>
+
+                {/* Description */}
+                {drawerItem.description && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{drawerItem.description}</p>
+                )}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
