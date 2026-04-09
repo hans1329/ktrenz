@@ -394,13 +394,21 @@ export default function Battle() {
 
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto mx-auto max-w-lg">
           {drawerItem && (
             <>
+              {/* Close row */}
+              <div className="flex justify-end pb-1">
+                <button
+                  onClick={() => setDrawerItem(null)}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
               <SheetHeader className="pb-3">
                 <SheetTitle className="text-base">{t("contentDetail")}</SheetTitle>
               </SheetHeader>
-              {/* Thumbnail */}
               <div className="rounded-2xl overflow-hidden bg-muted aspect-video mb-4">
                 {drawerItem.thumbnail ? (
                   <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-full object-cover" />
@@ -408,7 +416,6 @@ export default function Battle() {
                   <div className="w-full h-full bg-muted" />
                 )}
               </div>
-              {/* Meta */}
               <div className="space-y-3">
                 <Badge variant="secondary" className="text-xs">
                   {sourceIcon(drawerItem.source)} {sourceLabel(drawerItem.source)}
