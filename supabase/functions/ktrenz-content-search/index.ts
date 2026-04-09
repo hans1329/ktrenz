@@ -19,6 +19,26 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOU
   }
 }
 
+// ── Extract og:image from a page ──
+async function extractOgImage(pageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(pageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+    }, 5000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Extract og:image from meta tags
+    const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (ogMatch?.[1]) {
+      const imgUrl = ogMatch[1];
+      // Ensure HTTPS
+      return imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
+    }
+    return null;
+  } catch { return null; }
+}
+
 // ── Naver News + Blog ──
 async function searchNaver(
   clientId: string, clientSecret: string, endpoint: "news" | "blog", query: string, display = 20,
