@@ -220,6 +220,31 @@ Deno.serve(async (req) => {
     const searchQuery = star.name_ko || star.display_name;
     const searchQueryEn = star.display_name;
 
+    // Fetch member names for title filtering (group → members)
+    let memberNames: string[] = [];
+    if (star.star_type === "group") {
+      const { data: members } = await sb
+        .from("ktrenz_stars")
+        .select("display_name, name_ko")
+        .eq("group_star_id", star_id)
+        .eq("star_type", "member");
+      if (members) {
+        memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+      }
+    }
+
+    // Build keyword set for title relevance check
+    const relevanceKeywords = [
+      star.display_name,
+      star.name_ko,
+      ...memberNames,
+    ].filter(Boolean).map((k: string) => k.toLowerCase());
+
+    function isTitleRelevant(title: string): boolean {
+      const t = title.toLowerCase();
+      return relevanceKeywords.some((kw) => t.includes(kw));
+    }
+
     // API Keys
     const NAVER_ID = Deno.env.get("NAVER_CLIENT_ID") || "";
     const NAVER_SECRET = Deno.env.get("NAVER_CLIENT_SECRET") || "";
