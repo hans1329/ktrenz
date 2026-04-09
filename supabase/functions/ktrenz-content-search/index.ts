@@ -308,6 +308,71 @@ Deno.serve(async (req) => {
       enrichReddit(reddit, 7),
     ]);
 
+    const contentScore = naverNewsRaw.length + naverBlogRaw.length + youtubeRaw.length + tiktokRaw.length + instagramRaw.length + redditRaw.length;
+
+    const countsObj = {
+      naver_news: naverNews.length,
+      naver_news_raw: naverNewsRaw.length,
+      naver_blog: naverBlogEnriched.length,
+      naver_blog_raw: naverBlogRaw.length,
+      youtube: youtube.length,
+      youtube_raw: youtubeRaw.length,
+      tiktok: tiktok.length,
+      tiktok_raw: tiktokRaw.length,
+      instagram: instagram.length,
+      instagram_raw: instagramRaw.length,
+      reddit: redditEnriched.length,
+      reddit_raw: redditRaw.length,
+      total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
+    };
+
+    // ── Save to B2 tables ──
+    const { data: runData, error: runErr } = await sb
+      .from("ktrenz_b2_runs")
+      .insert({ star_id, content_score: contentScore, counts: countsObj })
+      .select("id")
+      .single();
+
+    if (runErr) {
+      console.error("[B2] run insert error:", runErr.message);
+    }
+
+    const runId = runData?.id;
+
+    if (runId) {
+      const allSourceItems = [
+        ...naverNews.map((i: any) => ({ ...i, source: i.source || "naver_news" })),
+        ...naverBlogEnriched.map((i: any) => ({ ...i, source: i.source || "naver_blog" })),
+        ...youtube.map((i: any) => ({ ...i, source: i.source || "youtube" })),
+        ...tiktok.map((i: any) => ({ ...i, source: i.source || "tiktok" })),
+        ...instagram.map((i: any) => ({ ...i, source: i.source || "instagram" })),
+        ...redditEnriched.map((i: any) => ({ ...i, source: i.source || "reddit" })),
+      ];
+
+      const b2Items = allSourceItems.map((item: any) => ({
+        run_id: runId,
+        star_id,
+        source: item.source,
+        title: (item.title || "").substring(0, 500),
+        description: (item.description || "").substring(0, 1000),
+        url: item.url || "",
+        thumbnail: item.thumbnail || null,
+        has_thumbnail: !!item.thumbnail,
+        published_at: item.date || null,
+        engagement_score: contentScore,
+        card_status: "available",
+        metadata: item.metadata || {},
+      }));
+
+      // Batch insert (Supabase default limit ~1000)
+      const BATCH = 200;
+      for (let i = 0; i < b2Items.length; i += BATCH) {
+        const batch = b2Items.slice(i, i + BATCH);
+        const { error: itemErr } = await sb.from("ktrenz_b2_items").insert(batch);
+        if (itemErr) console.error(`[B2] items batch ${i} error:`, itemErr.message);
+      }
+    }
+
     const results = {
       star: {
         id: star.id,
@@ -324,20 +389,12 @@ Deno.serve(async (req) => {
         reddit: redditEnriched,
       },
       counts: {
-        naver_news: naverNews.length,
-        naver_news_raw: naverNewsRaw.length,
-        naver_blog: naverBlogEnriched.length,
-        naver_blog_raw: naverBlogRaw.length,
-        youtube: youtube.length,
-        youtube_raw: youtubeRaw.length,
-        tiktok: tiktok.length,
-        tiktok_raw: tiktokRaw.length,
-        instagram: instagram.length,
-        instagram_raw: instagramRaw.length,
-        reddit: redditEnriched.length,
-        reddit_raw: redditRaw.length,
-        total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
-        content_score: naverNewsRaw.length + naverBlogRaw.length + youtubeRaw.length + tiktokRaw.length + instagramRaw.length + redditRaw.length,
+        ...countsObj,
+        content_score: contentScore,
+      },
+      b2: {
+        run_id: runId || null,
+        saved: !!runId,
       },
     };
 
