@@ -78,28 +78,46 @@ function FlipTimer() {
 
   const pad = (n: number) => String(n).padStart(2, "0");
 
-  function FlipDigit({ value, label }: { value: string; label: string }) {
+  function FlipCard({ digit }: { digit: string }) {
     return (
-      <div className="flex flex-col items-center gap-1">
-        <div className="flex gap-0.5">
+      <div className="relative w-9 h-12 sm:w-11 sm:h-14 rounded-lg overflow-hidden shadow-md">
+        {/* Top half */}
+        <div className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden border-b border-border/30">
+          <span className="text-xl sm:text-2xl font-extrabold font-mono text-foreground translate-y-[55%]">{digit}</span>
+        </div>
+        {/* Bottom half */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white/90 flex items-start justify-center overflow-hidden">
+          <span className="text-xl sm:text-2xl font-extrabold font-mono text-foreground -translate-y-[55%]">{digit}</span>
+        </div>
+        {/* Center line */}
+        <div className="absolute inset-x-0 top-1/2 h-px bg-border/50 z-10" />
+        {/* Side shadow notches */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-r-full" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-l-full" />
+      </div>
+    );
+  }
+
+  function FlipGroup({ value, label }: { value: string; label: string }) {
+    return (
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="flex gap-1">
           {value.split("").map((d, i) => (
-            <div key={i} className="w-8 h-10 rounded-lg bg-foreground/10 flex items-center justify-center">
-              <span className="text-lg font-bold font-mono text-foreground">{d}</span>
-            </div>
+            <FlipCard key={i} digit={d} />
           ))}
         </div>
-        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{label}</span>
+        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">{label}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center gap-3">
-      <FlipDigit value={pad(time.h)} label="hrs" />
-      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
-      <FlipDigit value={pad(time.m)} label="min" />
-      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
-      <FlipDigit value={pad(time.s)} label="sec" />
+    <div className="flex items-center justify-center gap-2.5 sm:gap-4">
+      <FlipGroup value={pad(time.h)} label="hrs" />
+      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
+      <FlipGroup value={pad(time.m)} label="min" />
+      <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
+      <FlipGroup value={pad(time.s)} label="sec" />
     </div>
   );
 }
