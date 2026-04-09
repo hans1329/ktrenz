@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -186,6 +186,23 @@ export default function Battle() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
+  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set()); // item IDs that got 🔥
+
+  // Count hot votes per run's star_id
+  function getHotBonus(runId: string): number {
+    const runItems = items[runId] || [];
+    const count = runItems.filter((i) => hotVotes.has(i.id)).length;
+    return count * 0.2;
+  }
+
+  function toggleHot(itemId: string) {
+    setHotVotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
 
   useEffect(() => { loadBattleData(); }, []);
 
@@ -304,7 +321,7 @@ export default function Battle() {
             <ContentCarousel
               runItems={items[run.id] || []}
               starName={run.star?.display_name || "Unknown"}
-              contentScore={run.content_score}
+              contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
               scoreLabel={t("contentScore")}
               isPicked={pickedRunId === run.id}
               onPick={() => handlePick(run.id)}
@@ -479,6 +496,19 @@ export default function Battle() {
                     </div>
                   )}
                 </div>
+
+                {/* Hot button */}
+                <button
+                  onClick={() => toggleHot(drawerItem.id)}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all text-sm font-semibold ${
+                    hotVotes.has(drawerItem.id)
+                      ? "border-orange-400 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400"
+                      : "border-border bg-card text-muted-foreground hover:border-orange-300 hover:text-orange-500"
+                  }`}
+                >
+                  <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
+                  {hotVotes.has(drawerItem.id) ? "Hot! +0.2" : "Mark as Hot"}
+                </button>
               </>
             );
           })()}
