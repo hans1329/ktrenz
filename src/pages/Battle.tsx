@@ -551,8 +551,8 @@ export default function Battle() {
               <Zap className="w-5 h-5 mr-2" />
               {t("submitPrediction")}
               {selectedBand && (
-                <span className="ml-2 opacity-80">
-                  (+{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes)
+                <span className="ml-2 text-xs font-normal opacity-70">
+                  +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes
                 </span>
               )}
             </Button>
