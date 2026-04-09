@@ -58,6 +58,52 @@ function sourceIcon(source: string): ReactNode {
   }
 }
 
+/* ── Flip Timer ── */
+function FlipTimer() {
+  const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
+
+  useEffect(() => {
+    function calc() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
+      setTime({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
+    }
+    calc();
+    const iv = setInterval(calc, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  function FlipDigit({ value, label }: { value: string; label: string }) {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex gap-0.5">
+          {value.split("").map((d, i) => (
+            <div key={i} className="w-8 h-10 rounded-lg bg-foreground/10 flex items-center justify-center">
+              <span className="text-lg font-bold font-mono text-foreground">{d}</span>
+            </div>
+          ))}
+        </div>
+        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <FlipDigit value={pad(time.h)} label="hrs" />
+      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
+      <FlipDigit value={pad(time.m)} label="min" />
+      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
+      <FlipDigit value={pad(time.s)} label="sec" />
+    </div>
+  );
+}
+
 /* ── Artist Section: name bar + horizontal card carousel ── */
 function ArtistSection({
   runItems,
@@ -259,24 +305,18 @@ export default function Battle() {
 
   return (
     <div className="min-h-screen bg-background">
-      <V3Header />
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
+        <V3Header />
+      </div>
 
-      <div className="pt-14 pb-24 max-w-lg mx-auto px-4 space-y-5">
-        {/* Instruction */}
-        <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
-          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            {t("howItWorks")}
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">{t("instruction")}</p>
-          <div className="flex items-center gap-2 pt-1">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">{t("nextSettlement")} <span className="font-mono font-semibold text-foreground">23:41:08</span></span>
-          </div>
+      <div className="pt-16 pb-24 max-w-lg mx-auto px-4 space-y-5">
+        {/* Title + Flip Timer */}
+        <div className="text-center space-y-3 pt-2">
+          <h2 className="text-base font-bold text-foreground">
+            어떤 트렌드가 내일도 더 유행할까요?
+          </h2>
+          <FlipTimer />
         </div>
-
-        {/* Pick label */}
-        <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
 
         {/* Card carousels */}
         {runs.map((run, idx) => (
