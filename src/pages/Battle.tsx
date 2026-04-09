@@ -42,7 +42,23 @@ const BANDS: { key: Band; label: string; range: string; color: string; multiplie
 
 export default function Battle() {
   const navigate = useNavigate();
-  const { t } = usePageTranslation("battle");
+  const { t } = usePageTranslation({
+    cacheKey: "battle",
+    segments: {
+      loading: "Loading battles...",
+      title: "Trend Battle",
+      subtitle: "Predict the next content surge",
+      howItWorks: "How it works",
+      instruction: "Predict how much each artist's content score will change in the next 24 hours. Pick a growth band for each — the narrower the band, the higher the reward!",
+      nextSettlement: "Next settlement in",
+      contentScore: "Content Score",
+      predictGrowth: "Predict 24h growth",
+      submitPrediction: "Submit Prediction",
+      predictionSubmitted: "Prediction Submitted!",
+      waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
+      dailyRemaining: "Daily free battles remaining:",
+    },
+  });
   const [runs, setRuns] = useState<B2Run[]>([]);
   const [items, setItems] = useState<Record<string, B2Item[]>>({});
   const [selectedBands, setSelectedBands] = useState<Record<string, Band>>({});
