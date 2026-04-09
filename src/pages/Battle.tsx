@@ -175,6 +175,8 @@ function ArtistSection({
   onPick,
   onCardTap,
   disabled,
+  onActiveIndexChange,
+  scrollRefOut,
 }: {
   runItems: B2Item[];
   starName: string;
@@ -184,12 +186,14 @@ function ArtistSection({
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
   disabled: boolean;
+  onActiveIndexChange?: (index: number) => void;
+  scrollRefOut?: React.RefObject<HTMLDivElement>;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const ref = scrollRefOut || scrollRef;
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = ref.current;
     if (!el) return;
     const handleScroll = () => {
       const children = Array.from(el.children) as HTMLElement[];
@@ -203,18 +207,11 @@ function ArtistSection({
         const dist = Math.abs(childCenter - scrollLeft - containerWidth / 2);
         if (dist < minDist) { minDist = dist; closest = i; }
       });
-      setActiveIndex(closest);
+      onActiveIndexChange?.(closest);
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, [runItems.length]);
-
-  const scrollToIndex = (i: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const child = el.children[i] as HTMLElement;
-    if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  };
 
   return (
     <div className="space-y-2">
@@ -245,7 +242,7 @@ function ArtistSection({
 
       {/* Horizontal card carousel */}
       <div
-        ref={scrollRef}
+        ref={ref}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
       >
         {runItems.map((item) => (
@@ -274,28 +271,6 @@ function ArtistSection({
           </div>
         ))}
       </div>
-
-      {/* Carousel indicators */}
-      {runItems.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          {runItems.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollToIndex(i)}
-              className="relative p-0.5"
-              aria-label={`Slide ${i + 1}`}
-            >
-              <span
-                className={`block rounded-full transition-all duration-300 ease-out ${
-                  i === activeIndex
-                    ? "w-5 h-1.5 bg-primary"
-                    : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
