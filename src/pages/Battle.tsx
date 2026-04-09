@@ -396,46 +396,51 @@ export default function Battle() {
                   <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
                 </div>
 
-                {/* Large thumbnail */}
-                <div className="rounded-2xl overflow-hidden bg-muted mb-4">
+                {/* Large thumbnail with artist+date overlay */}
+                <div className="relative rounded-2xl overflow-hidden bg-muted mb-4">
                   {drawerItem.thumbnail ? (
                     <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
                   ) : (
                     <div className="w-full aspect-video bg-muted" />
                   )}
+                  {/* Artist · Date overlay top-left */}
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-6">
+                    <p className="text-[11px] text-white/90 font-medium drop-shadow-md">
+                      {starRun?.star?.display_name || ""}
+                      {drawerItem.published_at && (
+                        <span> · {(() => {
+                          const d = new Date(drawerItem.published_at);
+                          return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+                        })()}</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-
-                {/* Artist */}
-                {starRun?.star && (
-                  <p className="text-xs text-muted-foreground mb-2">
-                    by {starRun.star.display_name}
-                  </p>
-                )}
 
                 {/* Title */}
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(drawerItem.title)}</h3>
 
-                {/* Description */}
-                {drawerItem.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                    {decodeHtml(drawerItem.description)}
-                  </p>
-                )}
+                {/* Description + external link */}
+                <div className="relative mb-4">
+                  {drawerItem.description && (
+                    <p className="text-sm text-muted-foreground leading-relaxed pr-8">
+                      {decodeHtml(drawerItem.description)}
+                    </p>
+                  )}
+                  {(drawerItem.url || meta.url || meta.videoId) && (
+                    <a
+                      href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute bottom-0 right-0 p-1 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  {drawerItem.published_at && (
-                    <div className="rounded-xl bg-muted/50 p-3">
-                      <p className="text-[10px] text-muted-foreground mb-0.5">Published</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {new Date(drawerItem.published_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                  <div className="rounded-xl bg-muted/50 p-3">
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Engagement</p>
-                    <p className="text-sm font-medium text-foreground">{drawerItem.engagement_score}</p>
-                  </div>
                   {meta.likes != null && (
                     <div className="rounded-xl bg-muted/50 p-3">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Likes</p>
@@ -473,19 +478,6 @@ export default function Battle() {
                     </div>
                   )}
                 </div>
-
-                {/* Open original link */}
-                {(drawerItem.url || meta.url || meta.videoId) && (
-                  <a
-                    href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Open original
-                  </a>
-                )}
               </>
             );
           })()}
