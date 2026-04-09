@@ -109,7 +109,7 @@ function ContentCarousel({
             <div
               key={item.id}
               className="snap-center flex-shrink-0 w-full cursor-pointer"
-              onClick={() => onCardTap(item)}
+              onClick={onPick}
             >
               <div className="relative aspect-square bg-muted">
                 {item.thumbnail ? (
@@ -121,8 +121,15 @@ function ContentCarousel({
                 <div className="absolute top-2.5 right-2.5">
                   {sourceIcon(item.source)}
                 </div>
+                {/* detail button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCardTap(item); }}
+                  className="absolute bottom-3 left-3 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors focus:outline-none"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
                 {/* title overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16 pointer-events-none">
                   <p className="text-white text-sm font-medium leading-snug line-clamp-3">
                     {decodeHtml(item.title)}
                   </p>
