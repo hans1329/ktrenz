@@ -455,15 +455,20 @@ export default function Battle() {
     setPredictions((prev) => [...prev, prediction]);
     setSubmitted(true);
 
-    // Also save to DB (fire-and-forget for logged-in users)
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // Use ticket and save prediction
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
-        supabase.from("b2_predictions").insert({
+        // Use prediction ticket
+        await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
+        // Refresh ticket count
+        loadTickets();
+        // Save prediction
+        await supabase.from("b2_predictions").insert({
           user_id: user.id,
           picked_run_id: pickedRunId,
           opponent_run_id: opponentRun.id,
           band: selectedBand,
-        }).then(() => {});
+        });
       }
     });
   }
