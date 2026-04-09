@@ -406,11 +406,11 @@ export default function Battle() {
                 </div>
 
                 {/* Large thumbnail */}
-                <div className="rounded-2xl overflow-hidden bg-muted aspect-video mb-4">
+                <div className="rounded-2xl overflow-hidden bg-muted mb-4">
                   {drawerItem.thumbnail ? (
-                    <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-full object-cover" />
+                    <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
                   ) : (
-                    <div className="w-full h-full bg-muted" />
+                    <div className="w-full aspect-video bg-muted" />
                   )}
                 </div>
 
