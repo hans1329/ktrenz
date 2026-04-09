@@ -398,7 +398,7 @@ export default function Battle() {
 
                 {/* Artist · Date */}
                 <p className="text-[11px] text-muted-foreground mb-2">
-                  {starRun?.star?.display_name || ""}
+                  <span className="font-semibold text-foreground">{starRun?.star?.display_name || ""}</span>
                   {drawerItem.published_at && (
                     <span> · {(() => {
                       const d = new Date(drawerItem.published_at);
