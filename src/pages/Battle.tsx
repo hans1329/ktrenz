@@ -13,12 +13,15 @@ interface B2Item {
   id: string;
   source: string;
   title: string;
+  description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
   engagement_score: number;
   star_id: string;
   published_at: string | null;
+  url: string;
   metadata: any;
+}
 }
 
 interface B2Run {
