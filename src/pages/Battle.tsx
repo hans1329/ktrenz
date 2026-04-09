@@ -329,8 +329,8 @@ export default function Battle() {
 
       <div className="pt-16 pb-24 max-w-lg mx-auto px-4 space-y-5">
         {/* Title + Flip Timer */}
-        <div className="text-center space-y-3 pt-2">
-          <h2 className="text-base font-bold text-foreground">
+        <div className="text-center space-y-4 pt-2">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
             어떤 트렌드가 내일도 더 유행할까요?
           </h2>
           <FlipTimer />
