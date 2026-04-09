@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
     // Fetch star info
     const { data: star, error: starErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_name, group_name_ko, instagram_handle")
+      .select("id, display_name, name_ko, group_name, group_name_ko, social_handles")
       .eq("id", star_id)
       .maybeSingle();
     if (starErr || !star) {
