@@ -603,7 +603,7 @@ export default function Battle() {
               {!allBattlesDone ? (
                 <Button onClick={handleNextBattle} variant="outline" className="w-full h-12 rounded-2xl text-base font-bold">
                   <ChevronRight className="w-5 h-5 mr-2" />
-                  {t("nextBattle")} ({remainingCount - 1} {t("dailyRemaining").replace(":", "").trim()})
+                  {t("nextBattle")} ({remainingTickets - 1} {t("dailyRemaining").replace(":", "").trim()})
                 </Button>
               ) : (
                 <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 text-center">
@@ -615,7 +615,7 @@ export default function Battle() {
 
           <div className="text-center pb-2">
             <p className="text-xs text-muted-foreground">
-              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingCount} / {maxDaily}</span>
+              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingTickets} / {totalTickets}</span>
             </p>
           </div>
 
