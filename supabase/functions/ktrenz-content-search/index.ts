@@ -220,6 +220,31 @@ Deno.serve(async (req) => {
     const searchQuery = star.name_ko || star.display_name;
     const searchQueryEn = star.display_name;
 
+    // Fetch member names for title filtering (group → members)
+    let memberNames: string[] = [];
+    if (star.star_type === "group") {
+      const { data: members } = await sb
+        .from("ktrenz_stars")
+        .select("display_name, name_ko")
+        .eq("group_star_id", star_id)
+        .eq("star_type", "member");
+      if (members) {
+        memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+      }
+    }
+
+    // Build keyword set for title relevance check
+    const relevanceKeywords = [
+      star.display_name,
+      star.name_ko,
+      ...memberNames,
+    ].filter(Boolean).map((k: string) => k.toLowerCase());
+
+    function isTitleRelevant(title: string): boolean {
+      const t = title.toLowerCase();
+      return relevanceKeywords.some((kw) => t.includes(kw));
+    }
+
     // API Keys
     const NAVER_ID = Deno.env.get("NAVER_CLIENT_ID") || "";
     const NAVER_SECRET = Deno.env.get("NAVER_CLIENT_SECRET") || "";
@@ -262,12 +287,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const naverNewsDeduped = dedup(naverNewsRaw, true);
-    const naverBlog = dedup(naverBlogRaw);
-    const youtube = dedup(youtubeRaw);
+    const naverNewsDeduped = dedup(naverNewsRaw, true).filter((i: any) => isTitleRelevant(i.title));
+    const naverBlog = dedup(naverBlogRaw).filter((i: any) => isTitleRelevant(i.title));
+    const youtube = dedup(youtubeRaw).filter((i: any) => isTitleRelevant(i.title));
     const tiktok = dedup(tiktokRaw);
     const instagram = dedup(instagramRaw);
-    const reddit = dedup(redditRaw);
+    const reddit = dedup(redditRaw).filter((i: any) => isTitleRelevant(i.title));
 
     // Enrich with og:image where thumbnails are missing
     const enrichWithOgImage = async (items: any[], limit = 10) => {
