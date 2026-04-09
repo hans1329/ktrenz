@@ -67,6 +67,7 @@ import T2CategoryDetail from "./pages/T2CategoryDetail";
 import About from "./pages/About";
 import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
+import Battle from "./pages/Battle";
 
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -110,6 +111,7 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/key" element={<ContentSearch />} />
+                <Route path="/battle" element={<Battle />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
