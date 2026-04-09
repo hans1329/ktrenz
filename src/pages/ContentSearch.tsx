@@ -26,7 +26,7 @@ const ContentSearchPage = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
-  const [activeSource, setActiveSource] = useState<SourceKey | "all">("all");
+  const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
@@ -74,9 +74,15 @@ const ContentSearchPage = () => {
   const allItems = contentData?.sources
     ? (activeSource === "all"
       ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || [])
+      : activeSource === "no_image"
+      ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || []).filter((item: any) => !item.thumbnail)
       : contentData.sources[activeSource] || []
     )
     : [];
+
+  const noImageCount = contentData?.sources
+    ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || []).filter((item: any) => !item.thumbnail).length
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,6 +191,13 @@ const ContentSearchPage = () => {
                   </TabButton>
                 );
               })}
+              {noImageCount > 0 && (
+                <TabButton active={activeSource === "no_image"} onClick={() => setActiveSource("no_image")}>
+                  <span className="text-muted-foreground">🚫</span>
+                  <span className="hidden sm:inline">No Image</span>
+                  <span className="text-[10px] opacity-60">({noImageCount})</span>
+                </TabButton>
+              )}
             </div>
 
             {/* Content list */}
