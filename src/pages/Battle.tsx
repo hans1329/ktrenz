@@ -219,7 +219,7 @@ function ArtistSection({
   return (
     <div className="space-y-2">
       {/* Pick bar — constrained width */}
-      <div className="max-w-lg mx-auto px-2 sm:px-0">
+      <div className="max-w-lg mx-auto px-2 sm:px-0 mb-3">
         <button
           onClick={onPick}
           disabled={disabled}
