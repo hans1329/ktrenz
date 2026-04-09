@@ -254,14 +254,23 @@ Deno.serve(async (req) => {
     const instagram = dedup(instagramRaw);
     const reddit = dedup(redditRaw);
 
-    // Enrich Naver News with og:image (parallel, up to 10)
-    const naverNews = await Promise.all(
-      naverNewsDeduped.slice(0, 10).map(async (item: any) => {
-        if (item.thumbnail) return item;
-        const ogImg = await extractOgImage(item.url);
-        return ogImg ? { ...item, thumbnail: ogImg } : item;
-      })
-    );
+    // Enrich Naver News & Reddit with og:image (parallel, up to 10 each)
+    const enrichWithOgImage = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          if (item.thumbnail) return item;
+          const ogImg = await extractOgImage(item.url);
+          return ogImg ? { ...item, thumbnail: ogImg } : item;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
+    const [naverNews, redditEnriched] = await Promise.all([
+      enrichWithOgImage(naverNewsDeduped, 10),
+      enrichWithOgImage(reddit, 7),
+    ]);
     // Append remaining items without enrichment
     if (naverNewsDeduped.length > 10) {
       naverNews.push(...naverNewsDeduped.slice(10));
