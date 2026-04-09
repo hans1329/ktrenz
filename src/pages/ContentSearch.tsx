@@ -35,8 +35,8 @@ const ContentSearchPage = () => {
       if (searchText.length < 2) return [];
       const { data } = await (supabase as any)
         .from("ktrenz_stars")
-        .select("id, display_name, name_ko, group_name, star_type, image_url")
-        .or(`display_name.ilike.%${searchText}%,name_ko.ilike.%${searchText}%,group_name.ilike.%${searchText}%`)
+        .select("id, display_name, name_ko, star_type, image_url")
+        .or(`display_name.ilike.%${searchText}%,name_ko.ilike.%${searchText}%`)
         .limit(10);
       return data || [];
     },
