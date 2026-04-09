@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -445,7 +445,7 @@ export default function Battle() {
 
                 {/* External link - separate row, right-aligned */}
                 {(drawerItem.url || meta.url || meta.videoId) && (
-                  <div className="flex justify-end mb-4">
+                  <div className="flex justify-end gap-1 mb-4">
                     <a
                       href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
                       target="_blank"
@@ -454,6 +454,19 @@ export default function Battle() {
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
+                    <button
+                      onClick={() => {
+                        const shareUrl = drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "");
+                        if (navigator.share) {
+                          navigator.share({ title: drawerItem.title, url: shareUrl }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(shareUrl);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
 
