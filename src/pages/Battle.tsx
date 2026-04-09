@@ -297,7 +297,7 @@ export default function Battle() {
         {/* Card carousels */}
         {runs.map((run, idx) => (
           <div key={run.id} className="space-y-2">
-            <ContentCarousel
+            <ArtistSection
               runItems={items[run.id] || []}
               starName={run.star?.display_name || "Unknown"}
               contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
