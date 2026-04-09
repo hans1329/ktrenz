@@ -210,9 +210,10 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function ContentCard({ item }: { item: any }) {
   const cfg = SOURCE_CONFIG[item.source as SourceKey];
-  if (!cfg) return null;
-  const Icon = cfg.icon;
+  const Icon = cfg?.icon || Newspaper;
   const [imgError, setImgError] = useState(false);
+
+  if (!cfg) return null;
 
   return (
     <a
