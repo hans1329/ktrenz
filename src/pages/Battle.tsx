@@ -367,6 +367,7 @@ interface Prediction {
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { t: globalT } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
 
