@@ -55,9 +55,18 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const data = await res.json();
-        const items = data?.item_list || [];
-        totalVideos += items.length;
+        const rawText = await res.text();
+        let data: any;
+        try { data = JSON.parse(rawText); } catch { console.warn(`[p2-tiktok] Non-JSON for "${seed}"`); continue; }
+        
+        // Log first response structure for debugging
+        if (apiCalls === 1) {
+          console.log(`[p2-tiktok] Response keys: ${JSON.stringify(Object.keys(data))}`);
+          console.log(`[p2-tiktok] Response preview: ${rawText.substring(0, 500)}`);
+        }
+        
+        const items = data?.item_list || data?.data || data?.items || [];
+        totalVideos += Array.isArray(items) ? items.length : 0;
 
         for (const item of items) {
           const desc: string = item.desc || "";
