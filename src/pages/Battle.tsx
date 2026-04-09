@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { usePageTranslation } from "@/hooks/usePageTranslation";
+import SmartImage from "@/components/SmartImage";
 
 interface B2Item {
   id: string;
