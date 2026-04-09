@@ -22,7 +22,6 @@ interface B2Item {
   url: string;
   metadata: any;
 }
-}
 
 interface B2Run {
   id: string;
