@@ -97,31 +97,37 @@ async function searchTikTok(rapidApiKey: string, query: string, count = 15): Pro
   } catch { return []; }
 }
 
-// ── Instagram (instagram120 RapidAPI) ──
+// ── Instagram (instagram120 RapidAPI — POST method) ──
 async function searchInstagram(rapidApiKey: string, handle: string | null, query: string): Promise<any[]> {
   if (!handle) return [];
   try {
-    // Use feed endpoint for the given handle
-    const url = `https://instagram120.p.rapidapi.com/api/instagram/posts/${encodeURIComponent(handle)}?count=15`;
-    const res = await fetchWithTimeout(url, {
-      headers: { "x-rapidapi-host": "instagram120.p.rapidapi.com", "x-rapidapi-key": rapidApiKey },
+    const res = await fetchWithTimeout("https://instagram120.p.rapidapi.com/api/instagram/posts", {
+      method: "POST",
+      headers: {
+        "x-rapidapi-host": "instagram120.p.rapidapi.com",
+        "x-rapidapi-key": rapidApiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: handle, maxId: "" }),
     }, 15000);
     if (!res.ok) { await res.text(); return []; }
     const data = await res.json();
-    const posts = data?.data || data?.items || data || [];
-    if (!Array.isArray(posts)) return [];
-    return posts.slice(0, 15).map((p: any) => ({
-      source: "instagram",
-      title: (p.caption?.text || p.edge_media_to_caption?.edges?.[0]?.node?.text || "").substring(0, 200),
-      description: "",
-      url: p.link || `https://www.instagram.com/p/${p.shortcode || p.code}/`,
-      thumbnail: p.thumbnail_url || p.display_url || p.image_versions2?.candidates?.[0]?.url || null,
-      date: p.taken_at ? new Date(p.taken_at * 1000).toISOString() : null,
-      metadata: {
-        likes: p.like_count || p.edge_liked_by?.count || 0,
-        comments: p.comment_count || p.edge_media_to_comment?.count || 0,
-      },
-    }));
+    const edges = data?.result?.edges || [];
+    return edges.slice(0, 15).map((edge: any) => {
+      const p = edge?.node || edge;
+      return {
+        source: "instagram",
+        title: (p.caption?.text || "").substring(0, 200),
+        description: "",
+        url: `https://www.instagram.com/p/${p.code || p.shortcode}/`,
+        thumbnail: p.image_versions2?.candidates?.[0]?.url || p.display_url || null,
+        date: p.taken_at ? new Date(p.taken_at * 1000).toISOString() : null,
+        metadata: {
+          likes: p.like_count || 0,
+          comments: p.comment_count || 0,
+        },
+      };
+    });
   } catch { return []; }
 }
 
