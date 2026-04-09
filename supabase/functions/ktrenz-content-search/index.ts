@@ -39,7 +39,7 @@ async function searchNaver(
       description: (item.description || "").replace(/<[^>]*>/g, ""),
       url: item.originallink || item.link,
       thumbnail: null,
-      date: item.pubDate || null,
+      date: item.pubDate || item.postdate || null,
       metadata: { bloggername: item.bloggername, bloggerlink: item.bloggerlink },
     }));
   } catch { return []; }
