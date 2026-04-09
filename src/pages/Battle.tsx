@@ -13,11 +13,13 @@ interface B2Item {
   id: string;
   source: string;
   title: string;
+  description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
   engagement_score: number;
   star_id: string;
   published_at: string | null;
+  url: string;
   metadata: any;
 }
 
@@ -227,7 +229,7 @@ export default function Battle() {
     for (const run of enrichedRuns) {
       const { data: runItems } = await supabase
         .from("ktrenz_b2_items")
-        .select("id, source, title, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+        .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
         .not("source", "eq", "naver_blog")
@@ -427,7 +429,12 @@ export default function Battle() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-foreground leading-snug mb-3">{drawerItem.title}</h3>
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{drawerItem.title}</h3>
+
+                {/* Description */}
+                {drawerItem.description && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{drawerItem.description}</p>
+                )}
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
@@ -482,9 +489,9 @@ export default function Battle() {
                 </div>
 
                 {/* Open original link */}
-                {(meta.url || meta.videoId) && (
+                {(drawerItem.url || meta.url || meta.videoId) && (
                   <a
-                    href={meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
+                    href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
