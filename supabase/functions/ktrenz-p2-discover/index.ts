@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
     // 3. Build batch rows (limit 50 most relevant)
     const today = new Date().toISOString().split("T")[0];
-    const rows = trends.slice(0, 50).map((t: any) => {
+    const rows = trends.slice(0, 250).map((t: any) => {
       const keyword = t.query || t.title || "";
       const articleTitles = (t.articles || []).slice(0, 3).map((a: any) => a.title).filter(Boolean);
       return {
