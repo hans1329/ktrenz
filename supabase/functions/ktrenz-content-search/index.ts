@@ -38,7 +38,7 @@ async function searchNaver(
       title: (item.title || "").replace(/<[^>]*>/g, ""),
       description: (item.description || "").replace(/<[^>]*>/g, ""),
       url: item.originallink || item.link,
-      thumbnail: null,
+      thumbnail: item.thumbnail || null,
       date: item.pubDate || item.postdate || null,
       metadata: { bloggername: item.bloggername, bloggerlink: item.bloggerlink },
     }));
