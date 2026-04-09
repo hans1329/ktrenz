@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       .select("id, display_name, name_ko, social_handles, star_type")
       .eq("id", star_id)
       .maybeSingle();
-    console.log(`[content-search] star_id=${star_id}, star=${JSON.stringify(star)}, error=${starErr?.message}`);
+    if (starErr || !star) {
     if (starErr || !star) {
       return new Response(JSON.stringify({ error: "Star not found", detail: starErr?.message }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
