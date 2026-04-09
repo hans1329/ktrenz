@@ -385,7 +385,7 @@ export default function Battle() {
 
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg" hideClose>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
           {drawerItem && (() => {
             const starRun = runs.find((r) => r.star_id === drawerItem.star_id);
             const meta = drawerItem.metadata || {};
