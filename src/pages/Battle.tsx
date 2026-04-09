@@ -259,24 +259,17 @@ export default function Battle() {
 
   return (
     <div className="min-h-screen bg-background">
-      <V3Header />
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
+        <V3Header />
+      </div>
 
-      <div className="pt-14 pb-24 max-w-lg mx-auto px-4 space-y-5">
-        {/* Instruction */}
-        <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
-          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            {t("howItWorks")}
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">{t("instruction")}</p>
-          <div className="flex items-center gap-2 pt-1">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">{t("nextSettlement")} <span className="font-mono font-semibold text-foreground">23:41:08</span></span>
-          </div>
-        </div>
-
-        {/* Pick label */}
-        <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
+      <div className="pt-16 pb-24 max-w-lg mx-auto px-4 space-y-5">
+        {/* Title + Flip Timer */}
+        <div className="text-center space-y-3 pt-2">
+          <h2 className="text-base font-bold text-foreground">
+            어떤 트렌드가 내일도 더 유행할까요?
+          </h2>
+          <FlipTimer />
 
         {/* Card carousels */}
         {runs.map((run, idx) => (
