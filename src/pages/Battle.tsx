@@ -150,17 +150,24 @@ function ArtistSection({
       <button
         onClick={onPick}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
-          isPicked ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:border-primary/30"
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
+          isPicked ? "bg-primary/5" : "bg-card hover:bg-muted/50"
         } ${disabled ? "opacity-60" : ""}`}
       >
-        <div className="flex items-center gap-2">
-          {isPicked && <Zap className="w-4 h-4 text-primary" />}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">by</span>
           <span className="text-sm font-bold text-foreground">{starName}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold text-foreground">{contentScore}</span>
-          <span className="text-[10px] text-muted-foreground">{scoreLabel}</span>
+        <div
+          className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+            isPicked ? "bg-primary" : "bg-muted"
+          }`}
+        >
+          {isPicked && (
+            <svg className="w-3.5 h-3.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
         </div>
       </button>
 
