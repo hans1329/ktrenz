@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown } from "lucide-react";
@@ -254,22 +254,24 @@ function ArtistSection({
         {runItems.map((item) => (
           <div
             key={item.id}
-            className="snap-center flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
+            className="snap-center flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-              {item.thumbnail ? (
-                <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
-              )}
-              {/* source icon */}
-              <div className="absolute top-1.5 right-1.5">
-                {sourceIcon(item.source)}
+            <div className="rounded-xl overflow-hidden border border-border bg-white">
+              {/* Square image */}
+              <div className="relative aspect-square bg-muted">
+                {item.thumbnail ? (
+                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
+                )}
+                <div className="absolute top-1.5 right-1.5">
+                  {sourceIcon(item.source)}
+                </div>
               </div>
-              {/* title overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-10">
-                <p className="text-white text-xs font-medium leading-snug line-clamp-2">
+              {/* Content area */}
+              <div className="p-2.5">
+                <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">
                   {decodeHtml(item.title)}
                 </p>
               </div>
@@ -336,13 +338,13 @@ export default function Battle() {
   const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const maxDaily = 3;
+  const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
 
   const currentPair = battlePairs[currentPairIndex];
   const runs = currentPair?.runs || [];
   const items = currentPair?.items || {};
-  const completedCount = predictions.length;
-  const remainingCount = maxDaily - completedCount;
+  const remainingTickets = ticketInfo?.remaining ?? 3;
+  const totalTickets = ticketInfo?.total ?? 3;
 
   function getHotBonus(runId: string): number {
     const runItems = items[runId] || [];
@@ -359,7 +361,17 @@ export default function Battle() {
     });
   }
 
-  useEffect(() => { loadBattleData(); }, []);
+  // Load ticket info
+  const loadTickets = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed) setTicketInfo(parsed);
+    }
+  }, []);
+
+  useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
 
   async function loadBattleData() {
     // Load runs — get enough stars for multiple pairs
@@ -390,7 +402,7 @@ export default function Battle() {
 
     // Create pairs of 2
     const pairs: BattlePair[] = [];
-    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < maxDaily; i += 2) {
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
@@ -443,21 +455,26 @@ export default function Battle() {
     setPredictions((prev) => [...prev, prediction]);
     setSubmitted(true);
 
-    // Also save to DB (fire-and-forget for logged-in users)
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // Use ticket and save prediction
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
-        supabase.from("b2_predictions").insert({
+        // Use prediction ticket
+        await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
+        // Refresh ticket count
+        loadTickets();
+        // Save prediction
+        await supabase.from("b2_predictions").insert({
           user_id: user.id,
           picked_run_id: pickedRunId,
           opponent_run_id: opponentRun.id,
           band: selectedBand,
-        }).then(() => {});
+        });
       }
     });
   }
 
   function handleNextBattle() {
-    if (currentPairIndex + 1 >= battlePairs.length || completedCount >= maxDaily) return;
+    if (currentPairIndex + 1 >= battlePairs.length || remainingTickets <= 0) return;
     setCurrentPairIndex((prev) => prev + 1);
     setPickedRunId(null);
     setSelectedBand(null);
@@ -466,7 +483,7 @@ export default function Battle() {
   }
 
   const pickedRun = runs.find((r) => r.id === pickedRunId);
-  const allBattlesDone = completedCount >= maxDaily || (submitted && currentPairIndex + 1 >= battlePairs.length);
+  const allBattlesDone = remainingTickets <= 0 || (submitted && currentPairIndex + 1 >= battlePairs.length);
 
   if (loading) {
     return (
@@ -591,7 +608,7 @@ export default function Battle() {
               {!allBattlesDone ? (
                 <Button onClick={handleNextBattle} variant="outline" className="w-full h-12 rounded-2xl text-base font-bold">
                   <ChevronRight className="w-5 h-5 mr-2" />
-                  {t("nextBattle")} ({remainingCount - 1} {t("dailyRemaining").replace(":", "").trim()})
+                  {t("nextBattle")} ({remainingTickets - 1} {t("dailyRemaining").replace(":", "").trim()})
                 </Button>
               ) : (
                 <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 text-center">
@@ -603,7 +620,7 @@ export default function Battle() {
 
           <div className="text-center pb-2">
             <p className="text-xs text-muted-foreground">
-              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingCount} / {maxDaily}</span>
+              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingTickets} / {totalTickets}</span>
             </p>
           </div>
 

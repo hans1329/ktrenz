@@ -818,7 +818,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.submitPrediction": { en: "Submit Prediction", ko: "예측 제출", ja: "予測を送信", zh: "提交预测" },
   "battle.predictionSubmitted": { en: "Prediction Submitted!", ko: "예측이 제출되었습니다!", ja: "予測が送信されました！", zh: "预测已提交！" },
   "battle.waitResult": { en: "Results will be settled after the next content scan. Check back in ~24 hours.", ko: "다음 콘텐츠 스캔 후 결과가 정산됩니다. 약 24시간 후 확인하세요.", ja: "次回のコンテンツスキャン後に結果が確定します。約24時間後にご確認ください。", zh: "结果将在下次内容扫描后结算，请约24小时后查看。" },
-  "battle.dailyRemaining": { en: "Daily free battles remaining:", ko: "오늘 남은 무료 배틀:", ja: "残りの無料バトル:", zh: "今日剩余免费对战:" },
+  "battle.dailyRemaining": { en: "Prediction tickets remaining:", ko: "오늘 남은 예측 티켓:", ja: "残りの予測チケット:", zh: "剩余预测票:" },
   "battle.contentDetail": { en: "Content Detail", ko: "콘텐츠 상세", ja: "コンテンツ詳細", zh: "内容详情" },
   "battle.source": { en: "Source", ko: "출처", ja: "ソース", zh: "来源" },
   "battle.published": { en: "Published", ko: "게시일", ja: "公開日", zh: "发布日期" },
