@@ -27,7 +27,6 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
     }, 5000);
     if (!res.ok) return null;
     const html = await res.text();
-    // Extract og:image from meta tags
     const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     if (ogMatch?.[1]) {
@@ -35,6 +34,45 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
       return imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
     }
     return null;
+  } catch { return null; }
+}
+
+// ── Scrape article body text (top N chars) ──
+async function scrapeBodyText(pageUrl: string, maxChars = 500): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(pageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+    }, 5000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Try article body selectors common in Korean news sites
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
+      || html.match(/id=["']?articleBody["']?[^>]*>([\s\S]*?)<\/div>/i)
+      || html.match(/id=["']?newsct_article["']?[^>]*>([\s\S]*?)<\/div>/i)
+      || html.match(/class=["'][^"']*article[_-]?body[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)
+      || html.match(/class=["'][^"']*news[_-]?content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+    if (articleMatch?.[1]) {
+      const text = articleMatch[1]
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+      return text.length > 0 ? text.substring(0, maxChars) : null;
+    }
+    // Fallback: extract from <p> tags
+    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    const combined = paragraphs
+      .map((p: string) => p.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim())
+      .filter((t: string) => t.length > 30)
+      .join(" ");
+    return combined.length > 0 ? combined.substring(0, maxChars) : null;
   } catch { return null; }
 }
 
@@ -307,19 +345,39 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
+    // Enrich naver news: og:image + body text scraping
+    const enrichNaverNews = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          let updated = { ...item };
+          // Scrape body text to replace API snippet
+          const bodyText = await scrapeBodyText(item.url, 500);
+          if (bodyText && bodyText.length > (item.description || "").length) {
+            updated.description = bodyText;
+          }
+          // og:image if missing
+          if (!updated.thumbnail) {
+            const ogImg = await extractOgImage(item.url);
+            if (ogImg) updated.thumbnail = ogImg;
+          }
+          return updated;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
     // Reddit: try og:image from embedded links in snippet, then from post URL itself
     const enrichReddit = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
         toEnrich.map(async (item: any) => {
           if (item.thumbnail) return item;
-          // First try: extract URL from snippet text and get its og:image
           const embeddedUrl = extractUrlFromText(item.description || "");
           if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
             const ogImg = await extractOgImage(embeddedUrl);
             if (ogImg) return { ...item, thumbnail: ogImg };
           }
-          // Fallback: og:image from the Reddit post itself
           const ogImg = await extractOgImage(item.url);
           return ogImg ? { ...item, thumbnail: ogImg } : item;
         })
@@ -328,7 +386,7 @@ Deno.serve(async (req) => {
     };
 
     const [naverNews, naverBlogEnriched, redditEnriched] = await Promise.all([
-      enrichWithOgImage(naverNewsDeduped, 10),
+      enrichNaverNews(naverNewsDeduped, 10),
       enrichWithOgImage(naverBlog, 10),
       enrichReddit(reddit, 7),
     ]);
