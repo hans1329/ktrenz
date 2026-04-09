@@ -39,7 +39,7 @@ async function searchNaver(
       description: (item.description || "").replace(/<[^>]*>/g, ""),
       url: item.originallink || item.link,
       thumbnail: null,
-      date: item.pubDate || null,
+      date: item.pubDate || item.postdate || null,
       metadata: { bloggername: item.bloggername, bloggerlink: item.bloggerlink },
     }));
   } catch { return []; }
@@ -137,6 +137,7 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
     const url = new URL("https://serpapi.com/search.json");
     url.searchParams.set("engine", "google");
     url.searchParams.set("q", `site:reddit.com ${query}`);
+    url.searchParams.set("tbs", "qdr:d");
     url.searchParams.set("num", "15");
     url.searchParams.set("api_key", serpApiKey);
     const res = await fetchWithTimeout(url.toString(), {}, 12000);
