@@ -17,5 +17,20 @@ export default function SmartImage({
   ...imgProps
 }: SmartImageProps) {
   if (!src) return <>{fallback}</>;
-  return <img src={src} alt={alt} className={className} loading={loading} {...imgProps} />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={loading}
+      referrerPolicy="no-referrer"
+      decoding="async"
+      onError={(e) => {
+        const target = e.currentTarget;
+        target.style.display = "none";
+        if (target.nextElementSibling) target.nextElementSibling.removeAttribute("hidden");
+      }}
+      {...imgProps}
+    />
+  );
 }
