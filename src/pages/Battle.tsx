@@ -40,7 +40,10 @@ const BANDS: { key: Band; label: string; range: string; color: string; multiplie
   { key: "surge", label: "🔴 Surge", range: "80%+", color: "bg-destructive/10 text-destructive", multiplier: "×6.0" },
 ];
 
-function sourceIcon(source: string) {
+function decodeHtml(str: string) {
+  return str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+}
+
   switch (source) {
     case "youtube": return "▶️";
     case "tiktok": return "🎵";
