@@ -211,16 +211,10 @@ Deno.serve(async (req) => {
     // Deduplicate per source: by URL first, then by normalized title similarity
     function dedup(items: any[]): any[] {
       const seen = new Set<string>();
-      const seenTitles = new Set<string>();
       return items.filter((item) => {
-        // URL dedup
         const url = (item.url || "").split("?")[0].replace(/\/+$/, "");
         if (url && seen.has(url)) return false;
         if (url) seen.add(url);
-        // Title dedup: normalize and check prefix overlap (first 30 chars)
-        const normTitle = (item.title || "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 30);
-        if (normTitle.length > 5 && seenTitles.has(normTitle)) return false;
-        if (normTitle.length > 5) seenTitles.add(normTitle);
         return true;
       });
     }
