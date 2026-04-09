@@ -331,6 +331,8 @@ export default function Battle() {
       contentDetail: "Content Detail",
       source: "Source",
       published: "Published",
+      scoreLabel: "Score",
+      rewardProgress: "Reward Progress",
     },
   });
 
@@ -511,7 +513,7 @@ export default function Battle() {
               <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
+                  <p className="text-xs text-muted-foreground">{t("scoreLabel")}: {pickedRun?.content_score}</p>
                 </div>
                 <Badge variant="outline">
                   {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
@@ -519,7 +521,7 @@ export default function Battle() {
               </div>
               <div className="pt-2 border-t border-border mt-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">🎧 Spotify Premium</span>
+                  <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
                   <span className="text-xs font-semibold text-foreground">1,250 / 9,000 K-Cashes</span>
                 </div>
                 <Progress value={(1250 / 9000) * 100} className="h-2" />
