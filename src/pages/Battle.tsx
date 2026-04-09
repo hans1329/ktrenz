@@ -416,7 +416,7 @@ export default function Battle() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-3">
           <Zap className="w-8 h-8 text-primary" />
           <p className="text-muted-foreground text-sm">{t("loading")}</p>
@@ -426,7 +426,7 @@ export default function Battle() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
         <V3Header />
       </div>
