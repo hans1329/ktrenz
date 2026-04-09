@@ -270,8 +270,8 @@ function ArtistSection({
                 </div>
               </div>
               {/* Content area */}
-              <div className="p-3 min-h-[52px] flex items-start">
-                <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-2">
+              <div className="p-3 min-h-[40px] flex items-center">
+                <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
                   {decodeHtml(item.title)}
                 </p>
               </div>
@@ -581,12 +581,12 @@ export default function Battle() {
                   {t("predictionSubmitted")}
                 </p>
                 <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
-                <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
+                <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                    <p className="text-xs text-muted-foreground">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+                    <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
                   </div>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-sm px-3 py-1">
                     {BANDS.find((b) => b.key === selectedBand)?.label} +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K
                   </Badge>
                 </div>
