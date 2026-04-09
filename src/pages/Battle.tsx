@@ -175,6 +175,7 @@ function ArtistSection({
   onPick,
   onCardTap,
   disabled,
+  index,
 }: {
   runItems: B2Item[];
   starName: string;
@@ -184,6 +185,7 @@ function ArtistSection({
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
   disabled: boolean;
+  index: number;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -228,6 +230,7 @@ function ArtistSection({
           } ${disabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
+            <span className="text-sm font-extrabold text-foreground">{index === 0 ? "A" : "B"}:</span>
             <span className="text-xs text-muted-foreground">by</span>
             <span className="text-sm font-bold text-foreground">{starName}</span>
           </div>
@@ -236,11 +239,9 @@ function ArtistSection({
               isPicked ? "bg-primary" : "bg-muted"
             }`}
           >
-            {isPicked && (
-              <svg className="w-3.5 h-3.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
+            <svg className={`w-3.5 h-3.5 ${isPicked ? "text-primary-foreground" : "text-white"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
         </button>
       </div>
@@ -452,6 +453,7 @@ export default function Battle() {
                 onPick={() => handlePick(run.id)}
                 onCardTap={(item) => setDrawerItem(item)}
                 disabled={submitted}
+                index={idx}
               />
               {idx === 0 && runs.length > 1 && (
                 <div className="flex justify-center py-1">
