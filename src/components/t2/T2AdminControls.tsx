@@ -179,6 +179,8 @@ const T2AdminControls = () => {
           쇼핑 수집
         </Button>
 
+        <T2ManualKeywordDialog />
+
         <div className="border-t border-border/40 my-1" />
 
         <Button size="sm" variant="ghost" onClick={() => navigate("/admin/stars")} className="w-full justify-start gap-2 text-xs h-8">
