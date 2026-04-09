@@ -2628,6 +2628,89 @@ export type Database = {
           },
         ]
       }
+      ktrenz_b2_items: {
+        Row: {
+          card_status: string
+          created_at: string
+          description: string
+          engagement_score: number
+          has_thumbnail: boolean
+          id: string
+          metadata: Json | null
+          published_at: string | null
+          run_id: string
+          source: string
+          star_id: string
+          thumbnail: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          card_status?: string
+          created_at?: string
+          description?: string
+          engagement_score?: number
+          has_thumbnail?: boolean
+          id?: string
+          metadata?: Json | null
+          published_at?: string | null
+          run_id: string
+          source: string
+          star_id: string
+          thumbnail?: string | null
+          title?: string
+          url?: string
+        }
+        Update: {
+          card_status?: string
+          created_at?: string
+          description?: string
+          engagement_score?: number
+          has_thumbnail?: boolean
+          id?: string
+          metadata?: Json | null
+          published_at?: string | null
+          run_id?: string
+          source?: string
+          star_id?: string
+          thumbnail?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_b2_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_b2_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_b2_runs: {
+        Row: {
+          content_score: number
+          counts: Json
+          created_at: string
+          id: string
+          star_id: string
+        }
+        Insert: {
+          content_score?: number
+          counts?: Json
+          created_at?: string
+          id?: string
+          star_id: string
+        }
+        Update: {
+          content_score?: number
+          counts?: Json
+          created_at?: string
+          id?: string
+          star_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_b2b_ai_insights: {
         Row: {
           content: Json
