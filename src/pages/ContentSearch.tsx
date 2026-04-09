@@ -74,9 +74,15 @@ const ContentSearchPage = () => {
   const allItems = contentData?.sources
     ? (activeSource === "all"
       ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || [])
+      : activeSource === "no_image"
+      ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || []).filter((item: any) => !item.thumbnail)
       : contentData.sources[activeSource] || []
     )
     : [];
+
+  const noImageCount = contentData?.sources
+    ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || []).filter((item: any) => !item.thumbnail).length
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
