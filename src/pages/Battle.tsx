@@ -119,7 +119,7 @@ function ContentCarousel({
                 )}
                 {/* source icon */}
                 <div className="absolute top-2.5 right-2.5">
-                  <span className="text-base drop-shadow-md">{sourceIcon(item.source)}</span>
+                  {sourceIcon(item.source)}
                 </div>
                 {/* title overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
