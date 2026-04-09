@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
     const YT_KEY = ytKeys[Math.floor(Math.random() * ytKeys.length)] || "";
 
     // Parallel search all sources
-    const [naverNews, naverBlog, youtube, tiktok, instagram, reddit] = await Promise.all([
+    const [naverNewsRaw, naverBlogRaw, youtubeRaw, tiktokRaw, instagramRaw, redditRaw] = await Promise.all([
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "news", searchQuery, 15) : Promise.resolve([]),
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "blog", searchQuery, 10) : Promise.resolve([]),
       YT_KEY ? searchYouTube(YT_KEY, searchQueryEn, 15) : Promise.resolve([]),
@@ -207,6 +207,30 @@ Deno.serve(async (req) => {
       RAPIDAPI_KEY ? searchInstagram(RAPIDAPI_KEY, star.social_handles?.instagram || null, searchQuery) : Promise.resolve([]),
       SERPAPI_KEY ? searchReddit(SERPAPI_KEY, searchQueryEn) : Promise.resolve([]),
     ]);
+
+    // Deduplicate per source: by URL first, then by normalized title similarity
+    function dedup(items: any[]): any[] {
+      const seen = new Set<string>();
+      const seenTitles = new Set<string>();
+      return items.filter((item) => {
+        // URL dedup
+        const url = (item.url || "").split("?")[0].replace(/\/+$/, "");
+        if (url && seen.has(url)) return false;
+        if (url) seen.add(url);
+        // Title dedup: normalize and check prefix overlap (first 30 chars)
+        const normTitle = (item.title || "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 30);
+        if (normTitle.length > 5 && seenTitles.has(normTitle)) return false;
+        if (normTitle.length > 5) seenTitles.add(normTitle);
+        return true;
+      });
+    }
+
+    const naverNews = dedup(naverNewsRaw);
+    const naverBlog = dedup(naverBlogRaw);
+    const youtube = dedup(youtubeRaw);
+    const tiktok = dedup(tiktokRaw);
+    const instagram = dedup(instagramRaw);
+    const reddit = dedup(redditRaw);
 
     const results = {
       star: {
