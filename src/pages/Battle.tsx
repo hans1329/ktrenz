@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import React, { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText } from "lucide-react";
@@ -175,6 +175,8 @@ function ArtistSection({
   onPick,
   onCardTap,
   disabled,
+  onActiveIndexChange,
+  scrollRefOut,
 }: {
   runItems: B2Item[];
   starName: string;
@@ -184,12 +186,14 @@ function ArtistSection({
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
   disabled: boolean;
+  onActiveIndexChange?: (index: number) => void;
+  scrollRefOut?: React.RefObject<HTMLDivElement>;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const ref = scrollRefOut || scrollRef;
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = ref.current;
     if (!el) return;
     const handleScroll = () => {
       const children = Array.from(el.children) as HTMLElement[];
@@ -203,18 +207,11 @@ function ArtistSection({
         const dist = Math.abs(childCenter - scrollLeft - containerWidth / 2);
         if (dist < minDist) { minDist = dist; closest = i; }
       });
-      setActiveIndex(closest);
+      onActiveIndexChange?.(closest);
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, [runItems.length]);
-
-  const scrollToIndex = (i: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const child = el.children[i] as HTMLElement;
-    if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  };
 
   return (
     <div className="space-y-2">
@@ -245,7 +242,7 @@ function ArtistSection({
 
       {/* Horizontal card carousel */}
       <div
-        ref={scrollRef}
+        ref={ref}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
       >
         {runItems.map((item) => (
@@ -274,28 +271,6 @@ function ArtistSection({
           </div>
         ))}
       </div>
-
-      {/* Carousel indicators */}
-      {runItems.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          {runItems.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollToIndex(i)}
-              className="relative p-0.5"
-              aria-label={`Slide ${i + 1}`}
-            >
-              <span
-                className={`block rounded-full transition-all duration-300 ease-out ${
-                  i === activeIndex
-                    ? "w-5 h-1.5 bg-primary"
-                    : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -332,7 +307,9 @@ export default function Battle() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
-  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set()); // item IDs that got 🔥
+  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
+  const [carouselIndices, setCarouselIndices] = useState<Record<string, number>>({});
+  const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Count hot votes per run's star_id
   function getHotBonus(runId: string): number {
@@ -449,6 +426,8 @@ export default function Battle() {
               onPick={() => handlePick(run.id)}
               onCardTap={(item) => setDrawerItem(item)}
               disabled={submitted}
+              onActiveIndexChange={(i) => setCarouselIndices(prev => ({ ...prev, [run.id]: i }))}
+              scrollRefOut={{ current: scrollRefs.current[run.id] ?? null } as React.RefObject<HTMLDivElement>}
             />
             {idx === 0 && runs.length > 1 && (
               <div className="flex justify-center py-1">
@@ -457,6 +436,66 @@ export default function Battle() {
             )}
           </div>
         ))}
+
+        {/* Combined carousel indicators */}
+        {runs.length > 0 && (() => {
+          const allItems = runs.flatMap((run) => {
+            const runItemsList = items[run.id] || [];
+            return runItemsList.map((_, i) => ({ runId: run.id, index: i }));
+          });
+          if (allItems.length <= 1) return null;
+
+          let globalActive = 0;
+          let offset = 0;
+          for (const run of runs) {
+            const count = (items[run.id] || []).length;
+            const localIdx = carouselIndices[run.id] || 0;
+            globalActive = offset + localIdx;
+            offset += count;
+          }
+          // Use the first run's active for A dots, second for B dots
+          let currentGlobal = 0;
+          return (
+            <div className="flex items-center justify-center gap-1 pt-1">
+              {runs.map((run, runIdx) => {
+                const runItemsList = items[run.id] || [];
+                const localActive = carouselIndices[run.id] || 0;
+                return (
+                  <React.Fragment key={run.id}>
+                    {runIdx > 0 && (
+                      <span className="w-px h-2 bg-muted-foreground/20 mx-1" />
+                    )}
+                    {runItemsList.map((_, i) => {
+                      const isActive = i === localActive;
+                      return (
+                        <button
+                          key={`${run.id}-${i}`}
+                          className="p-0.5"
+                          aria-label={`Slide ${i + 1}`}
+                          onClick={() => {
+                            const el = scrollRefs.current[run.id];
+                            if (el) {
+                              const child = el.children[i] as HTMLElement;
+                              child?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                            }
+                          }}
+                        >
+                          <span
+                            className={`block rounded-full transition-all duration-300 ease-out ${
+                              isActive
+                                ? "w-5 h-1.5 bg-primary"
+                                : "w-1.5 h-1.5 bg-muted-foreground/25 hover:bg-muted-foreground/40"
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Band Selection */}
         {pickedRunId && !submitted && (
