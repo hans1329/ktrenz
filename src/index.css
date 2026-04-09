@@ -283,3 +283,12 @@ html {
 .caption-rotate {
   animation: caption-rotate-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+@keyframes flipDown {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
