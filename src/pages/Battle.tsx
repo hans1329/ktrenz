@@ -455,11 +455,6 @@ export default function Battle() {
                 disabled={submitted}
                 index={idx}
               />
-              {idx === 0 && runs.length > 1 && (
-                <div className="flex justify-center py-1">
-                  <span className="text-sm font-black text-muted-foreground tracking-[0.3em]">VS</span>
-                </div>
-              )}
             </div>
           ))}
         </div>
