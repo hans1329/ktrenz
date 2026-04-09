@@ -228,6 +228,18 @@ function ContentCard({ item }: { item: any }) {
 
   if (!cfg) return null;
 
+  // Generate a deterministic gradient from source + title
+  const GRADIENTS: Record<string, string> = {
+    naver_news: "from-green-600/90 to-emerald-800/90",
+    naver_blog: "from-emerald-500/90 to-teal-700/90",
+    youtube: "from-red-600/90 to-rose-800/90",
+    tiktok: "from-slate-800/90 to-zinc-900/90",
+    instagram: "from-pink-500/90 via-purple-500/90 to-orange-400/90",
+    reddit: "from-orange-500/90 to-red-700/90",
+  };
+
+  const hasThumbnail = item.thumbnail && !imgError;
+
   return (
     <a
       href={item.url}
@@ -235,8 +247,8 @@ function ContentCard({ item }: { item: any }) {
       rel="noopener noreferrer"
       className="flex gap-3 p-3 rounded-xl bg-card border border-border/40 hover:border-border transition-colors group"
     >
-      {/* Thumbnail or source icon placeholder */}
-      {item.thumbnail && !imgError ? (
+      {/* Thumbnail or stylized title card */}
+      {hasThumbnail ? (
         <img
           src={item.thumbnail}
           alt=""
@@ -246,8 +258,24 @@ function ContentCard({ item }: { item: any }) {
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="w-20 h-20 rounded-lg bg-muted/60 shrink-0 flex items-center justify-center">
-          <Icon className={cn("w-6 h-6 opacity-40", cfg.color)} />
+        <div
+          className={cn(
+            "w-20 h-20 rounded-lg shrink-0 flex flex-col items-center justify-center p-1.5 relative overflow-hidden",
+            "bg-gradient-to-br",
+            GRADIENTS[item.source] || "from-muted to-muted-foreground/20"
+          )}
+        >
+          {/* Decorative pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full border-2 border-white/40" />
+            <div className="absolute -bottom-3 -left-3 w-16 h-16 rounded-full border border-white/20" />
+          </div>
+          {/* Title excerpt */}
+          <p className="text-[8px] leading-[10px] font-semibold text-white text-center line-clamp-3 relative z-10 break-all">
+            {(item.title || "").replace(/<[^>]*>/g, "").slice(0, 50)}
+          </p>
+          {/* Source icon watermark */}
+          <Icon className="w-3 h-3 text-white/50 mt-auto relative z-10" />
         </div>
       )}
       <div className="flex-1 min-w-0">
@@ -279,6 +307,9 @@ function ContentCard({ item }: { item: any }) {
           )}
           {item.metadata?.likes > 0 && (
             <span className="text-[10px] text-muted-foreground">♥ {formatNum(item.metadata.likes)}</span>
+          )}
+          {item.metadata?.comments > 0 && (
+            <span className="text-[10px] text-muted-foreground">💬 {formatNum(item.metadata.comments)}</span>
           )}
           {item.metadata?.subreddit && (
             <span className="text-[10px] text-muted-foreground">r/{item.metadata.subreddit}</span>
