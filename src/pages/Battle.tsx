@@ -395,55 +395,107 @@ export default function Battle() {
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg" hideClose>
-          {drawerItem && (
-            <>
-              {/* Drag handle */}
-              <div className="flex justify-center pt-2 pb-3">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-              </div>
-              {/* Close row */}
-              <div className="flex justify-end pb-1">
-                <button
-                  onClick={() => setDrawerItem(null)}
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-              <SheetHeader className="pb-3">
-                <SheetTitle className="text-base">{t("contentDetail")}</SheetTitle>
-              </SheetHeader>
-              <div className="rounded-2xl overflow-hidden bg-muted aspect-video mb-4">
-                {drawerItem.thumbnail ? (
-                  <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-muted" />
-                )}
-              </div>
-              <div className="space-y-3">
-                <Badge variant="secondary" className="text-xs">
-                  {sourceIcon(drawerItem.source)} {sourceLabel(drawerItem.source)}
-                </Badge>
-                <h3 className="text-sm font-semibold text-foreground leading-snug">{drawerItem.title}</h3>
-                {drawerItem.published_at && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("published")}: {new Date(drawerItem.published_at).toLocaleDateString()}
-                  </p>
-                )}
-                {drawerItem.metadata?.url && (
+          {drawerItem && (() => {
+            const starRun = runs.find((r) => r.star_id === drawerItem.star_id);
+            const meta = drawerItem.metadata || {};
+            return (
+              <>
+                {/* Drag handle */}
+                <div className="flex justify-center pt-2 pb-4">
+                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                </div>
+
+                {/* Large thumbnail */}
+                <div className="rounded-2xl overflow-hidden bg-muted aspect-video mb-4">
+                  {drawerItem.thumbnail ? (
+                    <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted" />
+                  )}
+                </div>
+
+                {/* Source + Artist row */}
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="secondary" className="text-xs">
+                    {sourceIcon(drawerItem.source)} {sourceLabel(drawerItem.source)}
+                  </Badge>
+                  {starRun?.star && (
+                    <span className="text-xs text-muted-foreground">
+                      by {starRun.star.display_name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-3">{drawerItem.title}</h3>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {drawerItem.published_at && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Published</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {new Date(drawerItem.published_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  <div className="rounded-xl bg-muted/50 p-3">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Engagement</p>
+                    <p className="text-sm font-medium text-foreground">{drawerItem.engagement_score}</p>
+                  </div>
+                  {meta.likes != null && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Likes</p>
+                      <p className="text-sm font-medium text-foreground">{Number(meta.likes).toLocaleString()}</p>
+                    </div>
+                  )}
+                  {meta.plays != null && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Views</p>
+                      <p className="text-sm font-medium text-foreground">{Number(meta.plays).toLocaleString()}</p>
+                    </div>
+                  )}
+                  {meta.comments != null && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Comments</p>
+                      <p className="text-sm font-medium text-foreground">{Number(meta.comments).toLocaleString()}</p>
+                    </div>
+                  )}
+                  {meta.channelTitle && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Channel</p>
+                      <p className="text-sm font-medium text-foreground truncate">{meta.channelTitle}</p>
+                    </div>
+                  )}
+                  {meta.author && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Author</p>
+                      <p className="text-sm font-medium text-foreground truncate">{meta.author}</p>
+                    </div>
+                  )}
+                  {meta.subreddit && (
+                    <div className="rounded-xl bg-muted/50 p-3">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Subreddit</p>
+                      <p className="text-sm font-medium text-foreground">r/{meta.subreddit}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Open original link */}
+                {(meta.url || meta.videoId) && (
                   <a
-                    href={drawerItem.metadata.url}
+                    href={meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-4 h-4" />
                     Open original
                   </a>
                 )}
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
         </SheetContent>
       </Sheet>
     </div>
