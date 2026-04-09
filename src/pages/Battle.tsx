@@ -361,7 +361,17 @@ export default function Battle() {
     });
   }
 
-  useEffect(() => { loadBattleData(); }, []);
+  // Load ticket info
+  const loadTickets = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed) setTicketInfo(parsed);
+    }
+  }, []);
+
+  useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
 
   async function loadBattleData() {
     // Load runs — get enough stars for multiple pairs
@@ -392,7 +402,7 @@ export default function Battle() {
 
     // Create pairs of 2
     const pairs: BattlePair[] = [];
-    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < maxDaily; i += 2) {
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
