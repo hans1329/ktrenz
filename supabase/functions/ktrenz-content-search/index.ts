@@ -289,6 +289,7 @@ Deno.serve(async (req) => {
       },
       counts: {
         naver_news: naverNews.length,
+        naver_news_raw: naverNewsRaw.length,
         naver_blog: naverBlog.length,
         youtube: youtube.length,
         tiktok: tiktok.length,
