@@ -489,9 +489,9 @@ export default function Battle() {
                 </div>
 
                 {/* Open original link */}
-                {(meta.url || meta.videoId) && (
+                {(drawerItem.url || meta.url || meta.videoId) && (
                   <a
-                    href={meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
+                    href={drawerItem.url || meta.url || (meta.videoId ? `https://www.youtube.com/watch?v=${meta.videoId}` : "#")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
