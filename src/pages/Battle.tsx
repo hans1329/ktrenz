@@ -428,35 +428,37 @@ export default function Battle() {
         <V3Header />
       </div>
 
-      <div className="pt-16 pb-24 max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
+      <div className="pt-16 pb-24 space-y-5">
         {/* Title + Flip Timer */}
-        <div className="text-center space-y-4 pt-2">
+        <div className="text-center space-y-4 pt-2 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl">
             어떤 트렌드가 내일 더 유행할까요?
           </h2>
           <FlipTimer />
         </div>
 
-        {/* Card carousels */}
-        {runs.map((run, idx) => (
-          <div key={run.id} className="space-y-2">
-            <ArtistSection
-              runItems={items[run.id] || []}
-              starName={run.star?.display_name || "Unknown"}
-              contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-              scoreLabel={t("contentScore")}
-              isPicked={pickedRunId === run.id}
-              onPick={() => handlePick(run.id)}
-              onCardTap={(item) => setDrawerItem(item)}
-              disabled={submitted}
-            />
-            {idx === 0 && runs.length > 1 && (
-              <div className="flex justify-center py-1">
-                <span className="text-sm font-black text-muted-foreground tracking-[0.3em]">VS</span>
-              </div>
-            )}
-          </div>
-        ))}
+        {/* Card carousels — full width */}
+        <div className="w-full px-2 sm:px-4 space-y-2">
+          {runs.map((run, idx) => (
+            <div key={run.id} className="space-y-2">
+              <ArtistSection
+                runItems={items[run.id] || []}
+                starName={run.star?.display_name || "Unknown"}
+                contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
+                scoreLabel={t("contentScore")}
+                isPicked={pickedRunId === run.id}
+                onPick={() => handlePick(run.id)}
+                onCardTap={(item) => setDrawerItem(item)}
+                disabled={submitted}
+              />
+              {idx === 0 && runs.length > 1 && (
+                <div className="flex justify-center py-1">
+                  <span className="text-sm font-black text-muted-foreground tracking-[0.3em]">VS</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
         {/* Band Selection */}
         {pickedRunId && !submitted && (
