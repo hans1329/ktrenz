@@ -377,7 +377,7 @@ export default function Battle() {
         <V3Header />
       </div>
 
-      <div className="pt-16 pb-24 max-w-lg mx-auto px-4 space-y-5">
+      <div className="pt-16 pb-24 max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
         {/* Title + Flip Timer */}
         <div className="text-center space-y-4 pt-2">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl">
