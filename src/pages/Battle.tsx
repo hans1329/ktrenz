@@ -257,7 +257,7 @@ function ArtistSection({
             className="snap-center flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
-            <div className="rounded-xl overflow-hidden border border-border bg-white">
+            <div className="rounded-xl overflow-hidden bg-white">
               {/* Square image */}
               <div className="relative aspect-square bg-muted">
                 {item.thumbnail ? (
@@ -270,8 +270,8 @@ function ArtistSection({
                 </div>
               </div>
               {/* Content area */}
-              <div className="p-2.5">
-                <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">
+              <div className="p-3 min-h-[52px] flex items-start">
+                <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-2">
                   {decodeHtml(item.title)}
                 </p>
               </div>
