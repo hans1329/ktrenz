@@ -270,6 +270,7 @@ export default function Battle() {
             어떤 트렌드가 내일도 더 유행할까요?
           </h2>
           <FlipTimer />
+        </div>
 
         {/* Card carousels */}
         {runs.map((run, idx) => (
