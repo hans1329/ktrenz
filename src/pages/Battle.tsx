@@ -422,7 +422,7 @@ export default function Battle() {
         </div>
 
         {/* Card carousels — full width */}
-        <div className="w-full px-2 sm:px-4 space-y-6">
+        <div className="w-full px-2 sm:px-4 space-y-10">
           {runs.map((run, idx) => (
             <div key={run.id} className="space-y-2">
               <ArtistSection
