@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.ktrenz_p2_keywords CASCADE;
