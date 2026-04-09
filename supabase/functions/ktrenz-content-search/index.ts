@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
     const instagram = dedup(instagramRaw);
     const reddit = dedup(redditRaw);
 
-    // Enrich Naver News & Reddit with og:image (parallel, up to 10 each)
+    // Enrich with og:image where thumbnails are missing
     const enrichWithOgImage = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
@@ -282,9 +282,30 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    const [naverNews, redditEnriched] = await Promise.all([
+    // Reddit: try og:image from embedded links in snippet, then from post URL itself
+    const enrichReddit = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          if (item.thumbnail) return item;
+          // First try: extract URL from snippet text and get its og:image
+          const embeddedUrl = extractUrlFromText(item.description || "");
+          if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
+            const ogImg = await extractOgImage(embeddedUrl);
+            if (ogImg) return { ...item, thumbnail: ogImg };
+          }
+          // Fallback: og:image from the Reddit post itself
+          const ogImg = await extractOgImage(item.url);
+          return ogImg ? { ...item, thumbnail: ogImg } : item;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
+    const [naverNews, naverBlogEnriched, redditEnriched] = await Promise.all([
       enrichWithOgImage(naverNewsDeduped, 10),
-      enrichWithOgImage(reddit, 7),
+      enrichWithOgImage(naverBlog, 10),
+      enrichReddit(reddit, 7),
     ]);
 
     const results = {
