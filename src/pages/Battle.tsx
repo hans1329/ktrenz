@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, Flame } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -29,15 +29,12 @@ interface B2Run {
   star?: { display_name: string; name_ko: string };
 }
 
-type Band = "drop" | "flat" | "low" | "mid" | "high" | "surge";
+type Band = "steady" | "rising" | "surge";
 
 const BANDS: { key: Band; label: string; range: string; color: string; multiplier: string }[] = [
-  { key: "drop", label: "📉 Drop", range: "< 0%", color: "bg-muted text-muted-foreground", multiplier: "×3.0" },
-  { key: "flat", label: "➡️ Flat", range: "0–10%", color: "bg-secondary text-secondary-foreground", multiplier: "×1.5" },
-  { key: "low", label: "🔵 Steady", range: "10–30%", color: "bg-primary/10 text-primary", multiplier: "×2.0" },
-  { key: "mid", label: "🟢 Rising", range: "30–60%", color: "bg-emerald-100 text-emerald-700", multiplier: "×3.0" },
-  { key: "high", label: "🟡 Hot", range: "60–100%", color: "bg-amber-100 text-amber-700", multiplier: "×5.0" },
-  { key: "surge", label: "🔴 Surge", range: "100%+", color: "bg-destructive/10 text-destructive", multiplier: "×8.0" },
+  { key: "steady", label: "🔵 Steady", range: "0–30%", color: "bg-primary/10 text-primary", multiplier: "×1.5" },
+  { key: "rising", label: "🟢 Rising", range: "30–80%", color: "bg-emerald-100 text-emerald-700", multiplier: "×3.0" },
+  { key: "surge", label: "🔴 Surge", range: "80%+", color: "bg-destructive/10 text-destructive", multiplier: "×6.0" },
 ];
 
 export default function Battle() {
@@ -49,19 +46,22 @@ export default function Battle() {
       title: "Trend Battle",
       subtitle: "Predict the next content surge",
       howItWorks: "How it works",
-      instruction: "Predict how much each artist's content score will change in the next 24 hours. Pick a growth band for each — the narrower the band, the higher the reward!",
+      instruction: "Pick the artist you think will grow more, then predict their growth band. The tighter the band, the bigger the reward!",
       nextSettlement: "Next settlement in",
       contentScore: "Content Score",
-      predictGrowth: "Predict 24h growth",
+      pickWinner: "Who will grow more?",
+      predictGrowth: "How much will they grow?",
       submitPrediction: "Submit Prediction",
       predictionSubmitted: "Prediction Submitted!",
       waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
       dailyRemaining: "Daily free battles remaining:",
+      vs: "VS",
     },
   });
   const [runs, setRuns] = useState<B2Run[]>([]);
   const [items, setItems] = useState<Record<string, B2Item[]>>({});
-  const [selectedBands, setSelectedBands] = useState<Record<string, Band>>({});
+  const [pickedRunId, setPickedRunId] = useState<string | null>(null);
+  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +70,6 @@ export default function Battle() {
   }, []);
 
   async function loadBattleData() {
-    // Get latest run per star
     const { data: runsData } = await supabase
       .from("ktrenz_b2_runs")
       .select("id, star_id, content_score, counts, created_at")
@@ -79,14 +78,12 @@ export default function Battle() {
 
     if (!runsData?.length) { setLoading(false); return; }
 
-    // Dedupe: latest run per star_id
     const latestByStarMap = new Map<string, any>();
     for (const r of runsData) {
       if (!latestByStarMap.has(r.star_id)) latestByStarMap.set(r.star_id, r);
     }
     const latestRuns = Array.from(latestByStarMap.values()).slice(0, 2);
 
-    // Fetch star names
     const starIds = latestRuns.map((r: any) => r.star_id);
     const { data: stars } = await supabase
       .from("ktrenz_stars")
@@ -97,7 +94,6 @@ export default function Battle() {
     const enrichedRuns = latestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
     setRuns(enrichedRuns);
 
-    // Fetch items with thumbnails for each run
     const itemsByRun: Record<string, B2Item[]> = {};
     for (const run of enrichedRuns) {
       const { data: runItems } = await supabase
@@ -105,24 +101,30 @@ export default function Battle() {
         .select("id, source, title, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
-        .limit(8);
+        .limit(6);
       itemsByRun[run.id] = (runItems || []) as B2Item[];
     }
     setItems(itemsByRun);
     setLoading(false);
   }
 
-  function handleBandSelect(runId: string, band: Band) {
+  function handlePick(runId: string) {
     if (submitted) return;
-    setSelectedBands((prev) => ({ ...prev, [runId]: band }));
+    setPickedRunId(runId);
+    setSelectedBand(null);
+  }
+
+  function handleBandSelect(band: Band) {
+    if (submitted || !pickedRunId) return;
+    setSelectedBand(band);
   }
 
   function handleSubmit() {
-    if (Object.keys(selectedBands).length < runs.length) return;
+    if (!pickedRunId || !selectedBand) return;
     setSubmitted(true);
   }
 
-  const allSelected = Object.keys(selectedBands).length >= runs.length;
+  const pickedRun = runs.find((r) => r.id === pickedRunId);
 
   if (loading) {
     return (
@@ -173,99 +175,99 @@ export default function Battle() {
           </div>
         </div>
 
-        {/* Battle Cards */}
-        {runs.map((run) => {
-          const runItems = items[run.id] || [];
-          const selected = selectedBands[run.id];
-
-          return (
-            <div key={run.id} className="rounded-2xl bg-card border border-border overflow-hidden">
-              {/* Star Header */}
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div>
-                  <h2 className="font-bold text-foreground text-base">
-                    {run.star?.display_name || "Unknown"}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">{run.star?.name_ko}</p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1">
-                    <Flame className="w-4 h-4 text-primary" />
-                    <span className="text-lg font-bold text-foreground">{run.content_score}</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">{t("contentScore")}</p>
-                </div>
-              </div>
-
-              {/* Content Preview Carousel */}
-              <div className="px-4 py-3">
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                  {runItems.map((item) => (
-                    <div key={item.id} className="flex-shrink-0 w-24">
-                      <div className="w-24 h-24 rounded-xl overflow-hidden bg-muted relative">
-                        {item.thumbnail ? (
-                          <SmartImage
-                            src={item.thumbnail}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                            No img
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1">
-                          <span className="text-[9px] text-white font-medium uppercase">{item.source.replace("_", " ")}</span>
+        {/* Step 1: Pick Winner */}
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
+          <div className="flex gap-3 items-stretch">
+            {runs.map((run, idx) => {
+              const runItems = items[run.id] || [];
+              const isPicked = pickedRunId === run.id;
+              return (
+                <div key={run.id} className="flex-1 flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => handlePick(run.id)}
+                    disabled={submitted}
+                    className={`
+                      w-full rounded-2xl bg-card border-2 p-4 transition-all text-center
+                      ${isPicked
+                        ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
+                        : "border-border hover:border-muted-foreground/30"
+                      }
+                      ${submitted ? "opacity-60" : ""}
+                    `}
+                  >
+                    {/* Thumbnail strip */}
+                    <div className="flex gap-1 justify-center mb-3">
+                      {runItems.slice(0, 3).map((item) => (
+                        <div key={item.id} className="w-14 h-14 rounded-lg overflow-hidden bg-muted">
+                          {item.thumbnail ? (
+                            <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-muted" />
+                          )}
                         </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-tight">
-                        {item.title.substring(0, 50)}
-                      </p>
+                      ))}
                     </div>
-                  ))}
+                    <h3 className="font-bold text-foreground text-sm">{run.star?.display_name || "Unknown"}</h3>
+                    <p className="text-[10px] text-muted-foreground">{run.star?.name_ko}</p>
+                    <div className="mt-2">
+                      <span className="text-2xl font-bold text-foreground">{run.content_score}</span>
+                      <p className="text-[10px] text-muted-foreground">{t("contentScore")}</p>
+                    </div>
+                  </button>
+                  {idx === 0 && runs.length > 1 && (
+                    <div className="absolute left-1/2 -translate-x-1/2 mt-[90px] z-10">
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Band Selection */}
-              <div className="px-4 pb-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {t("predictGrowth")}
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {BANDS.map((band) => {
-                    const isSelected = selected === band.key;
-                    return (
-                      <button
-                        key={band.key}
-                        onClick={() => handleBandSelect(run.id, band.key)}
-                        disabled={submitted}
-                        className={`
-                          rounded-xl px-3 py-2.5 text-left transition-all border-2
-                          ${isSelected
-                            ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
-                            : "border-transparent hover:border-border"
-                          }
-                          ${band.color}
-                          ${submitted ? "opacity-60" : ""}
-                        `}
-                      >
-                        <span className="text-xs font-semibold block">{band.label}</span>
-                        <span className="text-[10px] opacity-70 block">{band.range}</span>
-                        <span className="text-[10px] font-bold block mt-0.5">{band.multiplier}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              );
+            })}
+          </div>
+          {/* VS badge */}
+          {runs.length === 2 && (
+            <div className="flex justify-center -mt-1">
+              <span className="text-xs font-black text-muted-foreground tracking-widest">{t("vs")}</span>
             </div>
-          );
-        })}
+          )}
+        </div>
+
+        {/* Step 2: Band Selection (only after pick) */}
+        {pickedRunId && !submitted && (
+          <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+            <p className="text-sm font-semibold text-foreground">
+              {t("predictGrowth")} — <span className="text-primary">{pickedRun?.star?.display_name}</span>
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {BANDS.map((band) => {
+                const isSelected = selectedBand === band.key;
+                return (
+                  <button
+                    key={band.key}
+                    onClick={() => handleBandSelect(band.key)}
+                    className={`
+                      rounded-xl px-3 py-3 text-center transition-all border-2
+                      ${isSelected
+                        ? "border-primary ring-2 ring-primary/20 scale-[1.03]"
+                        : "border-transparent hover:border-border"
+                      }
+                      ${band.color}
+                    `}
+                  >
+                    <span className="text-sm font-semibold block">{band.label}</span>
+                    <span className="text-[10px] opacity-70 block mt-0.5">{band.range}</span>
+                    <span className="text-xs font-bold block mt-1">{band.multiplier}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Submit / Result */}
         {!submitted ? (
           <Button
             onClick={handleSubmit}
-            disabled={!allSelected}
+            disabled={!pickedRunId || !selectedBand}
             className="w-full h-12 rounded-2xl text-base font-bold"
           >
             <Zap className="w-5 h-5 mr-2" />
@@ -280,21 +282,14 @@ export default function Battle() {
             <p className="text-xs text-muted-foreground">
               {t("waitResult")}
             </p>
-            <div className="space-y-2">
-              {runs.map((run) => {
-                const band = BANDS.find((b) => b.key === selectedBands[run.id]);
-                return (
-                  <div key={run.id} className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{run.star?.display_name}</p>
-                      <p className="text-xs text-muted-foreground">Score: {run.content_score}</p>
-                    </div>
-                    <Badge className={band?.color || ""}>
-                      {band?.label} {band?.multiplier}
-                    </Badge>
-                  </div>
-                );
-              })}
+            <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
+              <div>
+                <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
+              </div>
+              <Badge className={BANDS.find((b) => b.key === selectedBand)?.color || ""}>
+                {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
+              </Badge>
             </div>
             {/* K-Cash Progress */}
             <div className="pt-2 border-t border-border mt-3">
