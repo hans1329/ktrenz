@@ -170,7 +170,7 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
       title: r.title || "",
       description: r.snippet || "",
       url: r.link,
-      thumbnail: r.thumbnail || null,
+      thumbnail: r.thumbnail || r.rich_snippet?.top?.detected_extensions?.thumbnail || null,
       date: r.date || null,
       metadata: { subreddit: r.link?.match(/reddit\.com\/r\/([^/]+)/)?.[1] || "" },
     }));
