@@ -307,7 +307,9 @@ export default function Battle() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
-  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set()); // item IDs that got 🔥
+  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
+  const [carouselIndices, setCarouselIndices] = useState<Record<string, number>>({});
+  const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Count hot votes per run's star_id
   function getHotBonus(runId: string): number {
