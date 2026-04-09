@@ -52,18 +52,6 @@ function sourceIcon(source: string) {
   }
 }
 
-function sourceLabel(source: string) {
-  switch (source) {
-    case "youtube": return "YouTube";
-    case "tiktok": return "TikTok";
-    case "instagram": return "Instagram";
-    case "naver_news": return "News";
-    case "naver_blog": return "Blog";
-    case "reddit": return "Reddit";
-    default: return source;
-  }
-}
-
 /* ── Carousel of content cards for one run ── */
 function ContentCarousel({
   runItems,
