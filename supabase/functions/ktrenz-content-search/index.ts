@@ -91,29 +91,39 @@ async function searchYouTube(apiKey: string, query: string, maxResults = 15): Pr
   } catch { return []; }
 }
 
-// ── TikTok (tiktok-api23 RapidAPI) ──
+// ── TikTok (tiktok-api23 RapidAPI — collect-tiktok-trends와 동일 구조) ──
 async function searchTikTok(rapidApiKey: string, query: string, count = 15): Promise<any[]> {
   try {
-    const url = `https://tiktok-api23.p.rapidapi.com/api/search/video?keyword=${encodeURIComponent(query)}&search_id=0&count=${count}`;
+    const url = `https://tiktok-api23.p.rapidapi.com/api/search/video?keyword=${encodeURIComponent(query)}&search_id=0`;
     const res = await fetchWithTimeout(url, {
       headers: { "x-rapidapi-host": "tiktok-api23.p.rapidapi.com", "x-rapidapi-key": rapidApiKey },
     });
     if (!res.ok) { await res.text(); return []; }
-    const data = await res.json();
-    const items = data?.data?.videos || data?.data?.item_list || [];
-    return items.slice(0, count).map((v: any) => ({
-      source: "tiktok",
-      title: v.desc || v.title || "",
-      description: "",
-      url: `https://www.tiktok.com/@${v.author?.unique_id || "user"}/video/${v.video_id || v.id || v.aweme_id}`,
-      thumbnail: v.cover?.url_list?.[0] || v.video?.cover?.url_list?.[0] || v.origin_cover?.url_list?.[0] || null,
-      date: v.create_time ? new Date(v.create_time * 1000).toISOString() : null,
-      metadata: {
-        author: v.author?.nickname || v.author?.unique_id,
-        plays: v.statistics?.play_count || v.play_count || 0,
-        likes: v.statistics?.digg_count || v.digg_count || 0,
-      },
-    }));
+    const text = await res.text();
+    if (!text || text.trim().length === 0) return [];
+    let data: any;
+    try { data = JSON.parse(text); } catch { return []; }
+    // tiktok-api23 응답: { item_list: [...] }
+    const items = data?.item_list || [];
+    if (!Array.isArray(items)) return [];
+    return items.slice(0, count).filter((v: any) => v && v.id).map((v: any) => {
+      const stats = v.stats || {};
+      const author = v.author || {};
+      return {
+        source: "tiktok",
+        title: v.desc || "",
+        description: "",
+        url: `https://www.tiktok.com/@${author.uniqueId || "user"}/video/${v.id}`,
+        thumbnail: v.video?.cover || v.video?.dynamicCover || null,
+        date: v.createTime ? new Date(v.createTime * 1000).toISOString() : null,
+        metadata: {
+          author: author.nickname || author.uniqueId,
+          plays: Number(stats.playCount) || 0,
+          likes: Number(stats.diggCount) || 0,
+          comments: Number(stats.commentCount) || 0,
+        },
+      };
+    });
   } catch { return []; }
 }
 
