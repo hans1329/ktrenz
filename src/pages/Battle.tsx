@@ -123,7 +123,7 @@ function ContentCarousel({
                 {/* title overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
                   <p className="text-white text-sm font-medium leading-snug line-clamp-3">
-                    {item.title}
+                    {decodeHtml(item.title)}
                   </p>
                 </div>
               </div>
