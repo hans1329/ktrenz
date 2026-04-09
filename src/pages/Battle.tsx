@@ -453,6 +453,7 @@ export default function Battle() {
                 onPick={() => handlePick(run.id)}
                 onCardTap={(item) => setDrawerItem(item)}
                 disabled={submitted}
+                index={idx}
               />
               {idx === 0 && runs.length > 1 && (
                 <div className="flex justify-center py-1">
