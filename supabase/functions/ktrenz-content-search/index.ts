@@ -32,11 +32,16 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     if (ogMatch?.[1]) {
       const imgUrl = ogMatch[1];
-      // Ensure HTTPS
       return imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
     }
     return null;
   } catch { return null; }
+}
+
+// ── Extract first URL from text (for Reddit snippets) ──
+function extractUrlFromText(text: string): string | null {
+  const m = text.match(/https?:\/\/[^\s)"'<>\]]+/);
+  return m ? m[0] : null;
 }
 
 // ── Naver News + Blog ──
@@ -264,7 +269,7 @@ Deno.serve(async (req) => {
     const instagram = dedup(instagramRaw);
     const reddit = dedup(redditRaw);
 
-    // Enrich Naver News & Reddit with og:image (parallel, up to 10 each)
+    // Enrich with og:image where thumbnails are missing
     const enrichWithOgImage = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
@@ -277,9 +282,30 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    const [naverNews, redditEnriched] = await Promise.all([
+    // Reddit: try og:image from embedded links in snippet, then from post URL itself
+    const enrichReddit = async (items: any[], limit = 10) => {
+      const toEnrich = items.slice(0, limit);
+      const enriched = await Promise.all(
+        toEnrich.map(async (item: any) => {
+          if (item.thumbnail) return item;
+          // First try: extract URL from snippet text and get its og:image
+          const embeddedUrl = extractUrlFromText(item.description || "");
+          if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
+            const ogImg = await extractOgImage(embeddedUrl);
+            if (ogImg) return { ...item, thumbnail: ogImg };
+          }
+          // Fallback: og:image from the Reddit post itself
+          const ogImg = await extractOgImage(item.url);
+          return ogImg ? { ...item, thumbnail: ogImg } : item;
+        })
+      );
+      return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
+    };
+
+    const [naverNews, naverBlogEnriched, redditEnriched] = await Promise.all([
       enrichWithOgImage(naverNewsDeduped, 10),
-      enrichWithOgImage(reddit, 7),
+      enrichWithOgImage(naverBlog, 10),
+      enrichReddit(reddit, 7),
     ]);
 
     const results = {
@@ -291,7 +317,7 @@ Deno.serve(async (req) => {
       },
       sources: {
         naver_news: naverNews,
-        naver_blog: naverBlog,
+        naver_blog: naverBlogEnriched,
         youtube,
         tiktok,
         instagram,
@@ -300,12 +326,12 @@ Deno.serve(async (req) => {
       counts: {
         naver_news: naverNews.length,
         naver_news_raw: naverNewsRaw.length,
-        naver_blog: naverBlog.length,
+        naver_blog: naverBlogEnriched.length,
         youtube: youtube.length,
         tiktok: tiktok.length,
         instagram: instagram.length,
         reddit: redditEnriched.length,
-        total: naverNews.length + naverBlog.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
+        total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
       },
     };
 
