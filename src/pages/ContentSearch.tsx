@@ -125,7 +125,6 @@ const ContentSearchPage = () => {
                     <p className="text-sm font-medium text-foreground">{star.display_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {star.name_ko && star.name_ko !== star.display_name && <span>{star.name_ko} · </span>}
-                      {star.group_name && <span>{star.group_name} · </span>}
                       {star.star_type}
                     </p>
                   </div>
