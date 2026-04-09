@@ -209,17 +209,24 @@ Deno.serve(async (req) => {
     ]);
 
     // Deduplicate per source: by URL first, then by normalized title similarity
-    function dedup(items: any[]): any[] {
-      const seen = new Set<string>();
+    function dedup(items: any[], dedupDesc = false): any[] {
+      const seenUrls = new Set<string>();
+      const seenDescs = new Set<string>();
       return items.filter((item) => {
         const url = (item.url || "").split("?")[0].replace(/\/+$/, "");
-        if (url && seen.has(url)) return false;
-        if (url) seen.add(url);
+        if (url && seenUrls.has(url)) return false;
+        if (url) seenUrls.add(url);
+        // For news: same description = same event photo articles
+        if (dedupDesc) {
+          const desc = (item.description || "").replace(/\s+/g, " ").trim().slice(0, 80);
+          if (desc.length > 20 && seenDescs.has(desc)) return false;
+          if (desc.length > 20) seenDescs.add(desc);
+        }
         return true;
       });
     }
 
-    const naverNews = dedup(naverNewsRaw);
+    const naverNews = dedup(naverNewsRaw, true);
     const naverBlog = dedup(naverBlogRaw);
     const youtube = dedup(youtubeRaw);
     const tiktok = dedup(tiktokRaw);
