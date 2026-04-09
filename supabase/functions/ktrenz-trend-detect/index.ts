@@ -1283,6 +1283,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
         return false;
       }
+      // "N기" 팬클럽 기수 패턴 차단 (예: "5기", "MIDZY 5기", "3기 모집")
+      const FANCLUB_GEN_PATTERN = /\d+기/;
+      if (FANCLUB_GEN_PATTERN.test(kwKo) || FANCLUB_GEN_PATTERN.test(k.keyword || "")) {
+        console.warn(`[trend-detect] Blocked fanclub generation keyword: "${k.keyword}"`);
+        return false;
+      }
 
       // ── 기업명 패턴 차단: 아티스트/그룹명 + 기업 접미사 조합 (엑소시스템즈, 빅히트테크 등) ──
       const CORP_SUFFIXES = [
