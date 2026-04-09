@@ -46,7 +46,7 @@ function sourceIcon(source: string) {
     case "tiktok": return "🎵";
     case "instagram": return "📷";
     case "naver_news": return "📰";
-    case "naver_blog": return "📝";
+    
     case "reddit": return "💬";
     default: return "📄";
   }
@@ -125,11 +125,9 @@ function ContentCarousel({
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>
                 )}
-                {/* source badge */}
-                <div className="absolute top-3 right-3">
-                  <span className="text-[11px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
-                    {sourceIcon(item.source)} {sourceLabel(item.source)}
-                  </span>
+                {/* source icon */}
+                <div className="absolute top-2.5 right-2.5">
+                  <span className="text-base drop-shadow-md">{sourceIcon(item.source)}</span>
                 </div>
                 {/* title overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
@@ -416,17 +414,6 @@ export default function Battle() {
                   )}
                 </div>
 
-                {/* Source + Artist row */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="secondary" className="text-xs">
-                    {sourceIcon(drawerItem.source)} {sourceLabel(drawerItem.source)}
-                  </Badge>
-                  {starRun?.star && (
-                    <span className="text-xs text-muted-foreground">
-                      by {starRun.star.display_name}
-                    </span>
-                  )}
-                </div>
 
                 {/* Title */}
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{drawerItem.title}</h3>
