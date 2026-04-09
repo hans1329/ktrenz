@@ -146,6 +146,19 @@ const ContentSearchPage = () => {
         {/* Results */}
         {contentData && !contentLoading && (
           <>
+            {/* Raw count banner */}
+            {contentData.counts?.naver_news_raw > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-muted/50 border border-border/40 text-xs text-muted-foreground">
+                <Newspaper className="w-3.5 h-3.5 text-green-500" />
+                <span>
+                  24h 뉴스 총 <strong className="text-foreground">{contentData.counts.naver_news_raw}</strong>건
+                  {contentData.counts.naver_news_raw !== contentData.counts.naver_news && (
+                    <> → 중복 제거 <strong className="text-foreground">{contentData.counts.naver_news}</strong>건</>
+                  )}
+                </span>
+              </div>
+            )}
+
             {/* Source tabs */}
             <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4 overflow-x-auto">
               <TabButton active={activeSource === "all"} onClick={() => setActiveSource("all")}>
