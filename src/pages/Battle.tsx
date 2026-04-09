@@ -129,7 +129,7 @@ export default function Battle() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-3">
           <Zap className="w-8 h-8 text-primary" />
-          <p className="text-muted-foreground text-sm">{t("loading", "Loading battles...")}</p>
+          <p className="text-muted-foreground text-sm">{t("loading")}</p>
         </div>
       </div>
     );
@@ -146,9 +146,9 @@ export default function Battle() {
           <div className="flex-1">
             <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              {t("title", "Trend Battle")}
+              {t("title")}
             </h1>
-            <p className="text-xs text-muted-foreground">{t("subtitle", "Predict the next content surge")}</p>
+            <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
           </div>
           <Badge variant="outline" className="text-xs">
             <Trophy className="w-3 h-3 mr-1" />
@@ -162,14 +162,14 @@ export default function Battle() {
         <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
           <p className="text-sm font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
-            {t("howItWorks", "How it works")}
+            {t("howItWorks")}
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            {t("instruction", "Predict how much each artist's content score will change in the next 24 hours. Pick a growth band for each — the narrower the band, the higher the reward!")}
+            {t("instruction")}
           </p>
           <div className="flex items-center gap-2 pt-1">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">{t("nextSettlement", "Next settlement in")} <span className="font-mono font-semibold text-foreground">23:41:08</span></span>
+            <span className="text-xs text-muted-foreground">{t("nextSettlement")} <span className="font-mono font-semibold text-foreground">23:41:08</span></span>
           </div>
         </div>
 
@@ -193,7 +193,7 @@ export default function Battle() {
                     <Flame className="w-4 h-4 text-primary" />
                     <span className="text-lg font-bold text-foreground">{run.content_score}</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{t("contentScore", "Content Score")}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("contentScore")}</p>
                 </div>
               </div>
 
@@ -229,7 +229,7 @@ export default function Battle() {
               {/* Band Selection */}
               <div className="px-4 pb-4">
                 <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {t("predictGrowth", "Predict 24h growth")}
+                  {t("predictGrowth")}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {BANDS.map((band) => {
@@ -269,16 +269,16 @@ export default function Battle() {
             className="w-full h-12 rounded-2xl text-base font-bold"
           >
             <Zap className="w-5 h-5 mr-2" />
-            {t("submitPrediction", "Submit Prediction")}
+            {t("submitPrediction")}
           </Button>
         ) : (
           <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-3">
             <p className="text-sm font-bold text-foreground flex items-center gap-2">
               <Trophy className="w-4 h-4 text-primary" />
-              {t("predictionSubmitted", "Prediction Submitted!")}
+              {t("predictionSubmitted")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("waitResult", "Results will be settled after the next content scan. Check back in ~24 hours.")}
+              {t("waitResult")}
             </p>
             <div className="space-y-2">
               {runs.map((run) => {
@@ -310,7 +310,7 @@ export default function Battle() {
         {/* Daily Remaining */}
         <div className="text-center pb-4">
           <p className="text-xs text-muted-foreground">
-            {t("dailyRemaining", "Daily free battles remaining:")} <span className="font-bold text-foreground">2 / 3</span>
+            {t("dailyRemaining")} <span className="font-bold text-foreground">2 / 3</span>
           </p>
         </div>
       </div>
