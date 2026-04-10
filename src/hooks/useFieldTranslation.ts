@@ -3,9 +3,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Detect if text contains Japanese-specific characters (Hiragana, Katakana)
+ */
+function containsJapanese(text: string): boolean {
+  return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+}
+
+/**
  * On-demand field translation hook.
  * When language is en/ja/zh and a field is null, triggers edge function
- * to translate and cache in DB. Calls onTranslated when done so UI can refetch.
+ * to translate and cache in DB. Also translates Japanese content to Korean.
+ * Calls onTranslated when done so UI can refetch.
  */
 export const useFieldTranslation = () => {
   const { language } = useLanguage();
@@ -18,26 +26,31 @@ export const useFieldTranslation = () => {
       items: { id: string; [key: string]: any }[],
       onTranslated?: () => void
     ) => {
-      if (language === "ko") return; // Korean is source, no translation needed
-
       // Determine target column name
       const targetColMap: Record<string, Record<string, string>> = {
         "ktrenz_keywords.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
         "ktrenz_keywords.context": { en: "context", ja: "context_ja", zh: "context_zh" },
         "ktrenz_trend_triggers.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
         "ktrenz_trend_triggers.context": { en: "context", ja: "context_ja", zh: "context_zh" },
-        "ktrenz_b2_items.title": { en: "title_en", ja: "title_ja", zh: "title_zh" },
+        "ktrenz_b2_items.title": { en: "title_en", ja: "title_ja", zh: "title_zh", ko: "title_ko" },
       };
 
       const key = `${table}.${field}`;
       const targetCol = targetColMap[key]?.[language];
       if (!targetCol) return;
 
-      // Find items that need translation (target is missing, or English context still equals Korean source)
+      // Find items that need translation
       const sourceCol = field === "keyword" ? "keyword_ko" : field === "title" ? "title" : "context_ko";
       const needTranslation = items.filter((item) => {
         const sourceValue = item[sourceCol];
         const targetValue = item[targetCol];
+
+        // For Korean: only translate if source contains Japanese characters
+        if (language === "ko") {
+          if (field !== "title") return false; // Only b2_items title can be non-Korean
+          return !!sourceValue && !targetValue && typeof sourceValue === "string" && containsJapanese(sourceValue) && !pendingRef.current.has(`${item.id}-${key}-${language}`);
+        }
+
         const isEnglishContextStale =
           field === "context" &&
           language === "en" &&
@@ -64,7 +77,6 @@ export const useFieldTranslation = () => {
 
         if (error) {
           console.warn("Translation request failed:", error);
-          // Remove from pending so it can retry
           batchIds.forEach((id) => pendingRef.current.delete(`${id}-${key}-${language}`));
           return;
         }

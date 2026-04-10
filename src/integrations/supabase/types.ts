@@ -2684,6 +2684,7 @@ export type Database = {
           title: string
           title_en: string | null
           title_ja: string | null
+          title_ko: string | null
           title_zh: string | null
           url: string
         }
@@ -2703,6 +2704,7 @@ export type Database = {
           title?: string
           title_en?: string | null
           title_ja?: string | null
+          title_ko?: string | null
           title_zh?: string | null
           url?: string
         }
@@ -2722,6 +2724,7 @@ export type Database = {
           title?: string
           title_en?: string | null
           title_ja?: string | null
+          title_ko?: string | null
           title_zh?: string | null
           url?: string
         }

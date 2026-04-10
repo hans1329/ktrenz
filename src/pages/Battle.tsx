@@ -92,6 +92,7 @@ interface B2Item {
   title_en: string | null;
   title_ja: string | null;
   title_zh: string | null;
+  title_ko: string | null;
   description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
@@ -244,6 +245,7 @@ function FlipTimer() {
 }
 
 function getLocalizedTitle(item: B2Item, lang: string): string {
+  if (lang === "ko" && item.title_ko) return item.title_ko;
   if (lang === "ja" && item.title_ja) return item.title_ja;
   if (lang === "zh" && item.title_zh) return item.title_zh;
   if (lang === "en" && item.title_en) return item.title_en;
@@ -581,7 +583,7 @@ export default function Battle() {
       for (const run of pair.runs) {
         const { data: runItems } = await supabase
           .from("ktrenz_b2_items")
-          .select("id, source, title, title_en, title_ja, title_zh, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
           .eq("run_id", run.id)
           .eq("has_thumbnail", true)
           .not("source", "eq", "naver_blog")
@@ -596,7 +598,7 @@ export default function Battle() {
       return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
     });
 
-    if (!skipTranslation && language !== "ko") {
+    if (!skipTranslation) {
       const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {

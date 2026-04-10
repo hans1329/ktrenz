@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_b2_items ADD COLUMN IF NOT EXISTS title_ko TEXT;
