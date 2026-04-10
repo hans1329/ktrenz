@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Lock, Gem } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -808,7 +808,7 @@ export default function Battle() {
                           </p>
                           <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
                             {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
-                            <Gem className="w-3.5 h-3.5 text-primary" />
+                            💎
                           </p>
                         </div>
                       </div>
