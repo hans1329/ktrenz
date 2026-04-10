@@ -55,7 +55,7 @@ async function fetchNaverPage(
 
 async function getNaverNewsCount48h(
   clientId: string, clientSecret: string, query: string
-): Promise<number> {
+): Promise<{ count: number; capped: boolean }> {
   try {
     const cutoff = Date.now() - 48 * 60 * 60 * 1000;
     let count = 0;
@@ -196,7 +196,6 @@ Deno.serve(async (req) => {
               star_id: star.id,
               news_count: result.count,
               pre_score: result.count,
-              is_capped: result.capped,
               batch_id: batchId,
             };
           })
