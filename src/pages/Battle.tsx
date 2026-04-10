@@ -851,7 +851,7 @@ export default function Battle() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(drawerItem.title)}</h3>
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(getLocalizedTitle(drawerItem, language))}</h3>
 
                 {/* Description */}
                 {drawerItem.description && (
