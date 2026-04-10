@@ -61,12 +61,24 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// star_type별 검색어 생성
+// star_category별 수식어 매핑
+const CATEGORY_QUALIFIER: Record<string, string> = {
+  kpop: "가수",
+  actor: "배우",
+  youtuber: "유튜버",
+  influencer: "인플루언서",
+  comedian: "개그맨",
+  model: "모델",
+  athlete: "선수",
+};
+
+// star_type + star_category 기반 검색어 생성
 function buildSearchQuery(
-  star: { name_ko: string | null; display_name: string; star_type: string },
+  star: { name_ko: string | null; display_name: string; star_type: string; star_category: string },
   groupNameKo: string | null
 ): string {
   const name = star.name_ko || star.display_name;
+  const qualifier = CATEGORY_QUALIFIER[star.star_category] || "연예인";
 
   switch (star.star_type) {
     case "member":
@@ -74,19 +86,19 @@ function buildSearchQuery(
       if (groupNameKo) {
         return `${groupNameKo} ${name}`;
       }
-      // 그룹 정보 없으면 이름+가수 fallback
-      return `${name} 가수`;
+      // 그룹 정보 없으면 이름+카테고리 수식어 fallback
+      return `${name} ${qualifier}`;
 
     case "solo":
-      // 솔로: "이름 가수" (예: "아이유 가수")
-      return `${name} 가수`;
+      // 솔로: "이름 카테고리수식어" (예: "아이유 가수", "마동석 배우")
+      return `${name} ${qualifier}`;
 
     case "group":
       // 그룹: 그룹명 자체가 고유하므로 그대로 사용
       return name;
 
     default:
-      return `${name} 가수`;
+      return `${name} ${qualifier}`;
   }
 }
 
