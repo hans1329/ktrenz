@@ -61,9 +61,8 @@ const AgencyDashboardSample = () => {
         .gte('summary_date', fromDate)
         .order('summary_date', { ascending: true });
 
-      if (selectedArtistId !== 'all') {
-        query = query.eq('wiki_entry_id', selectedArtistId);
-      }
+      // wiki_entry_id removed from ktrenz tables; artist filter not available
+      void selectedArtistId;
 
       const { data, error } = await query;
       if (error) throw error;
@@ -83,9 +82,8 @@ const AgencyDashboardSample = () => {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      if (selectedArtistId !== 'all') {
-        query = query.eq('wiki_entry_id', selectedArtistId);
-      }
+      // wiki_entry_id removed; no artist filter available
+      void selectedArtistId;
 
       const { data, error } = await query;
       if (error) throw error;
@@ -165,7 +163,6 @@ const AgencyDashboardSample = () => {
       const { data, error } = await supabase
         .from('ktrenz_agent_intents')
         .select('*')
-        .eq('wiki_entry_id', compareArtistId)
         .gte('created_at', fromDate)
         .order('created_at', { ascending: false })
         .limit(200);

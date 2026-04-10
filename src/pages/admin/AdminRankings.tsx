@@ -437,9 +437,9 @@ const AdminRankings = () => {
       .limit(1);
 
     if (wikiEntryId) {
-      query = query.eq('wiki_entry_id', wikiEntryId);
+      query = query.eq('star_id', wikiEntryId);
     } else {
-      query = query.not('wiki_entry_id', 'is', null);
+      query = query.not('star_id', 'is', null);
     }
 
     const { data } = await query.maybeSingle();
