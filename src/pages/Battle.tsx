@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
 import { toast } from "@/hooks/use-toast";
 
@@ -384,8 +385,9 @@ interface Prediction {
 export default function Battle() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t: globalT } = useLanguage();
+  const { t: globalT, language } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
+  const { translateIfNeeded } = useFieldTranslation();
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
@@ -478,6 +480,17 @@ export default function Battle() {
           .order("engagement_score", { ascending: false })
           .limit(8);
         pair.items[run.id] = (runItems || []) as B2Item[];
+      }
+    }
+
+    // Trigger on-demand translation for non-Korean users
+    if (language !== "ko") {
+      const allItems = pairs.flatMap(p => Object.values(p.items).flat());
+      if (allItems.length > 0) {
+        translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
+          // Refetch after translation completes
+          loadBattleData();
+        });
       }
     }
 
@@ -838,7 +851,7 @@ export default function Battle() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(drawerItem.title)}</h3>
+                <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(getLocalizedTitle(drawerItem, language))}</h3>
 
                 {/* Description */}
                 {drawerItem.description && (
