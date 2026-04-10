@@ -205,24 +205,7 @@ function ArtistSection({
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
 
-  // Triple items for infinite loop: [clone-last-set] [original] [clone-first-set]
-  const loopItems = itemCount > 1
-    ? [...runItems, ...runItems, ...runItems]
-    : runItems;
-  const offset = itemCount > 1 ? itemCount : 0;
-
-  // Initialize scroll to the first card in the middle (original) set
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || itemCount <= 1) return;
-    // Immediately set scroll position (no animation) to first original card
-    el.scrollLeft = 0;
-    requestAnimationFrame(() => {
-      const child = el.children[offset] as HTMLElement;
-      if (child) el.scrollLeft = child.offsetLeft - el.offsetLeft;
-    });
-  }, [itemCount, offset]);
-
+  // Track active index via scroll position
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
@@ -235,40 +218,24 @@ function ArtistSection({
         const children = Array.from(el.children) as HTMLElement[];
         if (children.length === 0) return;
         const scrollLeft = el.scrollLeft;
-
-        // Find closest child to left edge
         let closest = 0;
         let minDist = Infinity;
         children.forEach((child, i) => {
           const dist = Math.abs(child.offsetLeft - scrollLeft);
           if (dist < minDist) { minDist = dist; closest = i; }
         });
-
-        setActiveIndex(closest % itemCount);
-
-        // When scrolled into the third (clone-first) set, jump back to middle set
-        const thirdSetStart = children[offset + itemCount];
-        if (thirdSetStart && scrollLeft >= thirdSetStart.offsetLeft) {
-          const jumpTarget = children[closest - itemCount];
-          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft;
-        }
-        // When scrolled into the first (clone-last) set, jump forward to middle set
-        const middleSetStart = children[offset];
-        if (middleSetStart && scrollLeft < middleSetStart.offsetLeft - 10) {
-          const jumpTarget = children[closest + itemCount];
-          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft;
-        }
+        setActiveIndex(closest);
       });
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
-  }, [itemCount, offset]);
+  }, [itemCount]);
 
   const scrollToIndex = (i: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    const child = el.children[i + offset] as HTMLElement;
-    if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    const child = el.children[i] as HTMLElement;
+    if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
   };
 
   return (
