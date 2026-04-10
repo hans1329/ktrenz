@@ -19,6 +19,48 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOU
   }
 }
 
+// ── Charset-aware text decoder ──
+// Many Korean news sites serve EUC-KR; res.text() defaults to UTF-8 and garbles the text.
+async function fetchTextWithCharset(res: Response): Promise<string> {
+  // 1. Check Content-Type header for charset
+  const ct = res.headers.get("content-type") || "";
+  const charsetMatch = ct.match(/charset=["']?([^;"'\s]+)/i);
+  let charset = charsetMatch?.[1]?.toLowerCase() || "";
+
+  const buf = await res.arrayBuffer();
+
+  // 2. If header doesn't specify, peek into first 2KB for <meta charset="...">
+  if (!charset) {
+    const peek = new TextDecoder("utf-8", { fatal: false }).decode(buf.slice(0, 2048));
+    const metaMatch = peek.match(/<meta[^>]+charset=["']?([^"';\s>]+)/i)
+      || peek.match(/<meta[^>]+content=["'][^"']*charset=([^"';\s]+)/i);
+    if (metaMatch?.[1]) charset = metaMatch[1].toLowerCase();
+  }
+
+  // 3. Normalise common aliases
+  if (charset === "euc-kr" || charset === "euc_kr" || charset === "x-euc-kr") charset = "euc-kr";
+  if (!charset || charset === "utf-8") charset = "utf-8";
+
+  try {
+    return new TextDecoder(charset, { fatal: false }).decode(buf);
+  } catch {
+    // Fallback to UTF-8 if decoder doesn't support the charset
+    return new TextDecoder("utf-8", { fatal: false }).decode(buf);
+  }
+}
+
+// ── Check if a string contains garbled (mojibake) text ──
+function isGarbled(text: string): boolean {
+  if (!text || text.length === 0) return false;
+  // Count replacement characters and non-printable chars
+  let badChars = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 0xFFFD) badChars++; // Unicode replacement char
+  }
+  return badChars > text.length * 0.1; // >10% replacement chars = garbled
+}
+
 // ── Extract og:image from a page ──
 async function extractOgImage(pageUrl: string): Promise<string | null> {
   try {
