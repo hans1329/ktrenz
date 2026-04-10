@@ -235,32 +235,28 @@ function ArtistSection({
         const children = Array.from(el.children) as HTMLElement[];
         if (children.length === 0) return;
         const scrollLeft = el.scrollLeft;
-        const containerWidth = el.offsetWidth;
 
+        // Find closest child to left edge
         let closest = 0;
         let minDist = Infinity;
         children.forEach((child, i) => {
-          const childCenter = child.offsetLeft + child.offsetWidth / 2;
-          const dist = Math.abs(childCenter - scrollLeft - containerWidth / 2);
+          const dist = Math.abs(child.offsetLeft - scrollLeft);
           if (dist < minDist) { minDist = dist; closest = i; }
         });
 
         setActiveIndex(closest % itemCount);
 
-        // Reset to middle set when scrolling into clone zones
-        const firstOriginal = children[offset];
-        const lastOriginal = children[offset + itemCount - 1];
-        if (!firstOriginal || !lastOriginal) return;
-
-        const leftBound = firstOriginal.offsetLeft - containerWidth / 2;
-        const rightBound = lastOriginal.offsetLeft + lastOriginal.offsetWidth - containerWidth / 2;
-
-        if (scrollLeft < leftBound) {
-          const jumpTarget = children[closest + itemCount];
-          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft - (containerWidth - jumpTarget.offsetWidth) / 2;
-        } else if (scrollLeft > rightBound) {
+        // When scrolled into the third (clone-first) set, jump back to middle set
+        const thirdSetStart = children[offset + itemCount];
+        if (thirdSetStart && scrollLeft >= thirdSetStart.offsetLeft) {
           const jumpTarget = children[closest - itemCount];
-          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft - (containerWidth - jumpTarget.offsetWidth) / 2;
+          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft;
+        }
+        // When scrolled into the first (clone-last) set, jump forward to middle set
+        const middleSetStart = children[offset];
+        if (middleSetStart && scrollLeft < middleSetStart.offsetLeft - 10) {
+          const jumpTarget = children[closest + itemCount];
+          if (jumpTarget) el.scrollLeft = jumpTarget.offsetLeft;
         }
       });
     };
