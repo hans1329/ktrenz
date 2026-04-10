@@ -690,7 +690,7 @@ export default function Battle() {
               {pairIdx > 0 && (
                 <div className="my-10 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
                   <div className="flex-1 h-px bg-primary/30" />
-                  <span className="text-[11px] font-bold text-primary-foreground uppercase tracking-widest bg-primary rounded-full px-4 py-1.5 border border-primary/40 ring-1 ring-primary/30">Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? " ✓" : ""}</span>
+                  <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? " ✓ Joined" : ""}</span>
                   <div className="flex-1 h-px bg-primary/30" />
                 </div>
               )}
