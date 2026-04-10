@@ -1058,7 +1058,7 @@ export default function Battle() {
                       if (tiktokId) {
                         return (
                           <iframe
-                            src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+                            src={`https://www.tiktok.com/embed/v2/${tiktokId}?autoplay=1`}
                             className="w-full border-0"
                             style={{ height: "580px" }}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
