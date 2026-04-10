@@ -57,7 +57,7 @@ const ContentSearchPage = () => {
     staleTime: 30000,
   });
 
-  // Pre-score collection mutation
+  // Pre-score collection mutation (includes tier selection)
   const prescoreMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore");
@@ -66,6 +66,52 @@ const ContentSearchPage = () => {
     },
     onSuccess: () => {
       refetchPrescores();
+    },
+  });
+
+  // Batch queue status
+  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery({
+    queryKey: ["battle-batch-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+        body: { action: "status" },
+      });
+      if (error) return null;
+      return data;
+    },
+    enabled: viewMode === "prescore",
+    staleTime: 5000,
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (d && (d.pending > 0 || d.running > 0)) return 3000;
+      return false;
+    },
+  });
+
+  // Start batch collection
+  const startBatchMutation = useMutation({
+    mutationFn: async (starIds: string[]) => {
+      // Start the queue
+      const { data: startResult, error: startErr } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+        body: { action: "start", star_ids: starIds },
+      });
+      if (startErr) throw startErr;
+
+      // Process all items sequentially by polling
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+          body: { action: "process_next" },
+        });
+        if (error) throw error;
+        hasMore = data?.has_more ?? false;
+        refetchBatchStatus();
+      }
+
+      return startResult;
+    },
+    onSuccess: () => {
+      refetchBatchStatus();
     },
   });
 
