@@ -514,6 +514,21 @@ Deno.serve(async (req) => {
       total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
     };
 
+    // ── Atomic replacement: delete previous runs/items for this star ──
+    // Delete items first (FK), then runs
+    const { data: oldRuns } = await sb
+      .from("ktrenz_b2_runs")
+      .select("id")
+      .eq("star_id", star_id);
+    if (oldRuns && oldRuns.length > 0) {
+      const oldRunIds = oldRuns.map((r: any) => r.id);
+      for (let i = 0; i < oldRunIds.length; i += 50) {
+        const chunk = oldRunIds.slice(i, i + 50);
+        await sb.from("ktrenz_b2_items").delete().in("run_id", chunk);
+      }
+      await sb.from("ktrenz_b2_runs").delete().eq("star_id", star_id);
+    }
+
     // ── Save to B2 tables ──
     const { data: runData, error: runErr } = await sb
       .from("ktrenz_b2_runs")
