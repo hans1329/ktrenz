@@ -2738,6 +2738,36 @@ export type Database = {
           },
         ]
       }
+      ktrenz_b2_prescores: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          news_count: number
+          pre_score: number
+          scored_at: string
+          star_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          news_count?: number
+          pre_score?: number
+          scored_at?: string
+          star_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          news_count?: number
+          pre_score?: number
+          scored_at?: string
+          star_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_b2_runs: {
         Row: {
           content_score: number
