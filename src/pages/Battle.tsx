@@ -211,13 +211,15 @@ function ArtistSection({
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
 
-  // Initialize scroll to the middle (original) set
+  // Initialize scroll to the first card in the middle (original) set
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
+    // Immediately set scroll position (no animation) to first original card
+    el.scrollLeft = 0;
     requestAnimationFrame(() => {
       const child = el.children[offset] as HTMLElement;
-      if (child) el.scrollLeft = child.offsetLeft;
+      if (child) el.scrollLeft = child.offsetLeft - el.offsetLeft;
     });
   }, [itemCount, offset]);
 
