@@ -27,6 +27,10 @@ const FIELD_MAP: Record<string, { source: string; targets: Record<Lang, string> 
     source: "context_ko",
     targets: { en: "context", ja: "context_ja", zh: "context_zh" },
   },
+  "ktrenz_b2_items.title": {
+    source: "title",
+    targets: { en: "title_en", ja: "title_ja", zh: "title_zh" },
+  },
 };
 
 const langLabel: Record<Lang, string> = {
