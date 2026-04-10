@@ -1,0 +1,1 @@
+TRUNCATE public.ktrenz_b2_prescores;
