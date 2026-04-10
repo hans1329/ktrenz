@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface B2Item {
   id: string;
