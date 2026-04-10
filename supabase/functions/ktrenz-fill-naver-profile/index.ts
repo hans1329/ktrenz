@@ -345,11 +345,13 @@ function buildSocialUpdates(
   const merged = { ...existing };
   const changes: Record<string, string> = {};
 
-  // _not_found나 빈값, unverified인 경우만 업데이트
+  // 빈값/_not_found/unverified이면 무조건 업데이트, 기존 값과 다르면 덮어쓰기
   const shouldUpdate = (key: string, newVal: string | null): boolean => {
     if (!newVal) return false;
     const current = existing[key];
     if (!current || current === "_not_found" || existing[`${key}_unverified`] === "true") return true;
+    // 기존 값과 다르면 네이버 감지 값으로 덮어쓰기
+    if (current !== newVal) return true;
     return false;
   };
 
