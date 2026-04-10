@@ -696,6 +696,8 @@ export default function Battle() {
 
     setPredictions((prev) => [...prev, prediction]);
     updatePairState(pairIdx, { submitted: true });
+    // Auto-collapse submitted battle in live tab
+    setCollapsedPairs(prev => new Set(prev).add(pairIdx));
 
     const capturedPickedRunId = state.pickedRunId;
     const capturedSelectedBand = state.selectedBand;
