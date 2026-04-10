@@ -220,11 +220,13 @@ function ArtistSection({
         const scrollLeft = el.scrollLeft;
         let closest = 0;
         let minDist = Infinity;
+        // Only check actual card elements, not the spacer
         children.forEach((child, i) => {
+          if (i >= itemCount) return;
           const dist = Math.abs(child.offsetLeft - scrollLeft);
           if (dist < minDist) { minDist = dist; closest = i; }
         });
-        setActiveIndex(closest);
+        setActiveIndex(Math.min(closest, itemCount - 1));
       });
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
