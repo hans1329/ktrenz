@@ -61,24 +61,15 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// star_category별 수식어 매핑
-const CATEGORY_QUALIFIER: Record<string, string> = {
-  kpop: "가수",
-  actor: "배우",
-  youtuber: "유튜버",
-  influencer: "인플루언서",
-  comedian: "개그맨",
-  model: "모델",
-  athlete: "선수",
-};
+// search_qualifier는 DB ktrenz_stars.search_qualifier 컬럼에서 가져옴
 
 // star_type + star_category 기반 검색어 생성
 function buildSearchQuery(
-  star: { name_ko: string | null; display_name: string; star_type: string; star_category: string },
+  star: { name_ko: string | null; display_name: string; star_type: string; search_qualifier: string | null },
   groupNameKo: string | null
 ): string {
   const name = star.name_ko || star.display_name;
-  const qualifier = CATEGORY_QUALIFIER[star.star_category] || "연예인";
+  const qualifier = star.search_qualifier || "연예인";
 
   switch (star.star_type) {
     case "member":
@@ -124,7 +115,7 @@ Deno.serve(async (req) => {
     // Get all active stars with group info
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_category, image_url, star_type, group_star_id")
+      .select("id, display_name, name_ko, star_category, image_url, star_type, group_star_id, search_qualifier")
       .eq("is_active", true)
       .order("display_name");
 

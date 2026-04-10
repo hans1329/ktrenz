@@ -4662,6 +4662,7 @@ export type Database = {
           musicbrainz_id: string | null
           name_ko: string | null
           namuwiki_url: string | null
+          search_qualifier: string | null
           social_handles: Json | null
           star_category: string
           star_type: string
@@ -4683,6 +4684,7 @@ export type Database = {
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null
+          search_qualifier?: string | null
           social_handles?: Json | null
           star_category?: string
           star_type: string
@@ -4704,6 +4706,7 @@ export type Database = {
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null
+          search_qualifier?: string | null
           social_handles?: Json | null
           star_category?: string
           star_type?: string
