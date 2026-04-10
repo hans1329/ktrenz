@@ -436,29 +436,65 @@ Deno.serve(async (req) => {
                   updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
                 }
               }
-              // Fallback: extract first large image from article body
+              // Fallback: robust body image extraction (ported from trend-detect)
               if (!updated.thumbnail) {
-                const bodyImgMatches = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
-                for (const imgTag of bodyImgMatches) {
-                  // Skip tiny icons, logos, banners, sns icons, ads
-                  if (/ico_|btn_|logo|banner|ad_|\.gif/i.test(imgTag)) continue;
-                  // Prefer images with width >= 300 or no width constraint
-                  const widthMatch = imgTag.match(/width=["']?(\d+)/i);
-                  if (widthMatch && parseInt(widthMatch[1]) < 200) continue;
-                  const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
-                  if (srcMatch?.[1]) {
-                    let imgUrl = srcMatch[1];
-                    if (imgUrl.startsWith("//")) imgUrl = `https:${imgUrl}`;
-                    else if (imgUrl.startsWith("/")) {
-                      const origin = new URL(item.url).origin;
-                      imgUrl = `${origin}${imgUrl}`;
-                    }
-                    // Skip data URIs and very short paths
-                    if (!imgUrl.startsWith("data:") && imgUrl.length > 20) {
-                      updated.thumbnail = imgUrl;
-                      break;
-                    }
+                function extractAttr(tag: string, attr: string): string | null {
+                  const m = tag.match(new RegExp(`\\b${attr}=(?:["']([^"']+)["']|([^\\s>]+))`, "i"));
+                  return m?.[1] || m?.[2] || null;
+                }
+                function parseSrcset(raw: string): string | null {
+                  const parts = raw.split(/,\s+(?=https?:\/\/|\/)/);
+                  const urls: string[] = [];
+                  for (const p of parts) {
+                    const t = p.trim();
+                    if (!t) continue;
+                    const si = t.search(/\s+\d+(\.\d+)?[wx]\s*$/);
+                    const u = si > 0 ? t.slice(0, si).trim() : t;
+                    if (u && !u.startsWith("data:")) urls.push(u);
                   }
+                  return urls.length > 0 ? urls[urls.length - 1] : null;
+                }
+                function resolveImgUrl(src: string): string | null {
+                  if (!src || src.length < 3) return null;
+                  if (src.startsWith("//")) return `https:${src}`;
+                  if (src.startsWith("http")) return src;
+                  try {
+                    const base = new URL(item.url);
+                    return src.startsWith("/") ? `${base.origin}${src}` : `${base.origin}/${src}`;
+                  } catch { return null; }
+                }
+
+                const imgTagRegex = /<img[^>]*>/gi;
+                let imgTagMatch;
+                while ((imgTagMatch = imgTagRegex.exec(html)) !== null) {
+                  const tag = imgTagMatch[0];
+
+                  // Determine src: data-srcset > data-src > srcset > src
+                  let src: string | null = null;
+                  const ds = extractAttr(tag, "data-srcset");
+                  if (ds) src = parseSrcset(ds);
+                  if (!src) { const d = extractAttr(tag, "data-src"); if (d && !d.startsWith("data:")) src = d; }
+                  if (!src) { const ss = extractAttr(tag, "srcset"); if (ss) src = parseSrcset(ss); }
+                  if (!src) { const s = extractAttr(tag, "src"); if (s && !s.startsWith("data:")) src = s; }
+                  if (!src) continue;
+
+                  // Filter out non-photo assets
+                  if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
+                  if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|ico_|btn_|ad_|\/menu\/|\/sns\d|\/gong\.|\/common\/|\/layout\//i.test(src)) continue;
+
+                  // Skip sidebar/related article areas
+                  const lb = html.slice(Math.max(0, imgTagMatch.index - 500), imgTagMatch.index);
+                  if (/class=["'][^"']*(?:news_slide|best_click|rank|aside|related|recommend|popular|sidebar)["']|id=["'](?:aside|sidebar|taboola)["']/i.test(lb)) continue;
+
+                  // Width filter
+                  const wm = extractAttr(tag, "width");
+                  if (wm && parseInt(wm) < 200) continue;
+
+                  const resolved = resolveImgUrl(src.replace(/&amp;/g, "&"));
+                  if (!resolved || resolved.includes("data:image/") || resolved.length < 20) continue;
+
+                  updated.thumbnail = resolved;
+                  break;
                 }
               }
             }
