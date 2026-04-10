@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, X, Loader2, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,7 +40,7 @@ const SPOTIFY_GOAL = 9000;
 const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: () => void; kPoints: number }) => {
   if (!open) return null;
   const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
-  return (
+  return createPortal(
     <>
       <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
       <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(320px,90vw)] bg-card rounded-2xl p-5 shadow-xl space-y-4">
@@ -69,7 +70,8 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
           Close
         </button>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 
