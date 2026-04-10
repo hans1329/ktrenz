@@ -1075,14 +1075,15 @@ export default function Battle() {
                       const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
                       const shortcode = instaMatch?.[2] || meta.embed_shortcode;
                       if (shortcode) {
+                        const instaType = instaMatch?.[1] || "p";
+                        const embedPath = instaType === "reel" ? "reel" : "p";
                         return (
                           <iframe
-                            src={`https://www.instagram.com/p/${shortcode}/embed/`}
+                            src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
                             className="w-full border-0"
                             style={{ height: "480px" }}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
-                            loading="lazy"
                             referrerPolicy="no-referrer"
                           />
                         );
