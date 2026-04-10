@@ -77,7 +77,7 @@ function buildSearchQuery(
     case "solo":
       return `${name} ${qualifier}`;
     case "group":
-      return name;
+      return `${name} ${qualifier}`;
     default:
       return `${name} ${qualifier}`;
   }
