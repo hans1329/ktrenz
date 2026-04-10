@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface B2Item {
   id: string;
@@ -406,10 +407,14 @@ interface Prediction {
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t: globalT, language } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
   const { translateIfNeeded } = useFieldTranslation();
+
+  // Determine unlocked battle count based on user tier
+  const userLevel = profile?.current_level ?? 1;
+  const unlockedBattleCount = userLevel >= 16 ? 10 : userLevel >= 6 ? 5 : 3;
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
@@ -494,7 +499,7 @@ export default function Battle() {
     const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
     const pairs: BattlePair[] = [];
-    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 5; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
@@ -626,18 +631,29 @@ export default function Battle() {
 
         {/* All battle pairs rendered vertically */}
         {battlePairs.map((pair, pairIdx) => {
+          const isLocked = pairIdx >= unlockedBattleCount;
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
           const pairItems = pair.items;
           const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
           return (
-            <div key={pairIdx} className="space-y-5">
+            <div key={pairIdx} className={cn("space-y-5 relative", isLocked && "opacity-40 pointer-events-none select-none")}>
               {pairIdx > 0 && (
                 <div className="my-10 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
                   <div className="flex-1 h-px bg-primary/30" />
                   <span className="text-[11px] font-bold text-primary-foreground uppercase tracking-widest bg-primary rounded-full px-4 py-1.5 border border-primary/40 ring-1 ring-primary/30">Battle {pairIdx + 1}</span>
                   <div className="flex-1 h-px bg-primary/30" />
+                </div>
+              )}
+
+              {/* Lock overlay for tier-restricted battles */}
+              {isLocked && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto">
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-card/90 border border-border shadow-lg">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">다음 등급부터 참여 가능</span>
+                  </div>
                 </div>
               )}
 
