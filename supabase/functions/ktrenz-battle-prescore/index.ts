@@ -36,37 +36,44 @@ async function getNaverNewsCount(
   clientId: string, clientSecret: string, query: string
 ): Promise<number> {
   try {
-    // 네이버 API는 ds/de 파라미터를 공식 지원하지 않으므로
-    // 최근 기사 100건을 가져와서 pubDate로 24시간 내 기사만 직접 카운트
     const now = Date.now();
     const twoDaysAgo = now - 48 * 60 * 60 * 1000;
+    let totalCount = 0;
+    let start = 1;
+    const maxStart = 1000; // 네이버 API start 최대값
 
-    const url = new URL("https://openapi.naver.com/v1/search/news.json");
-    url.searchParams.set("query", query);
-    url.searchParams.set("display", "100");
-    url.searchParams.set("sort", "date");
-    const res = await fetchWithTimeout(url.toString(), {
-      headers: {
-        "X-Naver-Client-Id": clientId,
-        "X-Naver-Client-Secret": clientSecret,
-      },
-    });
-    if (!res.ok) return 0;
-    const data = await res.json();
-    if (!data.items || data.items.length === 0) return 0;
+    while (start <= maxStart) {
+      const url = new URL("https://openapi.naver.com/v1/search/news.json");
+      url.searchParams.set("query", query);
+      url.searchParams.set("display", "100");
+      url.searchParams.set("start", String(start));
+      url.searchParams.set("sort", "date");
+      const res = await fetchWithTimeout(url.toString(), {
+        headers: {
+          "X-Naver-Client-Id": clientId,
+          "X-Naver-Client-Secret": clientSecret,
+        },
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      if (!data.items || data.items.length === 0) break;
 
-    // pubDate 파싱하여 24시간 내 기사만 카운트
-    let count = 0;
-    for (const item of data.items) {
-      const pubTime = new Date(item.pubDate).getTime();
-      if (pubTime >= twoDaysAgo) {
-        count++;
-      } else {
-        // sort=date이므로 오래된 기사가 나오면 이후는 모두 오래된 것
-        break;
+      let reachedOld = false;
+      for (const item of data.items) {
+        const pubTime = new Date(item.pubDate).getTime();
+        if (pubTime >= twoDaysAgo) {
+          totalCount++;
+        } else {
+          reachedOld = true;
+          break;
+        }
       }
+
+      if (reachedOld || data.items.length < 100) break;
+      start += 100;
     }
-    return count;
+
+    return totalCount;
   } catch {
     return 0;
   }
