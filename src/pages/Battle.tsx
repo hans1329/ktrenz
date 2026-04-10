@@ -246,17 +246,24 @@ function ArtistSection({
       // Debounce: jump to real card only after scrolling stops
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(() => {
-        const currentClosest = closest;
-        // If in clone-before zone, jump to corresponding real card
-        if (currentClosest < offset) {
-          const realTarget = offset + (itemCount - (offset - currentClosest));
-          const target = el.children[realTarget] as HTMLElement;
+        const curChildren = Array.from(el.children) as HTMLElement[];
+        const curScroll = el.scrollLeft;
+        let cur = 0;
+        let curMin = Infinity;
+        curChildren.forEach((child, i) => {
+          const d = Math.abs(child.offsetLeft - curScroll);
+          if (d < curMin) { curMin = d; cur = i; }
+        });
+        // If snapped to a clone-before card, jump to corresponding real card
+        if (cur < offset) {
+          const realIdx = itemCount - (offset - cur);
+          const target = curChildren[offset + realIdx] as HTMLElement;
           if (target) el.scrollLeft = target.offsetLeft;
         }
-        // If in clone-after zone, jump to corresponding real card
-        else if (currentClosest >= offset + itemCount) {
-          const realTarget = offset + (currentClosest - offset - itemCount);
-          const target = el.children[realTarget] as HTMLElement;
+        // If snapped to a clone-after card, jump to corresponding real card
+        else if (cur >= offset + itemCount) {
+          const realIdx = cur - offset - itemCount;
+          const target = curChildren[offset + realIdx] as HTMLElement;
           if (target) el.scrollLeft = target.offsetLeft;
         }
       }, 120);
