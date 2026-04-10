@@ -25,43 +25,62 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOU
   }
 }
 
-async function getNaverNewsCount(
+async function fetchNaverPage(
+  clientId: string, clientSecret: string, query: string, start: number, display: number
+): Promise<{ items: any[]; total: number } | null> {
+  let retries = 0;
+  const maxRetries = 3;
+  while (retries < maxRetries) {
+    const url = new URL("https://openapi.naver.com/v1/search/news.json");
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", String(display));
+    url.searchParams.set("start", String(start));
+    url.searchParams.set("sort", "date");
+    const res = await fetchWithTimeout(url.toString(), {
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
+    });
+    if (res.status === 429) {
+      retries++;
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
+      continue;
+    }
+    if (!res.ok) return null;
+    return await res.json();
+  }
+  return null;
+}
+
+async function getNaverNewsCount48h(
   clientId: string, clientSecret: string, query: string
 ): Promise<number> {
   try {
-    // 단일 API 호출로 total 필드를 사용 — 페이지네이션 불필요, 1000 캡 없음
-    const url = new URL("https://openapi.naver.com/v1/search/news.json");
-    url.searchParams.set("query", query);
-    url.searchParams.set("display", "1");
-    url.searchParams.set("sort", "date");
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    let count = 0;
+    let start = 1;
+    const display = 100;
+    const maxStart = 1000; // API hard limit
 
-    let res: Response | null = null;
-    let retries = 0;
-    const maxRetries = 3;
+    while (start <= maxStart) {
+      const data = await fetchNaverPage(clientId, clientSecret, query, start, display);
+      if (!data || !data.items || data.items.length === 0) break;
 
-    while (retries < maxRetries) {
-      res = await fetchWithTimeout(url.toString(), {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-      });
-      if (res.status === 429) {
-        retries++;
-        console.log(`[prescore] 429 rate limit for "${query}", retry ${retries}/${maxRetries}`);
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
-        continue;
+      let allOld = false;
+      for (const item of data.items) {
+        const pubDate = new Date(item.pubDate).getTime();
+        if (pubDate >= cutoff) {
+          count++;
+        } else {
+          allOld = true;
+          break;
+        }
       }
-      break;
+      if (allOld || data.items.length < display) break;
+      start += display;
     }
-
-    if (!res || !res.ok) {
-      console.log(`[prescore] API fail for "${query}", status=${res?.status}`);
-      return 0;
-    }
-
-    const data = await res.json();
-    return data.total ?? 0;
+    return count;
   } catch (e) {
     console.log(`[prescore] Error for "${query}":`, e);
     return 0;
