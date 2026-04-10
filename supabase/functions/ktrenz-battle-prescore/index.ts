@@ -61,16 +61,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// star_category별 수식어 매핑
-const CATEGORY_QUALIFIER: Record<string, string> = {
-  kpop: "가수",
-  actor: "배우",
-  youtuber: "유튜버",
-  influencer: "인플루언서",
-  comedian: "개그맨",
-  model: "모델",
-  athlete: "선수",
-};
+// search_qualifier는 DB ktrenz_stars.search_qualifier 컬럼에서 가져옴
 
 // star_type + star_category 기반 검색어 생성
 function buildSearchQuery(
