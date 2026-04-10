@@ -219,12 +219,16 @@ Deno.serve(async (req) => {
     const totalCandidates = state.total_candidates || 0;
 
     // ── 2. 배치 대상 조회 ──
+    // forceAll: 오프셋 기반 (대상이 줄어들지 않음)
+    // 필터 모드: 항상 offset=0 (처리된 항목은 필터에서 빠짐)
     const filter = forceAll
       ? `is_active=eq.true`
       : `is_active=eq.true&or=(search_qualifier.eq.가수,search_qualifier.is.null,social_handles->>instagram.is.null,social_handles.is.null)`;
 
+    const queryOffset = forceAll ? currentOffset : 0;
+
     const starsResp = await fetch(
-      `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name,star_type,group_star_id,search_qualifier,social_handles&${filter}&order=name_ko&offset=${currentOffset}&limit=${BATCH_SIZE}`,
+      `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name,star_type,group_star_id,search_qualifier,social_handles&${filter}&order=name_ko&offset=${queryOffset}&limit=${BATCH_SIZE}`,
       { headers: dbHeaders }
     );
     const stars = await starsResp.json();
