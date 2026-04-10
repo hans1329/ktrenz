@@ -385,8 +385,9 @@ interface Prediction {
 export default function Battle() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t: globalT } = useLanguage();
+  const { t: globalT, language } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
+  const { translateIfNeeded } = useFieldTranslation();
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
@@ -488,7 +489,7 @@ export default function Battle() {
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
           // Refetch after translation completes
-          fetchBattleData();
+          loadBattleData();
         });
       }
     }
