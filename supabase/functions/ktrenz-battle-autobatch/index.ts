@@ -204,6 +204,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Action: "clear" — 멈춘 큐 전체 삭제
+    if (action === "clear") {
+      await sb.from("ktrenz_b2_batch_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      return new Response(JSON.stringify({ success: true, action: "clear" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Action: "status" — 현재 큐 상태 조회
     if (action === "status") {
       const { data: queue } = await sb

@@ -742,9 +742,24 @@ const ContentSearchPage = () => {
                   <p className="text-xs font-semibold text-foreground">
                     📦 배치 수집 진행 ({batchStatus.done + batchStatus.error}/{batchStatus.total})
                   </p>
-                  {(batchStatus.pending > 0 || batchStatus.running > 0) && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {(batchStatus.pending > 0 || batchStatus.running > 0) && (
+                      <>
+                        <button
+                          className="text-[10px] text-destructive hover:underline"
+                          onClick={async () => {
+                            await supabase.functions.invoke("ktrenz-battle-autobatch", {
+                              body: { action: "clear" },
+                            });
+                            refetchBatchStatus();
+                          }}
+                        >
+                          중단
+                        </button>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                   <div
