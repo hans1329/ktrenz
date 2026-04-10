@@ -780,7 +780,21 @@ export default function Battle() {
                         <Trophy className="w-4 h-4 text-primary" />
                         {t("predictionSubmitted")}
                       </p>
-                      <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {language === "ko" ? "다음 콘텐츠 스캔 후 결과가 정산됩니다." : language === "ja" ? "次回のコンテンツスキャン後に結果が確定します。" : language === "zh" ? "结果将在下次内容扫描后结算。" : "Results will be settled after the next content scan."}
+                        <br />
+                        {(() => {
+                          const now = new Date();
+                          const tomorrow = new Date(now);
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          tomorrow.setHours(0, 0, 0, 0);
+                          const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
+                          const h = Math.floor(diff / 3600);
+                          const m = Math.floor((diff % 3600) / 60);
+                          const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                          return language === "ko" ? `약 ${timeStr} 후 확인하세요.` : language === "ja" ? `約${timeStr}後にご確認ください。` : language === "zh" ? `请约${timeStr}后查看。` : `Check back in ~${timeStr}.`;
+                        })()}
+                      </p>
                       <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
                         <div>
                           <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
