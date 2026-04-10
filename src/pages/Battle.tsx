@@ -647,6 +647,16 @@ export default function Battle() {
                 </div>
               )}
 
+              {/* Lock overlay for tier-restricted battles */}
+              {isLocked && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto">
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-card/90 border border-border shadow-lg">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">다음 등급부터 참여 가능</span>
+                  </div>
+                </div>
+              )}
+
               {/* Card carousels — full width */}
               <div className="w-full px-2 sm:px-4">
                 {pairRuns.map((run, idx) => (
