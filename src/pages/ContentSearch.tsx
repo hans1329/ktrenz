@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords } from "lucide-react";
+import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords, Trophy, XCircle, Clock } from "lucide-react";
 import SEO from "@/components/SEO";
 import SmartImage from "@/components/SmartImage";
 
@@ -131,6 +131,68 @@ const ContentSearchPage = () => {
         .limit(8);
 
       return items || [];
+    },
+    enabled: !!collectedStarId,
+    staleTime: 60000,
+  });
+
+  // Battle history for the selected collected star
+  const { data: battleHistory } = useQuery({
+    queryKey: ["battle-history", collectedStarId],
+    queryFn: async () => {
+      // Get all run IDs for this star
+      const { data: runs } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("id, content_score, created_at")
+        .eq("star_id", collectedStarId);
+      if (!runs || runs.length === 0) return [];
+
+      const runIds = runs.map((r: any) => r.id);
+
+      // Get predictions where this star was picked or was opponent
+      const { data: asPicked } = await (supabase as any)
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, settled_at, battle_date, user_id")
+        .in("picked_run_id", runIds);
+
+      const { data: asOpponent } = await (supabase as any)
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, settled_at, battle_date, user_id")
+        .in("opponent_run_id", runIds);
+
+      // Combine and deduplicate
+      const all = [...(asPicked || []), ...(asOpponent || [])];
+      const unique = Array.from(new Map(all.map((p: any) => [p.id, p])).values());
+
+      // Get opponent star info
+      const opponentRunIds = unique.map((p: any) =>
+        runIds.includes(p.picked_run_id) ? p.opponent_run_id : p.picked_run_id
+      );
+      const { data: opponentRuns } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("id, star_id, content_score")
+        .in("id", [...new Set(opponentRunIds)]);
+
+      const opponentRunMap = new Map((opponentRuns || []).map((r: any) => [r.id, r]));
+      const opponentStarIds = [...new Set((opponentRuns || []).map((r: any) => r.star_id))];
+      const { data: opponentStars } = await (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, image_url")
+        .in("id", opponentStarIds);
+      const starMap = new Map((opponentStars || []).map((s: any) => [s.id, s]));
+
+      return unique.map((p: any) => {
+        const isPickedStar = runIds.includes(p.picked_run_id);
+        const opponentRunId = isPickedStar ? p.opponent_run_id : p.picked_run_id;
+        const opponentRun = opponentRunMap.get(opponentRunId);
+        const opponentStar = opponentRun ? starMap.get((opponentRun as any).star_id) : null;
+        return {
+          ...p,
+          isPickedStar,
+          opponentName: (opponentStar as any)?.display_name || "Unknown",
+          opponentImage: (opponentStar as any)?.image_url,
+        };
+      }).sort((a: any, b: any) => new Date(b.battle_date).getTime() - new Date(a.battle_date).getTime());
     },
     enabled: !!collectedStarId,
     staleTime: 60000,
@@ -387,6 +449,67 @@ const ContentSearchPage = () => {
 
                 {collectedItems && !collectedLoading && (
                   <>
+                    {/* Battle History */}
+                    {battleHistory && battleHistory.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                          <Swords className="w-4 h-4 text-primary" />
+                          배틀 전적
+                          <span className="text-xs text-muted-foreground font-normal">
+                            ({battleHistory.filter((b: any) => b.status === "won" && b.isPickedStar).length}W / 
+                            {battleHistory.filter((b: any) => b.status === "lost" && b.isPickedStar).length}L / 
+                            {battleHistory.filter((b: any) => b.status === "pending").length}P)
+                          </span>
+                        </h3>
+                        <div className="space-y-2">
+                          {battleHistory.map((battle: any) => (
+                            <div
+                              key={battle.id}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl border",
+                                battle.status === "won" ? "bg-emerald-500/5 border-emerald-500/20" :
+                                battle.status === "lost" ? "bg-red-500/5 border-red-500/20" :
+                                "bg-muted/50 border-border/40"
+                              )}
+                            >
+                              {/* Status icon */}
+                              {battle.status === "won" ? (
+                                <Trophy className="w-4 h-4 text-emerald-500 shrink-0" />
+                              ) : battle.status === "lost" ? (
+                                <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                              )}
+                              {/* Opponent info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-medium text-foreground">vs {battle.opponentName}</span>
+                                  <span className={cn(
+                                    "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                    battle.band === "surge" ? "bg-red-500/10 text-red-500" :
+                                    battle.band === "rising" ? "bg-orange-500/10 text-orange-500" :
+                                    "bg-emerald-500/10 text-emerald-500"
+                                  )}>
+                                    {battle.band}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {battle.battle_date} · {battle.isPickedStar ? "이 아티스트 선택됨" : "상대로 선택됨"}
+                                </p>
+                              </div>
+                              {/* Reward */}
+                              {battle.status === "won" && battle.reward_amount > 0 && (
+                                <span className="text-xs font-bold text-emerald-500">+{battle.reward_amount}P</span>
+                              )}
+                              {battle.status === "pending" && (
+                                <span className="text-[10px] text-muted-foreground">대기중</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Source filter tabs */}
                     <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4 overflow-x-auto">
                       <TabButton active={activeSource === "all"} onClick={() => setActiveSource("all")}>
