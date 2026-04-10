@@ -608,9 +608,9 @@ export default function Battle() {
     <div className="min-h-screen bg-muted/30">
       <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
         <V3Header rightSlot={
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/60">
-            <Ticket className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-foreground">{remainingTickets}</span>
+          <div className="flex items-center gap-1.5">
+            <Ticket className="w-5 h-5 text-primary" />
+            <span className="text-base font-extrabold text-foreground">{remainingTickets}</span>
           </div>
         } />
       </div>
