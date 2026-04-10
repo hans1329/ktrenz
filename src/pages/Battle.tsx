@@ -496,6 +496,7 @@ export default function Battle() {
   const [showHistory, setShowHistory] = useState(false);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [showTicketInfo, setShowTicketInfo] = useState(false);
+  const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -612,7 +613,7 @@ export default function Battle() {
       const allRunIds = validPairs.flatMap(p => p.runs.map(r => r.id));
       const { data: existingPreds } = await supabase
         .from("b2_predictions")
-        .select("picked_run_id, opponent_run_id, band")
+        .select("picked_run_id, opponent_run_id, band, status, settled_at")
         .eq("user_id", currentUser.id)
         .in("picked_run_id", allRunIds);
 
@@ -644,7 +645,7 @@ export default function Battle() {
             band: p.band as Band,
             pickedStarName: pickedRun?.star?.display_name || "Unknown",
             opponentStarName: opponentRun?.star?.display_name || "Unknown",
-            status: "pending",
+            status: (p as any).status || "pending",
             created_at: new Date().toISOString(),
           };
         });
@@ -748,10 +749,47 @@ export default function Battle() {
             {t("pickWinner")}
           </h2>
           <FlipTimer />
+
+          {/* Filter Tabs */}
+          <div className="flex items-center justify-center gap-1.5">
+            {([
+              { key: "live" as const, label: language === "ko" ? "라이브" : language === "ja" ? "ライブ" : language === "zh" ? "进行中" : "Live" },
+              { key: "settled" as const, label: language === "ko" ? "정산완료" : language === "ja" ? "精算済" : language === "zh" ? "已结算" : "Settled" },
+              { key: "myBets" as const, label: language === "ko" ? "내 참여" : language === "ja" ? "参加済" : language === "zh" ? "我的参与" : "My Bets" },
+            ]).map(tab => {
+              const count = battlePairs.filter((_, idx) => {
+                const state = getPairState(idx);
+                if (tab.key === "live") return !state.submitted || predictions.find(p => p.pickedRunId === state.pickedRunId)?.status === "pending";
+                if (tab.key === "settled") return state.submitted && predictions.find(p => p.pickedRunId === state.pickedRunId)?.status !== "pending";
+                return state.submitted;
+              }).length;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setBattleFilter(tab.key)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
+                    battleFilter === tab.key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label} {count > 0 && <span className="ml-0.5 opacity-70">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* All battle pairs rendered vertically */}
+        {/* Filtered battle pairs */}
         {battlePairs.map((pair, pairIdx) => {
+          // Filter logic
+          const state = getPairState(pairIdx);
+          const pred = predictions.find(p => p.pickedRunId === state.pickedRunId);
+          if (battleFilter === "live" && state.submitted && pred?.status !== "pending") return null;
+          if (battleFilter === "settled" && (!state.submitted || pred?.status === "pending")) return null;
+          if (battleFilter === "myBets" && !state.submitted) return null;
+
           const isLocked = pairIdx >= unlockedBattleCount;
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
@@ -893,7 +931,24 @@ export default function Battle() {
           );
         })}
 
-        {/* History Section */}
+        {/* Empty state for filter */}
+        {battlePairs.every((_, idx) => {
+          const s = getPairState(idx);
+          const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
+          if (battleFilter === "live") return s.submitted && p?.status !== "pending";
+          if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
+          if (battleFilter === "myBets") return !s.submitted;
+          return false;
+        }) && (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            {battleFilter === "settled"
+              ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
+              : battleFilter === "myBets"
+              ? (language === "ko" ? "참여한 배틀이 없습니다" : "No battles joined yet")
+              : (language === "ko" ? "라이브 배틀이 없습니다" : "No live battles")}
+          </div>
+        )}
+
         <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
           {predictions.length > 0 && (
             <div className="pb-4">
