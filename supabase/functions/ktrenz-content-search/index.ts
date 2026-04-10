@@ -498,20 +498,37 @@ Deno.serve(async (req) => {
         ...redditEnriched.map((i: any) => ({ ...i, source: i.source || "reddit" })),
       ];
 
-      const b2Items = allSourceItems.map((item: any) => ({
-        run_id: runId,
-        star_id,
-        source: item.source,
-        title: (item.title || "").substring(0, 500),
-        description: (item.description || "").substring(0, 1000),
-        url: item.url || "",
-        thumbnail: item.thumbnail || null,
-        has_thumbnail: !!item.thumbnail,
-        published_at: item.date || null,
-        engagement_score: contentScore,
-        card_status: "available",
-        metadata: item.metadata || {},
-      }));
+      // Validate thumbnail URLs with HEAD request (parallel, with timeout)
+      const validateThumbnail = async (url: string | null): Promise<string | null> => {
+        if (!url) return null;
+        try {
+          const res = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
+          if (res.ok && (res.headers.get("content-type") || "").startsWith("image")) return url;
+          return null;
+        } catch { return null; }
+      };
+
+      const thumbnailChecks = await Promise.all(
+        allSourceItems.map((item: any) => validateThumbnail(item.thumbnail))
+      );
+
+      const b2Items = allSourceItems.map((item: any, idx: number) => {
+        const validThumb = thumbnailChecks[idx];
+        return {
+          run_id: runId,
+          star_id,
+          source: item.source,
+          title: (item.title || "").substring(0, 500),
+          description: (item.description || "").substring(0, 1000),
+          url: item.url || "",
+          thumbnail: validThumb,
+          has_thumbnail: !!validThumb,
+          published_at: item.date || null,
+          engagement_score: contentScore,
+          card_status: "available",
+          metadata: item.metadata || {},
+        };
+      });
 
       // Batch insert (Supabase default limit ~1000)
       const BATCH = 200;
