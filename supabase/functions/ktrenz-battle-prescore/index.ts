@@ -85,12 +85,12 @@ function buildSearchQuery(
       if (groupNameKo) return `${groupNameKo} ${nameKo || nameEn}`;
       return `${nameKo || nameEn} ${qualifier}`;
     case "solo":
-      // 한글명과 영문명이 다르면 OR 결합
-      if (nameKo && nameKo !== nameEn) return `${nameKo} OR ${nameEn}`;
+      // 네이버 API는 | 를 OR 연산자로 사용
+      if (nameKo && nameKo !== nameEn) return `"${nameKo}" | "${nameEn}"`;
       return `${nameKo || nameEn} ${qualifier}`;
     case "group":
-      // 그룹은 한글명 OR 영문명으로 검색 (예: "방탄소년단 OR BTS")
-      if (nameKo && nameKo !== nameEn) return `${nameKo} OR ${nameEn}`;
+      // 그룹은 한글명 | 영문명으로 검색 (예: "방탄소년단" | "BTS")
+      if (nameKo && nameKo !== nameEn) return `"${nameKo}" | "${nameEn}"`;
       return `${nameKo || nameEn} ${qualifier}`;
     default:
       return `${nameKo || nameEn} ${qualifier}`;
