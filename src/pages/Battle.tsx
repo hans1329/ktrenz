@@ -499,6 +499,7 @@ export default function Battle() {
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [showTicketInfo, setShowTicketInfo] = useState(false);
   const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
+  const [collapsedPairs, setCollapsedPairs] = useState<Set<number>>(new Set());
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -635,6 +636,8 @@ export default function Battle() {
         });
         if (Object.keys(restoredStates).length > 0) {
           setPairStates(prev => ({ ...prev, ...restoredStates }));
+          // Auto-collapse restored submitted battles
+          setCollapsedPairs(new Set(Object.keys(restoredStates).map(Number)));
         }
 
         const restoredPredictions: Prediction[] = existingPreds.map(p => {
@@ -695,6 +698,8 @@ export default function Battle() {
 
     setPredictions((prev) => [...prev, prediction]);
     updatePairState(pairIdx, { submitted: true });
+    // Auto-collapse submitted battle in live tab
+    setCollapsedPairs(prev => new Set(prev).add(pairIdx));
 
     const capturedPickedRunId = state.pickedRunId;
     const capturedSelectedBand = state.selectedBand;
@@ -848,9 +853,26 @@ export default function Battle() {
 
           return (
             <div key={pairIdx} className={cn("space-y-5 relative", isLocked && "opacity-40 pointer-events-none select-none")}>
-              <div className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5")}>
+              <div
+                className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5", battleFilter === "live" && pairState.submitted && "cursor-pointer")}
+                onClick={() => {
+                  if (battleFilter === "live" && pairState.submitted) {
+                    setCollapsedPairs(prev => {
+                      const next = new Set(prev);
+                      if (next.has(pairIdx)) next.delete(pairIdx);
+                      else next.add(pairIdx);
+                      return next;
+                    });
+                  }
+                }}
+              >
                 <div className="flex-1 h-px bg-primary/30" />
-                <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}</span>
+                <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1 flex items-center gap-1.5", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>
+                  Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}
+                  {battleFilter === "live" && pairState.submitted && (
+                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", collapsedPairs.has(pairIdx) && "rotate-180")} />
+                  )}
+                </span>
                 <div className="flex-1 h-px bg-primary/30" />
               </div>
 
@@ -864,7 +886,9 @@ export default function Battle() {
                 </div>
               )}
 
-
+              {/* Collapsible content for submitted pairs in live tab */}
+              {battleFilter === "live" && pairState.submitted && collapsedPairs.has(pairIdx) ? null : (
+              <>
 
               {/* Card carousels — full width */}
               <div className="w-full px-2 sm:px-4">
@@ -979,6 +1003,8 @@ export default function Battle() {
                   )
                 )}
               </div>
+              </>
+              )}
             </div>
           );
         })}
