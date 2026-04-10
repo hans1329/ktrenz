@@ -835,7 +835,6 @@ const AdminStars = () => {
               </div>
             </div>
           </div>
-          </div>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={closeDialog}>취소</Button>
