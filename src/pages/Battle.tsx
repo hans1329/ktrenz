@@ -622,124 +622,118 @@ export default function Battle() {
           <FlipTimer />
         </div>
 
-        {/* Card carousels — full width */}
-        {currentPair && (
-          <div className="w-full px-2 sm:px-4">
-            {runs.map((run, idx) => (
-              <div key={run.id}>
-                {idx > 0 && (
-                  <div className="my-6 flex items-center gap-3 px-4">
-                    <div className="flex-1 h-px bg-border/60" />
-                    <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">vs</span>
-                    <div className="flex-1 h-px bg-border/60" />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <ArtistSection
-                    runItems={items[run.id] || []}
-                    starName={run.star?.display_name || "Unknown"}
-                    contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-                    scoreLabel={t("contentScore")}
-                    isPicked={pickedRunId === run.id}
-                    onPick={() => handlePick(run.id)}
-                    onCardTap={(item) => setDrawerItem(item)}
-                    disabled={submitted}
-                    index={idx}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* All battle pairs rendered vertically */}
+        {battlePairs.map((pair, pairIdx) => {
+          const pairState = getPairState(pairIdx);
+          const pairRuns = pair.runs;
+          const pairItems = pair.items;
+          const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
-        {/* Band Selection + Submit — constrained width */}
-        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
-          {/* Band Selection */}
-          {pickedRunId && !submitted && (
-            <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-1">
-                {t("predictGrowth")} <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> <span className="text-primary">{pickedRun?.star?.display_name}</span>
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {BANDS.map((band) => {
-                  const isSelected = selectedBand === band.key;
-                  const BandIcon = band.icon;
-                  const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
-                  return (
-                    <button
-                      key={band.key}
-                      onClick={() => handleBandSelect(band.key)}
-                      className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "ring-2 ring-primary scale-[1.03]" : "hover:ring-1 hover:ring-primary/30"}`}
-                    >
-                      <BandIcon className={`w-6 h-6 sm:w-8 sm:h-8 mb-1 ${band.iconColor}`} />
-                      <span className="text-[10px] sm:text-xs font-medium">{bandLabel}</span>
-                      <span className="text-base sm:text-lg font-extrabold mt-0.5">{band.range}</span>
-                      <span className="text-[10px] sm:text-xs font-bold text-muted-foreground mt-0.5">+{band.reward.toLocaleString()} K</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Submit / Result */}
-          {!submitted ? (
-            pickedRunId && selectedBand ? (
-              <Button onClick={handleSubmit} className="w-full h-12 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-bottom-2">
-                <Zap className="w-5 h-5 mr-2" />
-                {t("submitPrediction")}
-                <span className="ml-2 text-xs font-normal opacity-70">
-                  +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes
-                </span>
-              </Button>
-            ) : null
-          ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  {t("predictionSubmitted")}
-                </p>
-                <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
-                <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
-                  <div>
-                    <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
-                  </div>
-                  <Badge variant="outline" className="text-sm px-3 py-1">
-                    {BANDS.find((b) => b.key === selectedBand)?.label} +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K
-                  </Badge>
-                </div>
-                <div className="pt-2 border-t border-border mt-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
-                    <span className="text-[10px] text-muted-foreground"><span className="font-bold text-foreground">1,250</span> / 9,000 K-Cashes</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500 transition-all"
-                      style={{ width: `${(1250 / 9000) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Next Battle button */}
-              {!allBattlesDone ? (
-                <Button onClick={handleNextBattle} variant="outline" className="w-full h-12 rounded-2xl text-base font-bold">
-                  <ChevronRight className="w-5 h-5 mr-2" />
-                  {t("nextBattle")} ({remainingTickets - 1} {t("dailyRemaining").replace(":", "").trim()})
-                </Button>
-              ) : (
-                <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 text-center">
-                  <p className="text-sm font-bold text-foreground">🎉 {t("allDone")}</p>
+          return (
+            <div key={pairIdx} className="space-y-5">
+              {pairIdx > 0 && (
+                <div className="my-4 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">Battle {pairIdx + 1}</span>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
               )}
+
+              {/* Card carousels — full width */}
+              <div className="w-full px-2 sm:px-4">
+                {pairRuns.map((run, idx) => (
+                  <div key={run.id}>
+                    {idx > 0 && (
+                      <div className="my-6 flex items-center gap-3 px-4">
+                        <div className="flex-1 h-px bg-border/60" />
+                        <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">vs</span>
+                        <div className="flex-1 h-px bg-border/60" />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <ArtistSection
+                        runItems={pairItems[run.id] || []}
+                        starName={run.star?.display_name || "Unknown"}
+                        contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
+                        scoreLabel={t("contentScore")}
+                        isPicked={pairState.pickedRunId === run.id}
+                        onPick={() => handlePick(pairIdx, run.id)}
+                        onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
+                        disabled={pairState.submitted}
+                        index={idx}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Band Selection + Submit — constrained width */}
+              <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
+                {pairState.pickedRunId && !pairState.submitted && (
+                  <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+                      {t("predictGrowth")} <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> <span className="text-primary">{pickedRun?.star?.display_name}</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {BANDS.map((band) => {
+                        const isSelected = pairState.selectedBand === band.key;
+                        const BandIcon = band.icon;
+                        const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                        return (
+                          <button
+                            key={band.key}
+                            onClick={() => handleBandSelect(pairIdx, band.key)}
+                            className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "ring-2 ring-primary scale-[1.03]" : "hover:ring-1 hover:ring-primary/30"}`}
+                          >
+                            <BandIcon className={`w-6 h-6 sm:w-8 sm:h-8 mb-1 ${band.iconColor}`} />
+                            <span className="text-[10px] sm:text-xs font-medium">{bandLabel}</span>
+                            <span className="text-base sm:text-lg font-extrabold mt-0.5">{band.range}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground mt-0.5">+{band.reward.toLocaleString()} K</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit / Result */}
+                {!pairState.submitted ? (
+                  pairState.pickedRunId && pairState.selectedBand ? (
+                    <Button onClick={() => handleSubmit(pairIdx)} className="w-full h-12 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-bottom-2">
+                      <Zap className="w-5 h-5 mr-2" />
+                      {t("submitPrediction")}
+                      <span className="ml-2 text-xs font-normal opacity-70">
+                        +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K-Cashes
+                      </span>
+                    </Button>
+                  ) : null
+                ) : (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                      <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-primary" />
+                        {t("predictionSubmitted")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
+                      <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
+                        <div>
+                          <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+                        </div>
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          {BANDS.find((b) => b.key === pairState.selectedBand)?.label} +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          );
+        })}
 
-
-          {/* History Section */}
+        {/* History Section */}
+        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
           {predictions.length > 0 && (
             <div className="pb-4">
               <button
