@@ -816,35 +816,7 @@ export default function Battle() {
                 </div>
               )}
 
-              {/* My Bets: show result box at top */}
-              {battleFilter === "myBets" && pairState.submitted && (
-                <div className="max-w-lg sm:max-w-4xl mx-auto px-4 mb-4">
-                  <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-primary" />
-                      {t("predictionSubmitted")}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {language === "ko" ? "다음 콘텐츠 스캔 후 결과가 정산됩니다." : language === "ja" ? "次回のコンテンツスキャン後に結果が確定します。" : language === "zh" ? "结果将在下次内容扫描后结算。" : "Results will be settled after the next content scan."}
-                    </p>
-                    <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
-                      <div>
-                        <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
-                      </div>
-                      <div className="text-right space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} {language === "ko" ? "오름 예측" : language === "ja" ? "上昇予測" : language === "zh" ? "上涨预测" : "rise predicted"}
-                        </p>
-                        <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
-                          {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
-                          💎
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {/* Card carousels — full width */}
               <div className="w-full px-2 sm:px-4">
