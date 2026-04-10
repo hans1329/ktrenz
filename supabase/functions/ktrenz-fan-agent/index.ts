@@ -524,7 +524,6 @@ User: "스밍 가이드 보여줘" → {"intent_category":"streaming","sub_topic
 
     await adminClient.from("ktrenz_agent_intents").insert({
       user_id: userId,
-      wiki_entry_id: wikiEntryId || null,
       intent_category: INTENT_CATEGORIES.includes(intent.intent_category) ? intent.intent_category : "general",
       sub_topic: intent.sub_topic || null,
       entities: intent.entities || {},
@@ -557,12 +556,12 @@ async function handleTool(
 
     const { data: scores } = await adminClient
       .from("ktrenz_trend_triggers")
-      .select("artist_name, star_id, wiki_entry_id, influence_index, keyword_category")
+      .select("artist_name, star_id, influence_index, keyword_category")
       .eq("status", "active");
 
     const artistMap = new Map<string, any>();
     for (const t of scores || []) {
-      const key = t.wiki_entry_id || t.star_id || t.artist_name;
+      const key = t.star_id || t.artist_name;
       if (!key) continue;
       const existing = artistMap.get(key);
       if (existing) {
@@ -571,7 +570,7 @@ async function handleTool(
         existing.categories[t.keyword_category] = (existing.categories[t.keyword_category] || 0) + 1;
       } else {
         artistMap.set(key, {
-          wiki_entry_id: t.wiki_entry_id,
+          star_id: t.star_id,
           star_id: t.star_id,
           artist_name: t.artist_name,
           keyword_count: 1,
@@ -641,7 +640,7 @@ async function handleTool(
 
     koNameMap = new Map();
     for (const row of candidates) {
-      if (row.name_ko) koNameMap.set(row.wiki_entry_id, row.name_ko.toLowerCase());
+      if (row.name_ko) koNameMap.set(row.id, row.name_ko.toLowerCase());
     }
     return koNameMap;
   }
