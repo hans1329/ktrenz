@@ -415,6 +415,7 @@ export default function Battle() {
   // Determine unlocked battle count based on user tier
   const userLevel = profile?.current_level ?? 1;
   const unlockedBattleCount = userLevel >= 16 ? 10 : userLevel >= 6 ? 5 : 3;
+  const nextTierName = userLevel >= 16 ? "" : userLevel >= 6 ? (language === "ko" ? "분석가" : "Analyst") : (language === "ko" ? "탐색가" : "Explorer");
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
