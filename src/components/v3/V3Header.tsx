@@ -87,7 +87,7 @@ const SpotifyGoalBar = () => {
         className="flex items-center gap-1.5 px-0.5 py-1 active:opacity-60 transition-opacity"
       >
         <div className="w-5 h-5 shrink-0">{SPOTIFY_SVG}</div>
-        <div className="w-12 h-2.5 rounded-full bg-muted overflow-hidden">
+        <div className="w-8 h-3.5 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
