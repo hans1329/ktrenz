@@ -439,13 +439,12 @@ export default function Battle() {
     return count * 0.2;
   }
 
-  function toggleHot(itemId: string) {
-    setHotVotes((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
+  function toggleHot(pairIdx: number, itemId: string) {
+    const state = getPairState(pairIdx);
+    const next = new Set(state.hotVotes);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    updatePairState(pairIdx, { hotVotes: next });
   }
 
   // Load ticket info
@@ -461,7 +460,6 @@ export default function Battle() {
   useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
 
   async function loadBattleData(skipTranslation = false) {
-    // Load runs — get enough stars for multiple pairs
     const { data: runsData } = await (supabase
       .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
@@ -473,7 +471,6 @@ export default function Battle() {
       return;
     }
 
-    // Group by star and pick best per star
     const allRuns = runsData as B2Run[];
     const starBest = new Map<string, B2Run>();
     allRuns.forEach((r) => {
@@ -485,7 +482,6 @@ export default function Battle() {
     const bestRuns = Array.from(starBest.values()).sort((a, b) => b.content_score - a.content_score);
     if (bestRuns.length < 2) { setLoading(false); return; }
 
-    // Fetch star names
     const starIds = bestRuns.map((r) => r.star_id);
     const { data: starsData } = await supabase
       .from("ktrenz_stars")
@@ -495,14 +491,12 @@ export default function Battle() {
     const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
     const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
-    // Create pairs of 2
     const pairs: BattlePair[] = [];
     for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
 
-    // Load items for all pairs
     for (const pair of pairs) {
       for (const run of pair.runs) {
         const { data: runItems } = await supabase
@@ -517,13 +511,11 @@ export default function Battle() {
       }
     }
 
-    // Remove pairs where either side has fewer than 5 items
     const validPairs = pairs.filter(pair => {
       const runIds = pair.runs.map(r => r.id);
       return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
     });
 
-    // Trigger on-demand translation for non-Korean users (only on first load)
     if (!skipTranslation && language !== "ko") {
       const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
@@ -537,59 +529,59 @@ export default function Battle() {
     setLoading(false);
   }
 
-  function handlePick(runId: string) {
-    if (submitted) return;
+  function handlePick(pairIdx: number, runId: string) {
+    const state = getPairState(pairIdx);
+    if (state.submitted) return;
     if (!user) {
       toast({ title: "Please log in to participate.", variant: "destructive" });
       navigate("/login");
       return;
     }
-    setPickedRunId(prev => prev === runId ? null : runId);
-    setSelectedBand(null);
+    updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
   }
 
-  function handleBandSelect(band: Band) {
-    if (submitted || !pickedRunId) return;
-    setSelectedBand(prev => prev === band ? null : band);
+  function handleBandSelect(pairIdx: number, band: Band) {
+    const state = getPairState(pairIdx);
+    if (state.submitted || !state.pickedRunId) return;
+    updatePairState(pairIdx, { selectedBand: state.selectedBand === band ? null : band });
   }
 
-  function handleSubmit() {
-    if (!pickedRunId || !selectedBand || !currentPair) return;
-    const opponentRun = runs.find((r) => r.id !== pickedRunId);
+  function handleSubmit(pairIdx: number) {
+    const pair = battlePairs[pairIdx];
+    const state = getPairState(pairIdx);
+    if (!state.pickedRunId || !state.selectedBand || !pair) return;
+    const pairRuns = pair.runs;
+    const opponentRun = pairRuns.find((r) => r.id !== state.pickedRunId);
     if (!opponentRun) return;
 
     const prediction: Prediction = {
-      pickedRunId,
+      pickedRunId: state.pickedRunId,
       opponentRunId: opponentRun.id,
-      band: selectedBand,
-      pickedStarName: runs.find((r) => r.id === pickedRunId)?.star?.display_name || "Unknown",
+      band: state.selectedBand,
+      pickedStarName: pairRuns.find((r) => r.id === state.pickedRunId)?.star?.display_name || "Unknown",
       opponentStarName: opponentRun.star?.display_name || "Unknown",
       status: "pending",
       created_at: new Date().toISOString(),
     };
 
     setPredictions((prev) => [...prev, prediction]);
-    setSubmitted(true);
+    updatePairState(pairIdx, { submitted: true });
 
-    // Use ticket and save prediction
+    const capturedPickedRunId = state.pickedRunId;
+    const capturedSelectedBand = state.selectedBand;
+
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        console.warn("[Battle] No authenticated user found for ticket/prediction save");
-        return;
-      }
+      if (!user) return;
       try {
-        // Use prediction ticket
         const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
         if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
         else console.log("[Battle] ticket used:", ticketResult);
-        // Refresh ticket count
         await loadTickets();
-        // Save prediction
         const { error: predError } = await supabase.from("b2_predictions").insert({
           user_id: user.id,
-          picked_run_id: pickedRunId,
+          picked_run_id: capturedPickedRunId,
           opponent_run_id: opponentRun.id,
-          band: selectedBand,
+          band: capturedSelectedBand,
         });
         if (predError) console.error("[Battle] prediction insert error:", predError);
       } catch (e) {
@@ -598,17 +590,6 @@ export default function Battle() {
     });
   }
 
-  function handleNextBattle() {
-    if (currentPairIndex + 1 >= battlePairs.length || remainingTickets <= 0) return;
-    setCurrentPairIndex((prev) => prev + 1);
-    setPickedRunId(null);
-    setSelectedBand(null);
-    setSubmitted(false);
-    setHotVotes(new Set());
-  }
-
-  const pickedRun = runs.find((r) => r.id === pickedRunId);
-  const allBattlesDone = remainingTickets <= 0 || (submitted && currentPairIndex + 1 >= battlePairs.length);
 
   if (loading) {
     return (
