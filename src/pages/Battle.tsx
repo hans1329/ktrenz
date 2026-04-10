@@ -546,7 +546,7 @@ export default function Battle() {
         .in("picked_run_id", allRunIds);
 
       if (existingPreds && existingPreds.length > 0) {
-        const restoredStates: Record<number, { pickedRunId: string; selectedBand: string; submitted: boolean; hotVotes: Set<string> }> = {};
+        const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
         validPairs.forEach((pair, idx) => {
           const pairRunIds = new Set(pair.runs.map(r => r.id));
           const match = existingPreds.find(p => pairRunIds.has(p.picked_run_id));
