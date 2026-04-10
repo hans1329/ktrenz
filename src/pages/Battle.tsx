@@ -882,7 +882,9 @@ export default function Battle() {
                 </div>
               )}
 
-
+              {/* Collapsible content for submitted pairs in live tab */}
+              {battleFilter === "live" && pairState.submitted && collapsedPairs.has(pairIdx) ? null : (
+              <>
 
               {/* Card carousels — full width */}
               <div className="w-full px-2 sm:px-4">
