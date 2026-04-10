@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import {
-  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe,
+  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe, X,
 } from "lucide-react";
 
 /* ───── types ───── */
@@ -100,19 +101,51 @@ const AdminStars = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStar, setEditingStar] = useState<StarRow | null>(null);
   const [naverFilling, setNaverFilling] = useState(false);
-  const [naverProgress, setNaverProgress] = useState<string | null>(null);
+  const [naverStats, setNaverStats] = useState<{
+    progress: string;
+    totalCandidates: number;
+    currentOffset: number;
+    qualifierUpdated: number;
+    igUpdated: number;
+    errors: number;
+    recentResults: string[];
+    elapsedSec: number;
+  } | null>(null);
+
+  const stopNaverRef = { current: false };
 
   const runNaverFillLoop = useCallback(async () => {
     setNaverFilling(true);
-    setNaverProgress("시작 중...");
+    stopNaverRef.current = false;
+    setNaverStats({ progress: "0/?", totalCandidates: 0, currentOffset: 0, qualifierUpdated: 0, igUpdated: 0, errors: 0, recentResults: [], elapsedSec: 0 });
     let consecutiveErrors = 0;
+    let totalQualifier = 0, totalIg = 0, totalErrors = 0;
+    const startTime = Date.now();
     try {
       for (let i = 0; i < 200; i++) {
+        if (stopNaverRef.current) break;
         const { data, error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: { batchSize: 5 } });
-        if (error) { consecutiveErrors++; if (consecutiveErrors >= 3) throw error; continue; }
+        if (error) {
+          consecutiveErrors++;
+          totalErrors++;
+          if (consecutiveErrors >= 3) throw error;
+          continue;
+        }
         consecutiveErrors = 0;
         const res = typeof data === "string" ? JSON.parse(data) : data;
-        setNaverProgress(res?.progress || `${res?.batch_offset ?? 0}/?`);
+        totalQualifier += res?.qualifier_updated ?? 0;
+        totalIg += res?.ig_updated ?? 0;
+        totalErrors += res?.errors ?? 0;
+        setNaverStats({
+          progress: res?.progress || `${res?.batch_offset ?? 0}/?`,
+          totalCandidates: res?.next_offset !== null ? parseInt(res?.progress?.split("/")[1] || "0") : 0,
+          currentOffset: parseInt(res?.progress?.split("/")[0] || "0"),
+          qualifierUpdated: totalQualifier,
+          igUpdated: totalIg,
+          errors: totalErrors,
+          recentResults: (res?.results || []).slice(-5),
+          elapsedSec: Math.round((Date.now() - startTime) / 1000),
+        });
         if (res?.is_done) {
           toast({ title: `네이버 프로필 채우기 완료 (${res.progress})` });
           break;
@@ -123,7 +156,6 @@ const AdminStars = () => {
       toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
     } finally {
       setNaverFilling(false);
-      setNaverProgress(null);
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
     }
   }, [qc]);
@@ -412,13 +444,64 @@ const AdminStars = () => {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" disabled={naverFilling} onClick={runNaverFillLoop}>
             {naverFilling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Globe className="w-4 h-4 mr-1" />}
-            {naverProgress ? `프로필 ${naverProgress}` : "네이버 프로필"}
+            {naverStats ? `프로필 ${naverStats.progress}` : "네이버 프로필"}
           </Button>
+          {naverFilling && (
+            <Button size="sm" variant="ghost" onClick={() => { stopNaverRef.current = true; }}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" /> 등록
           </Button>
         </div>
       </div>
+
+      {/* naver profile fill monitor */}
+      {naverStats && (
+        <Card className="p-4 space-y-3 border-primary/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              네이버 프로필 채우기
+              {naverFilling && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              {!naverFilling && <Badge variant="outline" className="text-[10px]">완료</Badge>}
+            </p>
+            {!naverFilling && (
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setNaverStats(null)}>
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          <Progress value={naverStats.totalCandidates > 0 ? (naverStats.currentOffset / naverStats.totalCandidates) * 100 : 0} className="h-2" />
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <p className="text-lg font-bold">{naverStats.progress}</p>
+              <p className="text-[10px] text-muted-foreground">진행</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-primary">{naverStats.qualifierUpdated}</p>
+              <p className="text-[10px] text-muted-foreground">분류 업데이트</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-primary">{naverStats.igUpdated}</p>
+              <p className="text-[10px] text-muted-foreground">IG 업데이트</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-destructive">{naverStats.errors}</p>
+              <p className="text-[10px] text-muted-foreground">에러</p>
+            </div>
+          </div>
+          {naverStats.recentResults.length > 0 && (
+            <div className="bg-muted/50 rounded-md p-2 max-h-32 overflow-y-auto">
+              {naverStats.recentResults.map((r, i) => (
+                <p key={i} className="text-[11px] font-mono leading-relaxed">{r}</p>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground text-right">{naverStats.elapsedSec}초 경과</p>
+        </Card>
+      )}
 
       {/* filters */}
       <div className="flex gap-2">
