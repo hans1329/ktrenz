@@ -87,11 +87,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
       window.history.replaceState({}, "");
     }
   }, [location.state]);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [keywordResults, setKeywordResults] = useState<KeywordResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+
+
 
   // Check for unread daily news notification (red dot)
   const { data: watchedArtists } = useQuery({
