@@ -244,7 +244,7 @@ const T2TrendMap = () => {
         path="/t2"
       />
 
-      <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header
           rightSlot={
             <div
