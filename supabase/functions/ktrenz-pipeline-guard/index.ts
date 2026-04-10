@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         const { data: snapshots } = await sb
           .from("ktrenz_data_snapshots")
           .select("id, metrics, collected_at, guard_flagged")
-          .eq("wiki_entry_id", entryId)
+          .eq("star_id", entryId)
           .eq("platform", platform)
           .eq("guard_flagged", false) // 이미 플래그된 것은 비교 기준에서 제외
           .order("collected_at", { ascending: false })
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
             if (rule.type === "null_check" || rule.type === "zero_check") {
               const log = {
                 module,
-                wiki_entry_id: entryId,
+                star_id: entryId,
                 guard_rule: rule.id,
                 action: "block" as const,
                 current_value: { [rule.metricKey]: null },
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
             if (prevVal !== null && prevVal > 0) {
               issues.push({
                 module,
-                wiki_entry_id: entryId,
+                star_id: entryId,
                 guard_rule: rule.id,
                 action: rule.action,
                 current_value: { [rule.metricKey]: currentVal },
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
             if (triggered) {
               issues.push({
                 module,
-                wiki_entry_id: entryId,
+                star_id: entryId,
                 guard_rule: rule.id,
                 action: rule.action,
                 current_value: { [rule.metricKey]: currentVal },
@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       checked: totalChecked,
       warnings: totalWarnings,
       blocks: totalBlocks,
-      issues: issues.map(i => ({ rule: i.guard_rule, action: i.action, delta: i.delta_pct, artist: i.wiki_entry_id })),
+      issues: issues.map(i => ({ rule: i.guard_rule, action: i.action, delta: i.delta_pct, artist: i.star_id })),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
