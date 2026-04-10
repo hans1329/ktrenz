@@ -11,7 +11,7 @@ import SEO from "@/components/SEO";
 
 interface WatchedArtistScore {
   artist_name: string;
-  wiki_entry_id: string | null;
+  
   image_url: string | null;
   energy_score: number;
   energy_change_24h: number;
@@ -71,11 +71,10 @@ const Notifications = () => {
 
       // Map watched artists
       return watchedArtists.map(w => {
-        const score = seen.get(w.wiki_entry_id ?? "");
+        const score = seen.get(w.id ?? "");
         const rank = score ? sorted.indexOf(score) + 1 : 999;
         return {
           artist_name: w.artist_name,
-          wiki_entry_id: w.wiki_entry_id,
           image_url: (score?.wiki_entries as any)?.image_url ?? null,
           energy_score: score?.energy_score ?? 0,
           energy_change_24h: score?.energy_change_24h ?? 0,
