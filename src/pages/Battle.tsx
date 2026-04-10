@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
 import { toast } from "@/hooks/use-toast";
 
@@ -478,6 +479,17 @@ export default function Battle() {
           .order("engagement_score", { ascending: false })
           .limit(8);
         pair.items[run.id] = (runItems || []) as B2Item[];
+      }
+    }
+
+    // Trigger on-demand translation for non-Korean users
+    if (language !== "ko") {
+      const allItems = pairs.flatMap(p => Object.values(p.items).flat());
+      if (allItems.length > 0) {
+        translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
+          // Refetch after translation completes
+          fetchBattleData();
+        });
       }
     }
 
