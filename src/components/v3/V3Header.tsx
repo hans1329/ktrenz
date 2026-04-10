@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, X, Loader2, Zap, Gem } from "lucide-react";
+import { Search, X, Loader2, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import T2AdminControls from "@/components/t2/T2AdminControls";
 import { Button } from "@/components/ui/button";
