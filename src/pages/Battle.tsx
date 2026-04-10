@@ -205,38 +205,74 @@ function ArtistSection({
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
 
-  // Track active index via scroll position
+  // Clone first 2 cards at end, last 2 at start for seamless looping
+  const cloneBefore = itemCount > 2 ? 2 : 1;
+  const cloneAfter = itemCount > 2 ? 2 : 1;
+  const loopItems = itemCount > 1
+    ? [...runItems.slice(-cloneBefore), ...runItems, ...runItems.slice(0, cloneAfter)]
+    : runItems;
+  const offset = itemCount > 1 ? cloneBefore : 0;
+
+  // Initialize scroll to first real card
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
-    let ticking = false;
+    requestAnimationFrame(() => {
+      const child = el.children[offset] as HTMLElement;
+      if (child) el.scrollLeft = child.offsetLeft;
+    });
+  }, [itemCount, offset]);
+
+  // Track active index + handle infinite loop jump AFTER scroll settles
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || itemCount <= 1) return;
+
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
     const handleScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        const children = Array.from(el.children) as HTMLElement[];
-        if (children.length === 0) return;
-        const scrollLeft = el.scrollLeft;
-        let closest = 0;
-        let minDist = Infinity;
-        // Only check actual card elements, not the spacer
-        children.forEach((child, i) => {
-          if (i >= itemCount) return;
-          const dist = Math.abs(child.offsetLeft - scrollLeft);
-          if (dist < minDist) { minDist = dist; closest = i; }
-        });
-        setActiveIndex(Math.min(closest, itemCount - 1));
+      // Update active index immediately
+      const children = Array.from(el.children) as HTMLElement[];
+      const scrollLeft = el.scrollLeft;
+      let closest = 0;
+      let minDist = Infinity;
+      children.forEach((child, i) => {
+        const dist = Math.abs(child.offsetLeft - scrollLeft);
+        if (dist < minDist) { minDist = dist; closest = i; }
       });
+      const realIndex = ((closest - offset) % itemCount + itemCount) % itemCount;
+      setActiveIndex(realIndex);
+
+      // Debounce: jump to real card only after scrolling stops
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const currentClosest = closest;
+        // If in clone-before zone, jump to corresponding real card
+        if (currentClosest < offset) {
+          const realTarget = offset + (itemCount - (offset - currentClosest));
+          const target = el.children[realTarget] as HTMLElement;
+          if (target) el.scrollLeft = target.offsetLeft;
+        }
+        // If in clone-after zone, jump to corresponding real card
+        else if (currentClosest >= offset + itemCount) {
+          const realTarget = offset + (currentClosest - offset - itemCount);
+          const target = el.children[realTarget] as HTMLElement;
+          if (target) el.scrollLeft = target.offsetLeft;
+        }
+      }, 120);
     };
+
     el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, [itemCount]);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      if (scrollTimer) clearTimeout(scrollTimer);
+    };
+  }, [itemCount, offset]);
 
   const scrollToIndex = (i: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    const child = el.children[i] as HTMLElement;
+    const child = el.children[i + offset] as HTMLElement;
     if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
   };
 
@@ -273,9 +309,9 @@ function ArtistSection({
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
-        {runItems.map((item, idx) => (
+        {loopItems.map((item, loopIdx) => (
           <div
-            key={`${item.id}-${idx}`}
+            key={`${item.id}-loop-${loopIdx}`}
             className="snap-start flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
@@ -304,8 +340,6 @@ function ArtistSection({
             </div>
           </div>
         ))}
-        {/* Spacer so last cards can scroll fully into view */}
-        <div className="flex-shrink-0 w-[20%] sm:w-40" aria-hidden="true" />
       </div>
 
       {/* Carousel indicators */}
