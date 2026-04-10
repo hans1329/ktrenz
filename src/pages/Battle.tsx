@@ -245,6 +245,7 @@ function FlipTimer() {
 }
 
 function getLocalizedTitle(item: B2Item, lang: string): string {
+  if (lang === "ko" && item.title_ko) return item.title_ko;
   if (lang === "ja" && item.title_ja) return item.title_ja;
   if (lang === "zh" && item.title_zh) return item.title_zh;
   if (lang === "en" && item.title_en) return item.title_en;
