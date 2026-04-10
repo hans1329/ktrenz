@@ -10,6 +10,7 @@ const corsHeaders = {
 
 const BATCH_SIZE = 5;
 const PHASE_NAME = "fill_naver_profile";
+const STALE_MINUTES = 15; // 15분 이상 running이면 stale로 간주
 
 // 직업 → search_qualifier 매핑 (플랫폼 star_category에 맞춤)
 // 플랫폼 분류: kpop, actor, singer, baseball, athlete, chef, politician, influencer, comedian, other
@@ -53,6 +54,7 @@ Deno.serve(async (req) => {
   }
 
   const startTime = Date.now();
+  let stateId: string | null = null; // try/finally에서 에러 기록용
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -77,11 +79,13 @@ Deno.serve(async (req) => {
     let forceAll = false;
     let testStarIds: string[] | null = null;
     let dryRun = false;
+    let resumeMode = false; // 기존 running 상태를 이어서 처리
     try {
       const body = await req.json();
       forceAll = body?.force === true;
       testStarIds = body?.testStarIds || null;
       dryRun = body?.dryRun === true;
+      resumeMode = body?.resume === true;
     } catch { /* no body */ }
 
     // ── 테스트 모드: 특정 스타만 처리 (파이프라인 상태 무시) ──
@@ -151,11 +155,27 @@ Deno.serve(async (req) => {
 
     // ── 1. 파이프라인 상태 조회/생성 ──
     const stateResp = await fetch(
-      `${supabaseUrl}/rest/v1/ktrenz_pipeline_state?phase=eq.${PHASE_NAME}&status=eq.running&order=created_at.desc&limit=1`,
+      `${supabaseUrl}/rest/v1/ktrenz_pipeline_state?phase=eq.${PHASE_NAME}&status=in.(running,running_inflight)&order=created_at.desc&limit=1`,
       { headers: dbHeaders }
     );
     const states = await stateResp.json();
     let state = states[0];
+
+    // Stale lock recovery: 15분 이상 멈춘 running 상태 자동 복구
+    if (state) {
+      const updatedAt = new Date(state.updated_at).getTime();
+      const staleThreshold = Date.now() - STALE_MINUTES * 60 * 1000;
+      if (updatedAt < staleThreshold) {
+        console.warn(`[naver-profile] Stale lock detected: run=${state.run_id}, offset=${state.current_offset}, updated_at=${state.updated_at}`);
+        // 복구: running 상태 유지하되 updated_at 갱신하여 이어서 처리
+        await fetch(`${supabaseUrl}/rest/v1/ktrenz_pipeline_state?id=eq.${state.id}`, {
+          method: "PATCH",
+          headers: dbHeaders,
+          body: JSON.stringify({ status: "running", updated_at: new Date().toISOString() }),
+        });
+        state.status = "running";
+      }
+    }
 
     if (!state) {
       const filter = forceAll
@@ -194,6 +214,7 @@ Deno.serve(async (req) => {
       console.log(`[naver-profile] New run: ${runId}, candidates: ${totalCandidates}`);
     }
 
+    stateId = state.id;
     const currentOffset = state.current_offset || 0;
     const totalCandidates = state.total_candidates || 0;
 
@@ -301,6 +322,20 @@ Deno.serve(async (req) => {
       }),
     });
 
+    // ── 5. 자가 진행: 완료가 아니면 다음 배치를 fire-and-forget으로 자동 호출 ──
+    if (!isDone) {
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-fill-naver-profile`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ force: forceAll }),
+      }).catch((e) => {
+        console.error(`[naver-profile] Self-chain failed: ${(e as Error).message}`);
+      });
+    }
+
     const elapsed = Date.now() - startTime;
 
     return new Response(
@@ -321,6 +356,28 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[naver-profile] Fatal:", error);
+
+    // DB에 에러 기록 (stateId가 있을 때만)
+    if (stateId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        await fetch(`${supabaseUrl}/rest/v1/ktrenz_pipeline_state?id=eq.${stateId}`, {
+          method: "PATCH",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            last_error: (error as Error).message?.slice(0, 500),
+            last_error_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      } catch { /* best-effort */ }
+    }
+
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
