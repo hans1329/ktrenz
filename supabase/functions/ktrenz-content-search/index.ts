@@ -345,41 +345,107 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    // Enrich naver news: og:image + body text scraping
+    // Enrich naver news: og:image + body text + full title scraping
     const enrichNaverNews = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
         toEnrich.map(async (item: any) => {
           let updated = { ...item };
-          // Scrape body text to replace API snippet
-          const bodyText = await scrapeBodyText(item.url, 500);
-          if (bodyText && bodyText.length > (item.description || "").length) {
-            updated.description = bodyText;
-          }
-          // og:image if missing
-          if (!updated.thumbnail) {
-            const ogImg = await extractOgImage(item.url);
-            if (ogImg) updated.thumbnail = ogImg;
-          }
+          try {
+            const res = await fetchWithTimeout(item.url, {
+              headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+            }, 5000);
+            if (res.ok) {
+              const html = await res.text();
+              // Full title from og:title or <title>
+              const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+                || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+              if (ogTitleMatch?.[1]) {
+                const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").trim();
+                if (fullTitle.length > updated.title.length) {
+                  updated.title = fullTitle;
+                }
+              } else {
+                const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+                if (titleTagMatch?.[1]) {
+                  const rawTitle = titleTagMatch[1].replace(/<[^>]*>/g, "").trim();
+                  // Remove common suffixes like " - 매체명" or " | 매체명"
+                  const cleanTitle = rawTitle.replace(/\s*[-|]\s*[^-|]+$/, "").trim();
+                  if (cleanTitle.length > updated.title.length) {
+                    updated.title = cleanTitle;
+                  }
+                }
+              }
+              // Body text
+              const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
+                || html.match(/id=["']?articleBody["']?[^>]*>([\s\S]*?)<\/div>/i)
+                || html.match(/id=["']?newsct_article["']?[^>]*>([\s\S]*?)<\/div>/i)
+                || html.match(/class=["'][^"']*article[_-]?body[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)
+                || html.match(/class=["'][^"']*news[_-]?content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+              if (articleMatch?.[1]) {
+                const bodyText = articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/\s+/g, " ").trim();
+                if (bodyText.length > (updated.description || "").length) {
+                  updated.description = bodyText.substring(0, 500);
+                }
+              }
+              // og:image
+              if (!updated.thumbnail) {
+                const ogImgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                  || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+                if (ogImgMatch?.[1]) {
+                  const imgUrl = ogImgMatch[1];
+                  updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
+                }
+              }
+            }
+          } catch { /* skip enrichment on error */ }
           return updated;
         })
       );
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    // Reddit: try og:image from embedded links in snippet, then from post URL itself
+    // Reddit: og:title for full title + og:image
     const enrichReddit = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
         toEnrich.map(async (item: any) => {
-          if (item.thumbnail) return item;
-          const embeddedUrl = extractUrlFromText(item.description || "");
-          if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
-            const ogImg = await extractOgImage(embeddedUrl);
-            if (ogImg) return { ...item, thumbnail: ogImg };
-          }
-          const ogImg = await extractOgImage(item.url);
-          return ogImg ? { ...item, thumbnail: ogImg } : item;
+          let updated = { ...item };
+          try {
+            const pageUrl = item.url || "";
+            if (pageUrl) {
+              const res = await fetchWithTimeout(pageUrl, {
+                headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+              }, 5000);
+              if (res.ok) {
+                const html = await res.text();
+                // Full title
+                const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+                  || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+                if (ogTitleMatch?.[1]) {
+                  const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").trim();
+                  if (fullTitle.length > updated.title.length) {
+                    updated.title = fullTitle;
+                  }
+                }
+                // og:image
+                if (!updated.thumbnail) {
+                  const embeddedUrl = extractUrlFromText(updated.description || "");
+                  if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
+                    const ogImg = await extractOgImage(embeddedUrl);
+                    if (ogImg) { updated.thumbnail = ogImg; return updated; }
+                  }
+                  const ogImgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+                  if (ogImgMatch?.[1]) {
+                    const imgUrl = ogImgMatch[1];
+                    updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
+                  }
+                }
+              }
+            }
+          } catch { /* skip */ }
+          return updated;
         })
       );
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
