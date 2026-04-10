@@ -473,9 +473,10 @@ export default function Battle() {
     }
 
     const allRuns = runsData as B2Run[];
+    // Pick the most recent run per star (latest created_at wins)
     const starBest = new Map<string, B2Run>();
     allRuns.forEach((r) => {
-      if (!starBest.has(r.star_id) || r.content_score > (starBest.get(r.star_id)!.content_score)) {
+      if (!starBest.has(r.star_id)) {
         starBest.set(r.star_id, r);
       }
     });
