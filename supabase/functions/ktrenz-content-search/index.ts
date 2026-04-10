@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
           try {
             const res = await fetchWithTimeout(item.url, {
               headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
-            }, 5000);
+            }, 8000);
             if (res.ok) {
               const html = await fetchTextWithCharset(res);
               // Full title from og:title or <title>
@@ -436,6 +436,29 @@ Deno.serve(async (req) => {
                   updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
                 }
               }
+              // Validate og:image immediately — some sites return 404 on og:image URLs
+              if (updated.thumbnail) {
+                try {
+                  const ogHeadRes = await fetchWithTimeout(updated.thumbnail, {
+                    method: "HEAD",
+                    headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+                  }, 3000);
+                  if (!ogHeadRes.ok) {
+                    // Try GET with Range as some servers don't support HEAD
+                    const ogGetRes = await fetchWithTimeout(updated.thumbnail, {
+                      method: "GET",
+                      headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)", "Range": "bytes=0-0" },
+                    }, 3000);
+                    if (!ogGetRes.ok && ogGetRes.status !== 206) {
+                      console.warn(`[enrichNews] og:image invalid (${ogHeadRes.status}): ${updated.thumbnail}`);
+                      updated.thumbnail = null; // Clear so body extraction runs
+                    }
+                  }
+                } catch {
+                  console.warn(`[enrichNews] og:image unreachable: ${updated.thumbnail}`);
+                  updated.thumbnail = null;
+                }
+              }
               // Fallback: robust body image extraction (ported from trend-detect)
               if (!updated.thumbnail) {
                 function extractAttr(tag: string, attr: string): string | null {
@@ -465,9 +488,12 @@ Deno.serve(async (req) => {
                 }
 
                 const imgTagRegex = /<img[^>]*>/gi;
+                // Also scan <source> tags inside <picture> elements
+                const combinedTagRegex = /<(?:img|source)[^>]*>/gi;
                 let imgTagMatch;
-                while ((imgTagMatch = imgTagRegex.exec(html)) !== null) {
+                while ((imgTagMatch = combinedTagRegex.exec(html)) !== null) {
                   const tag = imgTagMatch[0];
+                  const isSource = tag.toLowerCase().startsWith("<source");
 
                   // Determine src: data-srcset > data-src > srcset > src
                   let src: string | null = null;
@@ -486,9 +512,11 @@ Deno.serve(async (req) => {
                   const lb = html.slice(Math.max(0, imgTagMatch.index - 500), imgTagMatch.index);
                   if (/class=["'][^"']*(?:news_slide|best_click|rank|aside|related|recommend|popular|sidebar)["']|id=["'](?:aside|sidebar|taboola)["']/i.test(lb)) continue;
 
-                  // Width filter
-                  const wm = extractAttr(tag, "width");
-                  if (wm && parseInt(wm) < 200) continue;
+                  // Width filter (only for img tags, not source)
+                  if (!isSource) {
+                    const wm = extractAttr(tag, "width");
+                    if (wm && parseInt(wm) < 200) continue;
+                  }
 
                   const resolved = resolveImgUrl(src.replace(/&amp;/g, "&"));
                   if (!resolved || resolved.includes("data:image/") || resolved.length < 20) continue;
