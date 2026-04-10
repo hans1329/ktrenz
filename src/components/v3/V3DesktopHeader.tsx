@@ -29,32 +29,68 @@ interface V3DesktopHeaderProps {
 }
 
 const SPOTIFY_GOAL = 9000;
+const SPOTIFY_SVG = (
+  <svg viewBox="0 0 24 24" fill="hsl(142, 71%, 45%)"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+);
+
+const SpotifyGoalPopupDesktop = ({ open, onClose, kPoints }: { open: boolean; onClose: () => void; kPoints: number }) => {
+  if (!open) return null;
+  const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+  return (
+    <>
+      <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
+      <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(360px,90vw)] bg-card rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12">{SPOTIFY_SVG}</div>
+          <div>
+            <p className="font-bold text-foreground">Spotify Premium 1 Month</p>
+            <p className="text-sm text-muted-foreground">Redeem at 9,000 K-Cash</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="w-full h-4 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${Math.max(progress, 2)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
+            />
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="font-bold text-foreground">{kPoints.toLocaleString()}</span>
+            <span className="text-muted-foreground">/ {SPOTIFY_GOAL.toLocaleString()} K</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Earn K-Cash by completing daily missions, predictions, and battles. Reach the goal to redeem a Spotify Premium subscription coupon!
+        </p>
+        <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
+          Close
+        </button>
+      </div>
+    </>
+  );
+};
 
 const SpotifyGoalBarDesktop = () => {
   const { kPoints } = useAuth();
-  const navigate = useNavigate();
   const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+  const [showPopup, setShowPopup] = useState(false);
 
   return (
-    <button
-      onClick={() => navigate("/kpass")}
-      className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-muted/50 transition-colors"
-      title={`${kPoints.toLocaleString()} / ${SPOTIFY_GOAL.toLocaleString()} K`}
-    >
-      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="hsl(142, 71%, 45%)"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-      <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{
-            width: `${progress}%`,
-            backgroundColor: "hsl(142, 71%, 45%)",
-          }}
-        />
-      </div>
-      <span className="text-xs font-medium text-muted-foreground">
-        {kPoints.toLocaleString()} / {SPOTIFY_GOAL.toLocaleString()}
-      </span>
-    </button>
+    <>
+      <button
+        onClick={() => setShowPopup(true)}
+        className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-muted/50 transition-colors"
+      >
+        <div className="w-4 h-4 shrink-0">{SPOTIFY_SVG}</div>
+        <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${Math.max(progress, 5)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
+          />
+        </div>
+      </button>
+      <SpotifyGoalPopupDesktop open={showPopup} onClose={() => setShowPopup(false)} kPoints={kPoints} />
+    </>
   );
 };
 
