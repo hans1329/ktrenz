@@ -671,8 +671,8 @@ export default function Battle() {
           {/* Band Selection */}
           {pickedRunId && !submitted && (
             <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-              <p className="text-sm font-semibold text-foreground">
-                {t("predictGrowth")} <span className="text-primary">{pickedRun?.star?.display_name}</span>
+              <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+                {t("predictGrowth")} <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> <span className="text-primary">{pickedRun?.star?.display_name}</span>
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {BANDS.map((band) => {
