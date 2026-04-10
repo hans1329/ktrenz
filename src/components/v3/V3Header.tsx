@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, X, Loader2, Zap } from "lucide-react";
+import { Search, X, Loader2, Zap, Gem } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import T2AdminControls from "@/components/t2/T2AdminControls";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
             />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="font-bold text-foreground">{kPoints.toLocaleString()}</span>
+            <span className="font-bold text-foreground flex items-center gap-1"><Gem className="w-3 h-3 text-primary" />{kPoints.toLocaleString()}</span>
             <span className="text-muted-foreground">/ {SPOTIFY_GOAL.toLocaleString()} K</span>
           </div>
         </div>
