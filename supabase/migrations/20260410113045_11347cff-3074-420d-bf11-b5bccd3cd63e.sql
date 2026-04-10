@@ -1,0 +1,1 @@
+UPDATE ktrenz_pipeline_state SET status = 'done', updated_at = now() WHERE phase = 'fill_naver_profile' AND status = 'running';
