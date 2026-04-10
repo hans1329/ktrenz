@@ -1311,8 +1311,7 @@ async function handleTool(
         .from("ktrenz_trend_triggers")
         .select("influence_index")
         .eq("status", "active");
-      // wiki_entry_id removed from ktrenz_watched_artists
-      else watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
+      watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
       const { data: watchTriggers } = await watchQuery;
       const kwCount = (watchTriggers || []).length;
       const totalInf = (watchTriggers || []).reduce((s: number, t: any) => s + (t.influence_index || 0), 0);
