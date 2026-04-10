@@ -678,7 +678,7 @@ async function handleTool(
     return matrix[a.length][b.length];
   }
 
-  async function findClosestTierArtist(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number } | null> {
+  async function findClosestTierArtist(query: string): Promise<{ id: string; display_name: string | null; name_ko: string | null; distance: number } | null> {
     const normalizedQuery = normalizeArtistName(query);
     if (!normalizedQuery) return null;
 
@@ -696,14 +696,14 @@ async function handleTool(
 
         const bestDistance = Math.min(...variants.map((v) => levenshteinDistance(normalizedQuery, v)));
         return {
-          wiki_entry_id: row.wiki_entry_id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
           distance: bestDistance,
         };
       })
       .filter(Boolean)
-      .sort((a: any, b: any) => a.distance - b.distance) as { wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number }[];
+      .sort((a: any, b: any) => a.distance - b.distance) as { id: string; display_name: string | null; name_ko: string | null; distance: number }[];
 
     if (scored.length === 0) return null;
 
@@ -717,7 +717,7 @@ async function handleTool(
     return null;
   }
 
-  async function resolveTierArtistCandidate(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; wiki_title: string | null } | null> {
+  async function resolveTierArtistCandidate(query: string): Promise<{ id: string; display_name: string | null; name_ko: string | null; wiki_title: string | null } | null> {
     const sanitizedQuery = sanitizeArtistCandidate(query);
     const normalizedQuery = normalizeArtistName(sanitizedQuery);
     if (!normalizedQuery) return null;
@@ -739,7 +739,7 @@ async function handleTool(
         const bestDistance = Math.min(...variants.map((v: { raw: string; normalized: string }) => levenshteinDistance(normalizedQuery, v.normalized)));
 
         return {
-          wiki_entry_id: row.wiki_entry_id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
           wiki_title: null,
@@ -749,7 +749,7 @@ async function handleTool(
         };
       })
       .filter(Boolean) as {
-        wiki_entry_id: string;
+        id: string;
         display_name: string | null;
         name_ko: string | null;
         wiki_title: string | null;
@@ -785,7 +785,7 @@ async function handleTool(
     // Try exact match in ktrenz_stars
     const { data: exactMatches } = await adminClient
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .select("id, display_name, name_ko, star_type, image_url, social_handles, star_category")
       .eq("is_active", true)
       .or(`display_name.ilike.${lower},name_ko.ilike.${lower}`)
       .limit(1);
@@ -795,29 +795,12 @@ async function handleTool(
     // Try partial match
     const { data: partialMatches } = await adminClient
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .select("id, display_name, name_ko, star_type, image_url, social_handles, star_category")
       .eq("is_active", true)
       .or(`display_name.ilike.%${lower}%,name_ko.ilike.%${lower}%`)
       .limit(1);
 
     if (partialMatches?.[0]) return partialMatches[0];
-
-    // wiki_entries fallback
-    const { data: wikiMatch } = await adminClient
-      .from("wiki_entries")
-      .select("id, title")
-      .ilike("title", `%${lower}%`)
-      .limit(1);
-
-    if (wikiMatch?.[0]) {
-      const { data: starMatch } = await adminClient
-        .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
-        .eq("wiki_entry_id", wikiMatch[0].id)
-        .limit(1);
-      if (starMatch?.[0]) return starMatch[0];
-      return { wiki_entry_id: wikiMatch[0].id, display_name: wikiMatch[0].title, name_ko: null, id: null, star_type: null, image_url: null };
-    }
 
     return null;
   }
