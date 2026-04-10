@@ -434,32 +434,41 @@ export default function Battle() {
 
   useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
 
-  async function loadBattleData() {
+  async function loadBattleData(skipTranslation = false) {
     // Load runs — get enough stars for multiple pairs
     const { data: runsData } = await supabase
       .from("ktrenz_b2_runs")
       .select("id, star_id, content_score, counts, created_at")
+      .eq("status", "ready")
       .order("created_at", { ascending: false })
-      .limit(40);
+      .limit(20);
 
-    if (!runsData?.length) { setLoading(false); return; }
-
-    // Get latest run per star
-    const latestByStarMap = new Map<string, any>();
-    for (const r of runsData) {
-      if (!latestByStarMap.has(r.star_id)) latestByStarMap.set(r.star_id, r);
+    if (!runsData || runsData.length < 2) {
+      setLoading(false);
+      return;
     }
-    const allRuns = Array.from(latestByStarMap.values());
 
-    // Get star info
-    const starIds = allRuns.map((r: any) => r.star_id);
-    const { data: stars } = await supabase
+    // Group by star and pick best per star
+    const allRuns = runsData as B2Run[];
+    const starBest = new Map<string, B2Run>();
+    allRuns.forEach((r) => {
+      if (!starBest.has(r.star_id) || r.content_score > (starBest.get(r.star_id)!.content_score)) {
+        starBest.set(r.star_id, r);
+      }
+    });
+
+    const bestRuns = Array.from(starBest.values()).sort((a, b) => b.content_score - a.content_score);
+    if (bestRuns.length < 2) { setLoading(false); return; }
+
+    // Fetch star names
+    const starIds = bestRuns.map((r) => r.star_id);
+    const { data: starsData } = await supabase
       .from("ktrenz_stars")
       .select("id, display_name, name_ko")
       .in("id", starIds);
 
-    const starMap = new Map((stars || []).map((s: any) => [s.id, s]));
-    const enrichedRuns = allRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
+    const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
+    const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
     // Create pairs of 2
     const pairs: BattlePair[] = [];
@@ -483,13 +492,13 @@ export default function Battle() {
       }
     }
 
-    // Trigger on-demand translation for non-Korean users
-    if (language !== "ko") {
+    // Trigger on-demand translation for non-Korean users (only on first load)
+    if (!skipTranslation && language !== "ko") {
       const allItems = pairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
-          // Refetch after translation completes
-          loadBattleData();
+          // Refetch with translated data, skip re-triggering translation
+          loadBattleData(true);
         });
       }
     }
