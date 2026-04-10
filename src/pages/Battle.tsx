@@ -534,6 +534,53 @@ export default function Battle() {
     }
 
     setBattlePairs(validPairs);
+
+    // Restore submitted state from existing predictions in DB
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser && validPairs.length > 0) {
+      const allRunIds = validPairs.flatMap(p => p.runs.map(r => r.id));
+      const { data: existingPreds } = await supabase
+        .from("b2_predictions")
+        .select("picked_run_id, opponent_run_id, band")
+        .eq("user_id", currentUser.id)
+        .in("picked_run_id", allRunIds);
+
+      if (existingPreds && existingPreds.length > 0) {
+        const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
+        validPairs.forEach((pair, idx) => {
+          const pairRunIds = new Set(pair.runs.map(r => r.id));
+          const match = existingPreds.find(p => pairRunIds.has(p.picked_run_id));
+          if (match) {
+            restoredStates[idx] = {
+              pickedRunId: match.picked_run_id,
+              selectedBand: match.band as Band,
+              submitted: true,
+              hotVotes: new Set<string>(),
+            };
+          }
+        });
+        if (Object.keys(restoredStates).length > 0) {
+          setPairStates(prev => ({ ...prev, ...restoredStates }));
+        }
+
+        const restoredPredictions: Prediction[] = existingPreds.map(p => {
+          const pair = validPairs.find(vp => vp.runs.some(r => r.id === p.picked_run_id));
+          const pickedRun = pair?.runs.find(r => r.id === p.picked_run_id);
+          const opponentRun = pair?.runs.find(r => r.id === p.opponent_run_id);
+          return {
+            pickedRunId: p.picked_run_id,
+            opponentRunId: p.opponent_run_id,
+            band: p.band as Band,
+            pickedStarName: pickedRun?.star?.display_name || "Unknown",
+            opponentStarName: opponentRun?.star?.display_name || "Unknown",
+            status: "pending",
+            created_at: new Date().toISOString(),
+          };
+        });
+        setPredictions(restoredPredictions);
+      }
+    }
+
     setLoading(false);
   }
 
