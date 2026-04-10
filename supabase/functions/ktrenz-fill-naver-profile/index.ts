@@ -1,4 +1,4 @@
-// ktrenz-fill-naver-profile: 네이버 인물정보에서 직업(search_qualifier)과 인스타그램 핸들을 추출
+// ktrenz-fill-naver-profile: 네이버 인물정보에서 직업(search_qualifier)과 소셜 핸들(IG/YT/X/TikTok)을 추출
 // Firecrawl로 네이버 검색 프로필 페이지 스크래핑 → 정규식 파싱
 // DB 기반 오프셋 추적으로 배치 처리 (API 안전 정책 준수)
 
@@ -11,7 +11,8 @@ const corsHeaders = {
 const BATCH_SIZE = 5;
 const PHASE_NAME = "fill_naver_profile";
 
-// 직업 → search_qualifier 매핑
+// 직업 → search_qualifier 매핑 (플랫폼 star_category에 맞춤)
+// 플랫폼 분류: kpop, actor, singer, baseball, athlete, chef, politician, influencer, comedian, other
 const PROFESSION_MAP: Record<string, string> = {
   "가수": "가수",
   "싱어송라이터": "가수",
@@ -28,7 +29,6 @@ const PROFESSION_MAP: Record<string, string> = {
   "유튜버": "유튜버",
   "크리에이터": "유튜버",
   "인터넷방송인": "유튜버",
-  "모델": "모델",
   "MC": "방송인",
   "방송인": "방송인",
   "아나운서": "방송인",
@@ -37,6 +37,14 @@ const PROFESSION_MAP: Record<string, string> = {
   "작사가": "작곡가",
   "댄서": "댄서",
   "안무가": "댄서",
+};
+
+type ProfileData = {
+  profession: string | null;
+  instagram: string | null;
+  youtube: string | null;
+  x: string | null;
+  tiktok: string | null;
 };
 
 Deno.serve(async (req) => {
@@ -84,52 +92,37 @@ Deno.serve(async (req) => {
       );
       const stars = await starsResp.json();
 
-      // 그룹명 조회
-      const groupIds = [...new Set(stars.filter((s: any) => s.star_type === "member" && s.group_star_id).map((s: any) => s.group_star_id))];
-      const groupNameMap = new Map<string, string>();
-      if (groupIds.length > 0) {
-        const gResp = await fetch(
-          `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name&id=in.(${groupIds.join(",")})`,
-          { headers: dbHeaders }
-        );
-        const groups = await gResp.json();
-        for (const g of groups || []) groupNameMap.set(g.id, g.name_ko || g.display_name);
-      }
+      const groupNameMap = await resolveGroupNames(stars, supabaseUrl, dbHeaders);
 
       const results: any[] = [];
       for (const star of stars) {
-        const searchName = star.name_ko || star.display_name;
-        let searchQuery = searchName;
-        if (star.star_type === "member" && star.group_star_id) {
-          const groupName = groupNameMap.get(star.group_star_id);
-          if (groupName) searchQuery = `${groupName} ${searchName}`;
-        }
-
+        const searchQuery = buildSearchQuery(star, groupNameMap);
         const profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
-
         const qualifier = profileData.profession ? mapProfession(profileData.profession) : null;
+
+        const socialUpdates = buildSocialUpdates(star.social_handles || {}, profileData);
+        
         results.push({
-          name: searchName,
+          name: star.name_ko || star.display_name,
           searchQuery,
           currentQualifier: star.search_qualifier,
           detectedProfession: profileData.profession,
           mappedQualifier: qualifier,
-          detectedInstagram: profileData.instagram,
-          currentInstagram: star.social_handles?.instagram,
-          wouldUpdate: !dryRun,
+          social: {
+            instagram: profileData.instagram,
+            youtube: profileData.youtube,
+            x: profileData.x,
+            tiktok: profileData.tiktok,
+          },
+          currentSocial: star.social_handles,
+          socialUpdated: Object.keys(socialUpdates.changes).length > 0 ? socialUpdates.changes : null,
         });
 
-        // 실제 업데이트 (dryRun이 아닌 경우)
         if (!dryRun) {
           const updates: Record<string, any> = {};
           if (qualifier && qualifier !== star.search_qualifier) updates.search_qualifier = qualifier;
-          if (profileData.instagram) {
-            const existing = star.social_handles || {};
-            if (!existing.instagram || existing.instagram_unverified === "true") {
-              const merged = { ...existing, instagram: profileData.instagram };
-              delete merged.instagram_unverified;
-              updates.social_handles = merged;
-            }
+          if (Object.keys(socialUpdates.changes).length > 0) {
+            updates.social_handles = socialUpdates.merged;
           }
           if (Object.keys(updates).length > 0) {
             await fetch(`${supabaseUrl}/rest/v1/ktrenz_stars?id=eq.${star.id}`, {
@@ -156,7 +149,6 @@ Deno.serve(async (req) => {
     let state = states[0];
 
     if (!state) {
-      // 대상: search_qualifier가 기본값('가수')이거나, 인스타 핸들이 없는 활성 스타
       const filter = forceAll
         ? `is_active=eq.true`
         : `is_active=eq.true&or=(search_qualifier.eq.가수,search_qualifier.is.null,social_handles->>instagram.is.null,social_handles.is.null)`;
@@ -219,38 +211,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 그룹명 조회 (멤버 타입용)
-    const groupIds = [...new Set(stars.filter((s: any) => s.star_type === "member" && s.group_star_id).map((s: any) => s.group_star_id))];
-    const groupNameMap = new Map<string, string>();
-    if (groupIds.length > 0) {
-      const gResp = await fetch(
-        `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name&id=in.(${groupIds.join(",")})`,
-        { headers: dbHeaders }
-      );
-      const groups = await gResp.json();
-      for (const g of groups || []) {
-        groupNameMap.set(g.id, g.name_ko || g.display_name);
-      }
-    }
+    const groupNameMap = await resolveGroupNames(stars, supabaseUrl, dbHeaders);
 
     console.log(`[naver-profile] Batch: offset=${currentOffset}, count=${stars.length}`);
 
     // ── 3. Firecrawl로 네이버 프로필 스크래핑 ──
     const results: string[] = [];
     let qualifierUpdated = 0;
-    let igUpdated = 0;
+    let socialUpdatedCount = 0;
     let errors = 0;
 
     for (const star of stars) {
       try {
         const searchName = star.name_ko || star.display_name;
-        // 멤버인 경우 그룹명 포함
-        let searchQuery = searchName;
-        if (star.star_type === "member" && star.group_star_id) {
-          const groupName = groupNameMap.get(star.group_star_id);
-          if (groupName) searchQuery = `${groupName} ${searchName}`;
-        }
-
+        const searchQuery = buildSearchQuery(star, groupNameMap);
         const profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
 
         const updates: Record<string, any> = {};
@@ -266,18 +240,13 @@ Deno.serve(async (req) => {
           }
         }
 
-        // 인스타그램 핸들 업데이트
-        if (profileData.instagram) {
-          const existing = star.social_handles || {};
-          const currentIg = existing.instagram;
-          // 기존 핸들이 없거나 unverified인 경우만 업데이트
-          if (!currentIg || existing.instagram_unverified === "true") {
-            const merged = { ...existing, instagram: profileData.instagram };
-            // unverified 플래그 제거 (네이버는 공식 정보이므로)
-            delete merged.instagram_unverified;
-            updates.social_handles = merged;
-            igUpdated++;
-            updateNotes.push(`IG: @${profileData.instagram}`);
+        // 소셜 핸들 업데이트 (instagram, youtube, x, tiktok)
+        const socialResult = buildSocialUpdates(star.social_handles || {}, profileData);
+        if (Object.keys(socialResult.changes).length > 0) {
+          updates.social_handles = socialResult.merged;
+          socialUpdatedCount++;
+          for (const [key, val] of Object.entries(socialResult.changes)) {
+            updateNotes.push(`${key}: ${val}`);
           }
         }
 
@@ -324,7 +293,7 @@ Deno.serve(async (req) => {
         batch_offset: currentOffset,
         processed: stars.length,
         qualifier_updated: qualifierUpdated,
-        ig_updated: igUpdated,
+        social_updated: socialUpdatedCount,
         errors,
         next_offset: isDone ? null : newOffset,
         is_done: isDone,
@@ -343,9 +312,74 @@ Deno.serve(async (req) => {
   }
 });
 
+// ── 헬퍼: 검색 쿼리 생성 ──
+function buildSearchQuery(star: any, groupNameMap: Map<string, string>): string {
+  const searchName = star.name_ko || star.display_name;
+  if (star.star_type === "member" && star.group_star_id) {
+    const groupName = groupNameMap.get(star.group_star_id);
+    if (groupName) return `${groupName} ${searchName}`;
+  }
+  return searchName;
+}
+
+// ── 헬퍼: 그룹명 조회 ──
+async function resolveGroupNames(stars: any[], supabaseUrl: string, dbHeaders: Record<string, string>): Promise<Map<string, string>> {
+  const groupIds = [...new Set(stars.filter((s: any) => s.star_type === "member" && s.group_star_id).map((s: any) => s.group_star_id))];
+  const map = new Map<string, string>();
+  if (groupIds.length > 0) {
+    const gResp = await fetch(
+      `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name&id=in.(${groupIds.join(",")})`,
+      { headers: dbHeaders }
+    );
+    const groups = await gResp.json();
+    for (const g of groups || []) map.set(g.id, g.name_ko || g.display_name);
+  }
+  return map;
+}
+
+// ── 헬퍼: 소셜 핸들 업데이트 빌드 ──
+function buildSocialUpdates(
+  existing: Record<string, any>,
+  profileData: ProfileData
+): { merged: Record<string, any>; changes: Record<string, string> } {
+  const merged = { ...existing };
+  const changes: Record<string, string> = {};
+
+  // _not_found나 빈값, unverified인 경우만 업데이트
+  const shouldUpdate = (key: string, newVal: string | null): boolean => {
+    if (!newVal) return false;
+    const current = existing[key];
+    if (!current || current === "_not_found" || existing[`${key}_unverified`] === "true") return true;
+    return false;
+  };
+
+  if (shouldUpdate("instagram", profileData.instagram)) {
+    merged.instagram = profileData.instagram;
+    delete merged.instagram_unverified;
+    delete merged.instagram_checked_at;
+    changes.IG = `@${profileData.instagram}`;
+  }
+
+  if (shouldUpdate("youtube", profileData.youtube)) {
+    merged.youtube = profileData.youtube;
+    changes.YT = profileData.youtube!;
+  }
+
+  if (shouldUpdate("x", profileData.x)) {
+    merged.x = profileData.x;
+    changes.X = `@${profileData.x}`;
+  }
+
+  if (shouldUpdate("tiktok", profileData.tiktok)) {
+    merged.tiktok = profileData.tiktok;
+    changes.TT = `@${profileData.tiktok}`;
+  }
+
+  return { merged, changes };
+}
+
 // ── 직업 텍스트 → search_qualifier 매핑 ──
 function mapProfession(professionText: string): string | null {
-  // "가수, 탤런트" 같은 형태에서 첫 번째 매칭되는 직업 사용
   for (const [keyword, qualifier] of Object.entries(PROFESSION_MAP)) {
     if (professionText.includes(keyword)) {
       return qualifier;
@@ -358,7 +392,7 @@ function mapProfession(professionText: string): string | null {
 async function scrapeNaverProfile(
   searchQuery: string,
   apiKey: string
-): Promise<{ profession: string | null; instagram: string | null }> {
+): Promise<ProfileData> {
   const naverUrl = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(searchQuery + " 프로필")}`;
 
   const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
@@ -384,61 +418,68 @@ async function scrapeNaverProfile(
   const markdown: string = data?.data?.markdown || data?.markdown || "";
 
   if (!markdown) {
-    return { profession: null, instagram: null };
+    return { profession: null, instagram: null, youtube: null, x: null, tiktok: null };
   }
 
   // ── 프로필 섹션만 추출 (## **이름** ~ 다음 ## 또는 끝) ──
-  // 네이버 인물정보 패널은 "## **이름**펴고 접기" 형태로 시작
   const profileMatch = markdown.match(/##\s*\*{2}[^*]+\*{2}[^\n]*\n([\s\S]*?)(?=\n##\s|\n---|\n\*{3,}|$)/);
   const profileSection = profileMatch ? profileMatch[0] : "";
 
   if (!profileSection) {
-    console.log(`[naver-profile] No profile section found for query`);
-    return { profession: null, instagram: null };
+    console.log(`[naver-profile] No profile section found for: ${searchQuery}`);
+    return { profession: null, instagram: null, youtube: null, x: null, tiktok: null };
   }
 
-  // 1. 직업 추출 - 프로필 섹션 내에서만
+  // ── 1. 직업 추출 ──
   let profession: string | null = null;
-  const PROF_KEYWORDS = "가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|모델|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼";
+  const PROF_KEYWORDS = "가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼";
 
-  // 패턴: "JEON WOONG가수" 또는 "이지은, IU가수, 탤런트" - 프로필 헤더 바로 아래
+  // 패턴: "JEON WOONG가수" - 영문이름 바로 뒤에 직업
   const profRegex = new RegExp(`[A-Za-z\\s,]+(?:${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`);
-  const profMatch = profileSection.match(profRegex);
-  if (profMatch) {
-    // 영문이름 부분 제거하고 직업만 추출
-    const fullMatch = profMatch[0];
-    const profOnly = fullMatch.match(new RegExp(`(${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`));
-    if (profOnly) {
-      profession = profOnly[0].trim();
-    }
+  const profMatch2 = profileSection.match(profRegex);
+  if (profMatch2) {
+    const profOnly = profMatch2[0].match(new RegExp(`(${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`));
+    if (profOnly) profession = profOnly[0].trim();
   }
 
-  // fallback: 프로필 섹션 내 첫 번째 직업 키워드 (단독 등장)
+  // fallback: 프로필 섹션 내 첫 번째 직업 키워드
   if (!profession) {
     const simpleMatch = profileSection.match(new RegExp(`(?:^|\\n|\\s)(${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`, "m"));
-    if (simpleMatch) {
-      profession = simpleMatch[0].trim();
-    }
+    if (simpleMatch) profession = simpleMatch[0].trim();
   }
 
-  // 2. 인스타그램 핸들 추출 - 프로필 섹션 내에서만
+  // ── 2. 소셜 핸들 추출 (프로필 섹션 내) ──
+  // 인스타그램
   let instagram: string | null = null;
-  const igMatch = profileSection.match(/인스타그램[^\n]*\]\(https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]{2,30})\)/i);
+  const igMatch = profileSection.match(/인스타그램[^\n]*?\]\(https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]{2,30})\)/i)
+    || profileSection.match(/instagram\.com\/([a-zA-Z0-9_.]{2,30})/i);
   if (igMatch) {
-    instagram = igMatch[1].toLowerCase();
+    const handle = igMatch[1].toLowerCase();
+    const EXCLUDE_IG = new Set(["p", "explore", "reel", "stories", "accounts", "about", "developer", "legal", "api", "static", "help", "reels"]);
+    if (!EXCLUDE_IG.has(handle)) instagram = handle;
   }
 
-  // fallback: 프로필 섹션 내 instagram.com 링크
-  if (!instagram) {
-    const igLinkMatch = profileSection.match(/instagram\.com\/([a-zA-Z0-9_.]{2,30})/i);
-    if (igLinkMatch) {
-      const handle = igLinkMatch[1].toLowerCase();
-      const EXCLUDE = new Set(["p", "explore", "reel", "stories", "accounts", "about", "developer", "legal", "api", "static", "help", "reels"]);
-      if (!EXCLUDE.has(handle)) {
-        instagram = handle;
-      }
-    }
+  // 유튜브 채널 ID
+  let youtube: string | null = null;
+  const ytMatch = profileSection.match(/유튜브[^\n]*?\]\(https?:\/\/(?:www\.)?youtube\.com\/(?:channel\/|@)([a-zA-Z0-9_\-]{2,50})\)/i)
+    || profileSection.match(/youtube\.com\/(?:channel\/|@)([a-zA-Z0-9_\-]{2,50})/i);
+  if (ytMatch) youtube = ytMatch[1];
+
+  // X (트위터)
+  let x: string | null = null;
+  const xMatch = profileSection.match(/(?:X\(트위터\)|트위터|X)[^\n]*?\]\(https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]{2,30})\)/i)
+    || profileSection.match(/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]{2,30})/i);
+  if (xMatch) {
+    const handle = xMatch[1].toLowerCase();
+    const EXCLUDE_X = new Set(["home", "explore", "search", "settings", "i", "intent", "login", "signup"]);
+    if (!EXCLUDE_X.has(handle)) x = handle;
   }
 
-  return { profession, instagram };
+  // 틱톡
+  let tiktok: string | null = null;
+  const ttMatch = profileSection.match(/틱톡[^\n]*?\]\(https?:\/\/(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_.]{2,30})\)/i)
+    || profileSection.match(/tiktok\.com\/@([a-zA-Z0-9_.]{2,30})/i);
+  if (ttMatch) tiktok = ttMatch[1].toLowerCase();
+
+  return { profession, instagram, youtube, x, tiktok };
 }
