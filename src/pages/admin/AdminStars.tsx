@@ -100,6 +100,33 @@ const AdminStars = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStar, setEditingStar] = useState<StarRow | null>(null);
   const [naverFilling, setNaverFilling] = useState(false);
+  const [naverProgress, setNaverProgress] = useState<string | null>(null);
+
+  const runNaverFillLoop = useCallback(async () => {
+    setNaverFilling(true);
+    setNaverProgress("시작 중...");
+    let consecutiveErrors = 0;
+    try {
+      for (let i = 0; i < 200; i++) {
+        const { data, error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: { batchSize: 5 } });
+        if (error) { consecutiveErrors++; if (consecutiveErrors >= 3) throw error; continue; }
+        consecutiveErrors = 0;
+        const res = typeof data === "string" ? JSON.parse(data) : data;
+        setNaverProgress(res?.progress || `${res?.batch_offset ?? 0}/?`);
+        if (res?.is_done) {
+          toast({ title: `네이버 프로필 채우기 완료 (${res.progress})` });
+          break;
+        }
+        await new Promise(r => setTimeout(r, 500));
+      }
+    } catch (err) {
+      toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
+    } finally {
+      setNaverFilling(false);
+      setNaverProgress(null);
+      qc.invalidateQueries({ queryKey: ["admin-stars"] });
+    }
+  }, [qc]);
 
   /* form state */
   const [form, setForm] = useState({
