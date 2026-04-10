@@ -683,7 +683,11 @@ const ContentSearchPage = () => {
                 ) : (
                   <Zap className="w-3.5 h-3.5" />
                 )}
-                {prescoreMutation.isPending ? "수집중..." : "전체 수집"}
+                {prescoreMutation.isPending
+                  ? prescoreProgress
+                    ? `${prescoreProgress.processed}/${prescoreProgress.total}`
+                    : "수집중..."
+                  : "전체 수집"}
               </Button>
             </div>
 
