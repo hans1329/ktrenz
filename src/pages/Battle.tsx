@@ -439,7 +439,6 @@ export default function Battle() {
     const { data: runsData } = await (supabase
       .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
-      .eq("status", "ready")
       .order("created_at", { ascending: false })
       .limit(20);
 
