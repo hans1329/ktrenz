@@ -271,9 +271,9 @@ function ArtistSection({
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
-        {loopItems.map((item, loopIdx) => (
+        {runItems.map((item, idx) => (
           <div
-            key={`${item.id}-${loopIdx}`}
+            key={`${item.id}-${idx}`}
             className="snap-start flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
