@@ -436,8 +436,8 @@ export default function Battle() {
 
   async function loadBattleData(skipTranslation = false) {
     // Load runs — get enough stars for multiple pairs
-    const { data: runsData } = await supabase
-      .from("ktrenz_b2_runs")
+    const { data: runsData } = await (supabase
+      .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
       .eq("status", "ready")
       .order("created_at", { ascending: false })
