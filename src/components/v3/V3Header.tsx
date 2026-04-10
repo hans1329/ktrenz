@@ -66,7 +66,7 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
             />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="font-bold text-foreground flex items-center gap-1"><Gem className="w-3 h-3 text-primary" />{kPoints.toLocaleString()}</span>
+            <span className="font-bold text-foreground flex items-center gap-1">💎{kPoints.toLocaleString()}</span>
             <span className="text-muted-foreground">/ {SPOTIFY_GOAL.toLocaleString()} K</span>
           </div>
         </div>

@@ -808,7 +808,7 @@ export default function Battle() {
                           </p>
                           <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
                             {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
-                            <Gem className="w-3.5 h-3.5 text-primary" />
+                            💎
                           </p>
                         </div>
                       </div>
