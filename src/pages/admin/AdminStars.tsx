@@ -106,7 +106,7 @@ const AdminStars = () => {
     totalCandidates: number;
     currentOffset: number;
     qualifierUpdated: number;
-    igUpdated: number;
+    socialUpdated: number;
     errors: number;
     recentResults: string[];
     elapsedSec: number;
