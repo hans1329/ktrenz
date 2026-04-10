@@ -49,7 +49,8 @@ const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; ico
 ];
 
 function decodeHtml(str: string) {
-  return str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+  const basic = str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'").replace(/&middot;/g, '·').replace(/&hellip;/g, '…').replace(/&ndash;/g, '–').replace(/&mdash;/g, '—').replace(/&lsquo;/g, '\u2018').replace(/&rsquo;/g, '\u2019').replace(/&ldquo;/g, '\u201C').replace(/&rdquo;/g, '\u201D').replace(/&nbsp;/g, ' ');
+  return basic.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }
 
 function sourceIcon(source: string): ReactNode {
