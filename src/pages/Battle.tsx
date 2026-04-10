@@ -791,7 +791,9 @@ export default function Battle() {
                           const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
                           const h = Math.floor(diff / 3600);
                           const m = Math.floor((diff % 3600) / 60);
-                          const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                          const hLabel = language === "ko" ? "시간" : language === "ja" ? "時間" : language === "zh" ? "小时" : "h";
+                          const mLabel = language === "ko" ? "분" : language === "ja" ? "分" : language === "zh" ? "分钟" : "m";
+                          const timeStr = h > 0 ? `${h}${hLabel} ${m}${mLabel}` : `${m}${mLabel}`;
                           return language === "ko" ? `약 ${timeStr} 후 확인하세요.` : language === "ja" ? `約${timeStr}後にご確認ください。` : language === "zh" ? `请约${timeStr}后查看。` : `Check back in ~${timeStr}.`;
                         })()}
                       </p>
