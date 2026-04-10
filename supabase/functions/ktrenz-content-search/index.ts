@@ -603,38 +603,64 @@ Deno.serve(async (req) => {
 
     const runId = runData?.id;
 
-    if (runId) {
-      const allSourceItems = [
-        ...naverNews.map((i: any) => ({ ...i, source: i.source || "naver_news" })),
-        ...naverBlogEnriched.map((i: any) => ({ ...i, source: i.source || "naver_blog" })),
-        ...youtube.map((i: any) => ({ ...i, source: i.source || "youtube" })),
-        ...tiktok.map((i: any) => ({ ...i, source: i.source || "tiktok" })),
-        ...instagram.map((i: any) => ({ ...i, source: i.source || "instagram" })),
-        ...redditEnriched.map((i: any) => ({ ...i, source: i.source || "reddit" })),
-      ];
+    // Validate thumbnail URLs and cache http-only images to Supabase Storage
+    const STORAGE_BUCKET = "trend-images";
+    const validateThumbnail = async (url: string | null): Promise<string | null> => {
+      if (!url) return null;
+      try {
+        // For http:// URLs on HTTPS pages (mixed content), cache to storage
+        if (url.startsWith("http://")) {
+          // First try https:// version
+          const httpsUrl = url.replace("http://", "https://");
+          try {
+            const httpsRes = await fetchWithTimeout(httpsUrl, { method: "HEAD" }, 3000);
+            if (httpsRes.ok) {
+              const ct = httpsRes.headers.get("content-type") || "";
+              if (ct.startsWith("image") || !ct) return httpsUrl;
+            }
+          } catch { /* https not supported, proceed to cache */ }
 
-      // Validate thumbnail URLs: try HEAD first, fallback to GET for CDNs that block HEAD
-      const validateThumbnail = async (url: string | null): Promise<string | null> => {
-        if (!url) return null;
-        try {
-          // Try HEAD first (fast)
-          const headRes = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
-          if (headRes.ok) {
-            const ct = headRes.headers.get("content-type") || "";
-            // Accept if content-type is image OR if server doesn't specify (some CDNs omit it for HEAD)
-            if (ct.startsWith("image") || !ct) return url;
-          }
-          // If HEAD fails (405, 403, etc.) or wrong content-type, try GET with range header
-          if (!headRes.ok || headRes.status === 405 || headRes.status === 403) {
-            const getRes = await fetchWithTimeout(url, {
-              method: "GET",
-              headers: { "Range": "bytes=0-0" },
-            }, 3000);
-            if (getRes.ok || getRes.status === 206) return url;
-          }
-          return null;
-        } catch { return null; }
-      };
+          // Download and cache to Supabase Storage
+          try {
+            const dlRes = await fetchWithTimeout(url, {
+              headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)", "Accept": "image/*" },
+            }, 5000);
+            if (!dlRes.ok) return null;
+            const ct = dlRes.headers.get("content-type") || "image/jpeg";
+            if (!ct.startsWith("image")) return null;
+            const data = new Uint8Array(await dlRes.arrayBuffer());
+            if (data.length < 500) return null;
+            const ext = ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
+            const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(url)))).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+            const path = `b2-cache/${hash}.${ext}`;
+            const { error: upErr } = await sb.storage.from(STORAGE_BUCKET).upload(path, data, {
+              contentType: ct, upsert: true,
+            });
+            if (upErr) { console.warn("[B2] storage upload error:", upErr.message); return null; }
+            const { data: pubData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+            return pubData?.publicUrl || null;
+          } catch { return null; }
+        }
+
+        // Try HEAD first (fast)
+        const headRes = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
+        if (headRes.ok) {
+          const ct = headRes.headers.get("content-type") || "";
+          if (ct.startsWith("image") || !ct) return url;
+        }
+        // If HEAD fails (405, 403, etc.), try GET with range header
+        if (!headRes.ok || headRes.status === 405 || headRes.status === 403) {
+          const getRes = await fetchWithTimeout(url, {
+            method: "GET",
+            headers: { "Range": "bytes=0-0" },
+          }, 3000);
+          if (getRes.ok || getRes.status === 206) return url;
+        }
+        return null;
+      } catch { return null; }
+    };
+
+    if (runId) {
 
       const thumbnailChecks = await Promise.all(
         allSourceItems.map((item: any) => validateThumbnail(item.thumbnail))
@@ -667,6 +693,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Also fix http:// thumbnails in the real-time response sources
+    const fixHttpThumbs = async (items: any[]): Promise<any[]> => {
+      return Promise.all(items.map(async (item: any) => {
+        if (item.thumbnail?.startsWith("http://")) {
+          const cached = await validateThumbnail(item.thumbnail);
+          return { ...item, thumbnail: cached };
+        }
+        return item;
+      }));
+    };
+    const [fixedNews, fixedBlog, fixedReddit] = await Promise.all([
+      fixHttpThumbs(naverNews),
+      fixHttpThumbs(naverBlogEnriched),
+      fixHttpThumbs(redditEnriched),
+    ]);
+
     const results = {
       star: {
         id: star.id,
@@ -675,12 +717,12 @@ Deno.serve(async (req) => {
         star_type: star.star_type,
       },
       sources: {
-        naver_news: naverNews,
-        naver_blog: naverBlogEnriched,
+        naver_news: fixedNews,
+        naver_blog: fixedBlog,
         youtube,
         tiktok,
         instagram,
-        reddit: redditEnriched,
+        reddit: fixedReddit,
       },
       counts: {
         ...countsObj,
