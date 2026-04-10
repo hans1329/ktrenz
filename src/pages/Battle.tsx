@@ -749,10 +749,47 @@ export default function Battle() {
             {t("pickWinner")}
           </h2>
           <FlipTimer />
+
+          {/* Filter Tabs */}
+          <div className="flex items-center justify-center gap-1.5">
+            {([
+              { key: "live" as const, label: language === "ko" ? "라이브" : language === "ja" ? "ライブ" : language === "zh" ? "进行中" : "Live" },
+              { key: "settled" as const, label: language === "ko" ? "정산완료" : language === "ja" ? "精算済" : language === "zh" ? "已结算" : "Settled" },
+              { key: "myBets" as const, label: language === "ko" ? "내 참여" : language === "ja" ? "参加済" : language === "zh" ? "我的参与" : "My Bets" },
+            ]).map(tab => {
+              const count = battlePairs.filter((_, idx) => {
+                const state = getPairState(idx);
+                if (tab.key === "live") return !state.submitted || predictions.find(p => p.pickedRunId === state.pickedRunId)?.status === "pending";
+                if (tab.key === "settled") return state.submitted && predictions.find(p => p.pickedRunId === state.pickedRunId)?.status !== "pending";
+                return state.submitted;
+              }).length;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setBattleFilter(tab.key)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
+                    battleFilter === tab.key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label} {count > 0 && <span className="ml-0.5 opacity-70">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* All battle pairs rendered vertically */}
+        {/* Filtered battle pairs */}
         {battlePairs.map((pair, pairIdx) => {
+          // Filter logic
+          const state = getPairState(pairIdx);
+          const pred = predictions.find(p => p.pickedRunId === state.pickedRunId);
+          if (battleFilter === "live" && state.submitted && pred?.status !== "pending") return null;
+          if (battleFilter === "settled" && (!state.submitted || pred?.status === "pending")) return null;
+          if (battleFilter === "myBets" && !state.submitted) return null;
+
           const isLocked = pairIdx >= unlockedBattleCount;
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
