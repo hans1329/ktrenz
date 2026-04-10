@@ -660,6 +660,15 @@ Deno.serve(async (req) => {
       } catch { return null; }
     };
 
+    const allSourceItems = [
+      ...naverNews.map((i: any) => ({ ...i, source: "naver_news" })),
+      ...naverBlogEnriched.map((i: any) => ({ ...i, source: "naver_blog" })),
+      ...youtube.map((i: any) => ({ ...i, source: "youtube" })),
+      ...tiktok.map((i: any) => ({ ...i, source: "tiktok" })),
+      ...instagram.map((i: any) => ({ ...i, source: "instagram" })),
+      ...redditEnriched.map((i: any) => ({ ...i, source: "reddit" })),
+    ];
+
     if (runId) {
 
       const thumbnailChecks = await Promise.all(
