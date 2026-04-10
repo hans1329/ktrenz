@@ -68,7 +68,7 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
     }, 5000);
     if (!res.ok) return null;
-    const html = await res.text();
+    const html = await fetchTextWithCharset(res);
     const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     if (ogMatch?.[1]) {
@@ -86,8 +86,7 @@ async function scrapeBodyText(pageUrl: string, maxChars = 500): Promise<string |
       headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
     }, 5000);
     if (!res.ok) return null;
-    const html = await res.text();
-    // Try article body selectors common in Korean news sites
+    const html = await fetchTextWithCharset(res);
     const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
       || html.match(/id=["']?articleBody["']?[^>]*>([\s\S]*?)<\/div>/i)
       || html.match(/id=["']?newsct_article["']?[^>]*>([\s\S]*?)<\/div>/i)
@@ -103,12 +102,11 @@ async function scrapeBodyText(pageUrl: string, maxChars = 500): Promise<string |
         .replace(/&amp;/g, "&")
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">")
-        .replace(/&#39;/g, "'")
+        .replace(/&#0?39;/g, "'")
         .replace(/\s+/g, " ")
         .trim();
       return text.length > 0 ? text.substring(0, maxChars) : null;
     }
-    // Fallback: extract from <p> tags
     const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
     const combined = paragraphs
       .map((p: string) => p.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim())
