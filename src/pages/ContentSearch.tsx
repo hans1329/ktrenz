@@ -57,6 +57,8 @@ const ContentSearchPage = () => {
         body: { star_id: selectedStarId },
       });
       if (error) throw error;
+      // Invalidate collected artists so the list refreshes after a new search/collection
+      queryClient.invalidateQueries({ queryKey: ["collected-artists"] });
       return data;
     },
     enabled: !!selectedStarId,
