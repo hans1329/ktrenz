@@ -832,6 +832,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.noBattlesYet": { en: "No battles yet", ko: "아직 배틀이 없습니다", ja: "まだバトルがありません", zh: "暂无对战" },
   "battle.allDone": { en: "All battles done for today!", ko: "오늘의 배틀을 모두 완료했습니다!", ja: "今日のバトルは全て完了！", zh: "今天的对战已全部完成！" },
   "battle.markHot": { en: "Mark as Hot", ko: "Hot 표시", ja: "Hot マーク", zh: "标记为Hot" },
+  "battle.joined": { en: "Joined", ko: "참여완료", ja: "参加済み", zh: "已参与" },
 };
 
 export default translations;
