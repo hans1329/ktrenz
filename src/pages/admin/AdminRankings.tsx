@@ -581,7 +581,7 @@ const AdminRankings = () => {
       const { data, error } = await supabase
         .from('ktrenz_data_snapshots')
         .select('platform, metrics, collected_at')
-        .eq('wiki_entry_id', dataDetailWikiId)
+        .eq('star_id', dataDetailWikiId)
         .order('collected_at', { ascending: false })
         .limit(50);
       if (error) throw error;
