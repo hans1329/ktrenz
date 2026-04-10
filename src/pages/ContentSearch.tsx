@@ -24,6 +24,7 @@ const SOURCE_CONFIG: Record<SourceKey, { label: string; icon: typeof Newspaper; 
 const ALL_SOURCES: SourceKey[] = ["naver_news", "naver_blog", "youtube", "tiktok", "instagram", "reddit"];
 
 const ContentSearchPage = () => {
+  const queryClient = useQueryClient();
   const [searchText, setSearchText] = useState("");
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
