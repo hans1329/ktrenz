@@ -2667,6 +2667,42 @@ export type Database = {
           },
         ]
       }
+      ktrenz_b2_batch_queue: {
+        Row: {
+          batch_id: string
+          created_at: string
+          finished_at: string | null
+          id: string
+          queue_order: number
+          result: Json | null
+          star_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          queue_order?: number
+          result?: Json | null
+          star_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          queue_order?: number
+          result?: Json | null
+          star_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       ktrenz_b2_items: {
         Row: {
           card_status: string
