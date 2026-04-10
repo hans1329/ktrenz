@@ -38,8 +38,15 @@ interface KeywordResult {
 const SPOTIFY_GOAL = 9000;
 
 const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: () => void; kPoints: number }) => {
+  const { language } = useLanguage();
   if (!open) return null;
   const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+
+  const title = language === "ko" ? "Spotify Premium 1개월" : language === "ja" ? "Spotify Premium 1ヶ月" : language === "zh" ? "Spotify Premium 1个月" : "Spotify Premium 1 Month";
+  const redeemText = language === "ko" ? "9,000 K-Cash에 교환 가능" : language === "ja" ? "9,000 K-Cashで交換可能" : language === "zh" ? "9,000 K-Cash可兑换" : "Redeem at 9,000 K-Cash";
+  const howText = language === "ko" ? "데일리 미션, 예측, 배틀을 통해 K-Cash를 모으세요. 목표에 도달하면 Spotify Premium 구독 쿠폰을 받을 수 있습니다!" : language === "ja" ? "デイリーミッション、予測、バトルでK-Cashを貯めましょう。目標達成でSpotify Premiumクーポンを獲得！" : language === "zh" ? "通过每日任务、预测和对战赚取K-Cash。达到目标即可兑换Spotify Premium订阅券！" : "Earn K-Cash by completing daily missions, predictions, and battles. Reach the goal to redeem a Spotify Premium subscription coupon!";
+  const closeText = language === "ko" ? "닫기" : language === "ja" ? "閉じる" : language === "zh" ? "关闭" : "Close";
+
   return createPortal(
     <>
       <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
@@ -47,8 +54,8 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
         <div className="flex items-center gap-3">
           <div className="w-10 h-10">{SPOTIFY_SVG}</div>
           <div>
-            <p className="font-bold text-foreground text-sm">Spotify Premium 1 Month</p>
-            <p className="text-xs text-muted-foreground">Redeem at 9,000 K-Cash</p>
+            <p className="font-bold text-foreground text-sm">{title}</p>
+            <p className="text-xs text-muted-foreground">{redeemText}</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -64,10 +71,10 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Earn K-Cash by completing daily missions, predictions, and battles. Reach the goal to redeem a Spotify Premium subscription coupon!
+          {howText}
         </p>
         <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
-          Close
+          {closeText}
         </button>
       </div>
     </>,
