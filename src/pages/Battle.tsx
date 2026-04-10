@@ -915,46 +915,48 @@ export default function Battle() {
                     </Button>
                   ) : null
                 ) : (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-primary" />
-                        {t("predictionSubmitted")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {language === "ko" ? "다음 콘텐츠 스캔 후 결과가 정산됩니다." : language === "ja" ? "次回のコンテンツスキャン後に結果が確定します。" : language === "zh" ? "结果将在下次内容扫描后结算。" : "Results will be settled after the next content scan."}
-                        <br />
-                        {(() => {
-                          const now = new Date();
-                          const tomorrow = new Date(now);
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          tomorrow.setHours(0, 0, 0, 0);
-                          const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
-                          const h = Math.floor(diff / 3600);
-                          const m = Math.floor((diff % 3600) / 60);
-                          const hLabel = language === "ko" ? "시간" : language === "ja" ? "時間" : language === "zh" ? "小时" : "h";
-                          const mLabel = language === "ko" ? "분" : language === "ja" ? "分" : language === "zh" ? "分钟" : "m";
-                          const timeStr = h > 0 ? `${h}${hLabel} ${m}${mLabel}` : `${m}${mLabel}`;
-                          return language === "ko" ? `약 ${timeStr} 후 확인하세요.` : language === "ja" ? `約${timeStr}後にご確認ください。` : language === "zh" ? `请约${timeStr}后查看。` : `Check back in ~${timeStr}.`;
-                        })()}
-                      </p>
-                      <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
-                        <div>
-                          <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} {language === "ko" ? "오름 예측" : language === "ja" ? "上昇予測" : language === "zh" ? "上涨预测" : "rise predicted"}
-                          </p>
-                          <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
-                            {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
-                            💎
-                          </p>
+                  battleFilter !== "myBets" && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                      <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                        <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                          <Trophy className="w-4 h-4 text-primary" />
+                          {t("predictionSubmitted")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {language === "ko" ? "다음 콘텐츠 스캔 후 결과가 정산됩니다." : language === "ja" ? "次回のコンテンツスキャン後に結果が確定します。" : language === "zh" ? "结果将在下次内容扫描后结算。" : "Results will be settled after the next content scan."}
+                          <br />
+                          {(() => {
+                            const now = new Date();
+                            const tomorrow = new Date(now);
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            tomorrow.setHours(0, 0, 0, 0);
+                            const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
+                            const h = Math.floor(diff / 3600);
+                            const m = Math.floor((diff % 3600) / 60);
+                            const hLabel = language === "ko" ? "시간" : language === "ja" ? "時間" : language === "zh" ? "小时" : "h";
+                            const mLabel = language === "ko" ? "분" : language === "ja" ? "分" : language === "zh" ? "分钟" : "m";
+                            const timeStr = h > 0 ? `${h}${hLabel} ${m}${mLabel}` : `${m}${mLabel}`;
+                            return language === "ko" ? `약 ${timeStr} 후 확인하세요.` : language === "ja" ? `約${timeStr}後にご確認ください。` : language === "zh" ? `请约${timeStr}后查看。` : `Check back in ~${timeStr}.`;
+                          })()}
+                        </p>
+                        <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
+                          <div>
+                            <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} {language === "ko" ? "오름 예측" : language === "ja" ? "上昇予測" : language === "zh" ? "上涨预测" : "rise predicted"}
+                            </p>
+                            <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
+                              {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
+                              💎
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 )}
               </div>
             </div>
