@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
           try {
             const res = await fetchWithTimeout(item.url, {
               headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
-            }, 5000);
+            }, 8000);
             }, 8000);
             if (res.ok) {
               const html = await fetchTextWithCharset(res);
