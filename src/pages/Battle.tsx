@@ -273,9 +273,9 @@ function ArtistSection({
           } ${disabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
-            <span className={`text-sm sm:text-base font-extrabold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
-            <span className="text-xs sm:text-sm text-muted-foreground">by</span>
-            <span className={`text-sm sm:text-base font-bold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
+            <span className={`text-sm sm:text-base font-extrabold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>Trend {index === 0 ? "A" : "B"} ·</span>
+             <span className="text-xs sm:text-sm text-muted-foreground">by</span>
+             <span className={`text-sm sm:text-base font-bold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
           </div>
           <div
             className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
