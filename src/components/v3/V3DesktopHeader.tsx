@@ -42,6 +42,36 @@ interface V3DesktopHeaderProps {
   onTabChange: (tab: V3Tab) => void;
 }
 
+const SPOTIFY_GOAL = 9000;
+
+const SpotifyGoalBarDesktop = () => {
+  const { kPoints } = useAuth();
+  const navigate = useNavigate();
+  const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+
+  return (
+    <button
+      onClick={() => navigate("/kpass")}
+      className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-muted/50 transition-colors"
+      title={`${kPoints.toLocaleString()} / ${SPOTIFY_GOAL.toLocaleString()} K`}
+    >
+      <span className="text-xs font-medium text-muted-foreground">🎧</span>
+      <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${progress}%`,
+            backgroundColor: "hsl(142, 71%, 45%)",
+          }}
+        />
+      </div>
+      <span className="text-xs font-medium text-muted-foreground">
+        {kPoints.toLocaleString()} / {SPOTIFY_GOAL.toLocaleString()}
+      </span>
+    </button>
+  );
+};
+
 const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
