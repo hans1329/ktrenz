@@ -101,22 +101,30 @@ const ContentSearchPage = () => {
   const { data: collectedItems, isLoading: collectedLoading } = useQuery({
     queryKey: ["collected-items", collectedStarId],
     queryFn: async () => {
-      // Get runs for this star
       const { data: runs } = await (supabase as any)
         .from("ktrenz_b2_runs")
         .select("id, content_score, created_at")
         .eq("star_id", collectedStarId)
         .order("created_at", { ascending: false });
+
       if (!runs || runs.length === 0) return [];
-      const runIds = runs.map((r: any) => r.id);
+
+      const bestRun = runs.reduce((best: any, current: any) => {
+        if (!best) return current;
+        return current.content_score > best.content_score ? current : best;
+      }, null);
+
+      if (!bestRun?.id) return [];
+
       const { data: items } = await (supabase as any)
         .from("ktrenz_b2_items")
         .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, published_at, metadata, run_id")
-        .in("run_id", runIds)
+        .eq("run_id", bestRun.id)
         .eq("has_thumbnail", true)
         .not("source", "eq", "naver_blog")
         .order("engagement_score", { ascending: false })
-        .limit(100);
+        .limit(8);
+
       return items || [];
     },
     enabled: !!collectedStarId,
