@@ -29,64 +29,39 @@ async function getNaverNewsCount(
   clientId: string, clientSecret: string, query: string
 ): Promise<number> {
   try {
-    const now = Date.now();
-    const twoDaysAgo = now - 48 * 60 * 60 * 1000;
-    let totalCount = 0;
-    let start = 1;
-    const maxStart = 1000; // 네이버 API start 최대값
+    // 단일 API 호출로 total 필드를 사용 — 페이지네이션 불필요, 1000 캡 없음
+    const url = new URL("https://openapi.naver.com/v1/search/news.json");
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "1");
+    url.searchParams.set("sort", "date");
 
-    while (start <= maxStart) {
-      const url = new URL("https://openapi.naver.com/v1/search/news.json");
-      url.searchParams.set("query", query);
-      url.searchParams.set("display", "100");
-      url.searchParams.set("start", String(start));
-      url.searchParams.set("sort", "date");
+    let res: Response | null = null;
+    let retries = 0;
+    const maxRetries = 3;
 
-      let res: Response | null = null;
-      let retries = 0;
-      const maxRetries = 3;
-
-      while (retries < maxRetries) {
-        res = await fetchWithTimeout(url.toString(), {
-          headers: {
-            "X-Naver-Client-Id": clientId,
-            "X-Naver-Client-Secret": clientSecret,
-          },
-        });
-        if (res.status === 429) {
-          retries++;
-          console.log(`[prescore] 429 rate limit for "${query}" start=${start}, retry ${retries}/${maxRetries}`);
-          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
-          continue;
-        }
-        break;
+    while (retries < maxRetries) {
+      res = await fetchWithTimeout(url.toString(), {
+        headers: {
+          "X-Naver-Client-Id": clientId,
+          "X-Naver-Client-Secret": clientSecret,
+        },
+      });
+      if (res.status === 429) {
+        retries++;
+        console.log(`[prescore] 429 rate limit for "${query}", retry ${retries}/${maxRetries}`);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
+        continue;
       }
-
-      if (!res || !res.ok) {
-        console.log(`[prescore] API fail for "${query}" start=${start}, status=${res?.status}`);
-        break;
-      }
-      const data = await res.json();
-      if (!data.items || data.items.length === 0) break;
-
-      let reachedOld = false;
-      for (const item of data.items) {
-        const pubTime = new Date(item.pubDate).getTime();
-        if (pubTime >= twoDaysAgo) {
-          totalCount++;
-        } else {
-          reachedOld = true;
-          break;
-        }
-      }
-
-      if (reachedOld || data.items.length < 100) break;
-      start += 100;
-      // 페이지 간 딜레이 (rate limit 방지)
-      await new Promise((r) => setTimeout(r, 150));
+      break;
     }
 
-    return totalCount;
+    if (!res || !res.ok) {
+      console.log(`[prescore] API fail for "${query}", status=${res?.status}`);
+      return 0;
+    }
+
+    const data = await res.json();
+    return data.total ?? 0;
   } catch (e) {
     console.log(`[prescore] Error for "${query}":`, e);
     return 0;
