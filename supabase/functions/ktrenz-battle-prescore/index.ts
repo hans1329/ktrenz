@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
               ? groupNameMap.get(star.group_star_id) || null
               : null;
             const searchQuery = buildSearchQuery(star, groupNameKo);
-            const newsCount = await getNaverNewsCount(naverId, naverSecret, searchQuery);
+            const newsCount = await getNaverNewsCount48h(naverId, naverSecret, searchQuery);
             return {
               star_id: star.id,
               news_count: newsCount,
