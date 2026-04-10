@@ -69,7 +69,7 @@ function buildSearchQuery(
   groupNameKo: string | null
 ): string {
   const name = star.name_ko || star.display_name;
-  const qualifier = CATEGORY_QUALIFIER[star.star_category] || "연예인";
+  const qualifier = star.search_qualifier || "연예인";
 
   switch (star.star_type) {
     case "member":
