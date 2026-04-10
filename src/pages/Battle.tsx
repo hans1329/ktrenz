@@ -775,7 +775,9 @@ export default function Battle() {
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
           {drawerItem && (() => {
-            const starRun = runs.find((r) => r.star_id === drawerItem.star_id);
+            const drawerPair = battlePairs[drawerPairIndex];
+            const drawerRuns = drawerPair?.runs || [];
+            const starRun = drawerRuns.find((r) => r.star_id === drawerItem.star_id);
             const meta = drawerItem.metadata || {};
             return (
               <>
@@ -943,15 +945,15 @@ export default function Battle() {
 
                 {/* Hot button */}
                 <button
-                  onClick={() => toggleHot(drawerItem.id)}
+                  onClick={() => toggleHot(drawerPairIndex, drawerItem.id)}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all text-sm font-semibold focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
-                    hotVotes.has(drawerItem.id)
+                    getPairState(drawerPairIndex).hotVotes.has(drawerItem.id)
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary"
                   }`}
                 >
-                  <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
-                  {hotVotes.has(drawerItem.id) ? "Hot!" : t("markHot")}
+                  <Flame className={`w-4 h-4 ${getPairState(drawerPairIndex).hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
+                  {getPairState(drawerPairIndex).hotVotes.has(drawerItem.id) ? "Hot!" : t("markHot")}
                 </button>
               </>
             );
