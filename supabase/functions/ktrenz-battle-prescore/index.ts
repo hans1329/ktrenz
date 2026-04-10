@@ -71,14 +71,6 @@ async function getNaverNewsCount(
   }
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function buildSearchQuery(
   star: { name_ko: string | null; display_name: string; star_type: string; search_qualifier: string | null },
