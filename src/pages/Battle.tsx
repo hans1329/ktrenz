@@ -870,9 +870,9 @@ export default function Battle() {
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(getLocalizedTitle(drawerItem, language))}</h3>
 
                 {/* Description */}
-                {drawerItem.description && (
+                {drawerItem.description && !/[\uFFFD\x00-\x08]|[�]{2,}/.test(drawerItem.description) && !/^\.[\w_]+\s*\{/.test(drawerItem.description.trim()) && !/\{\{[\w#\/]/.test(drawerItem.description) && (
                   <p className="text-sm text-muted-foreground leading-relaxed mb-2">
-                    {decodeHtml(drawerItem.description)}
+                    {decodeHtml(drawerItem.description.length > 300 ? drawerItem.description.slice(0, 300) + "…" : drawerItem.description)}
                   </p>
                 )}
 
