@@ -539,12 +539,25 @@ Deno.serve(async (req) => {
         ...redditEnriched.map((i: any) => ({ ...i, source: i.source || "reddit" })),
       ];
 
-      // Validate thumbnail URLs with HEAD request (parallel, with timeout)
+      // Validate thumbnail URLs: try HEAD first, fallback to GET for CDNs that block HEAD
       const validateThumbnail = async (url: string | null): Promise<string | null> => {
         if (!url) return null;
         try {
-          const res = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
-          if (res.ok && (res.headers.get("content-type") || "").startsWith("image")) return url;
+          // Try HEAD first (fast)
+          const headRes = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
+          if (headRes.ok) {
+            const ct = headRes.headers.get("content-type") || "";
+            // Accept if content-type is image OR if server doesn't specify (some CDNs omit it for HEAD)
+            if (ct.startsWith("image") || !ct) return url;
+          }
+          // If HEAD fails (405, 403, etc.) or wrong content-type, try GET with range header
+          if (!headRes.ok || headRes.status === 405 || headRes.status === 403) {
+            const getRes = await fetchWithTimeout(url, {
+              method: "GET",
+              headers: { "Range": "bytes=0-0" },
+            }, 3000);
+            if (getRes.ok || getRes.status === 206) return url;
+          }
           return null;
         } catch { return null; }
       };
