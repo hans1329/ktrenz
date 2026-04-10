@@ -202,8 +202,8 @@ const AdminRankings = () => {
           const platforms = ['youtube', 'buzz_multi', 'hanteo', 'apple_music_charts', 'billboard_charts', 'lastfm', 'deezer', 'social_followers'];
           const { data, error } = await supabase
             .from('ktrenz_data_snapshots')
-            .select('wiki_entry_id, platform, collected_at, metrics')
-            .not('wiki_entry_id', 'is', null)
+            .select('star_id, platform, collected_at, metrics')
+            .not('star_id', 'is', null)
             .in('platform', platforms)
             .gte('collected_at', since)
             .order('collected_at', { ascending: false })
@@ -335,7 +335,7 @@ const AdminRankings = () => {
       while (true) {
         const { data, error } = await supabase
           .from('ktrenz_data_snapshots')
-          .select('platform, wiki_entry_id, metrics')
+          .select('platform, star_id, metrics')
           .gte('collected_at', since)
           .range(from, from + pageSize - 1);
         if (error) throw error;
