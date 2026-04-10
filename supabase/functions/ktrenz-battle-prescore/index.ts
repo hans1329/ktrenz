@@ -36,10 +36,18 @@ async function getNaverNewsCount(
   clientId: string, clientSecret: string, query: string
 ): Promise<number> {
   try {
+    // 최근 24시간 기사만 필터링: ds/de 파라미터 사용 (yyyy.mm.dd 형식)
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const formatDate = (d: Date) =>
+      `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+
     const url = new URL("https://openapi.naver.com/v1/search/news.json");
     url.searchParams.set("query", query);
     url.searchParams.set("display", "1");
     url.searchParams.set("sort", "date");
+    url.searchParams.set("ds", formatDate(yesterday));
+    url.searchParams.set("de", formatDate(now));
     const res = await fetchWithTimeout(url.toString(), {
       headers: {
         "X-Naver-Client-Id": clientId,
