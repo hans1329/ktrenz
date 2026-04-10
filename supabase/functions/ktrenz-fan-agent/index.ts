@@ -119,7 +119,7 @@ function areTrendItemsNearDuplicate(
 }
 
 function defaultTrendBucketKey(trigger: any): string {
-  return normalizeTrendText(trigger.artist_family_key || trigger.artist_name || trigger.wiki_entry_id || trigger.star_id);
+  return normalizeTrendText(trigger.artist_family_key || trigger.artist_name || trigger.star_id);
 }
 
 async function attachArtistFamilyKeys(adminClient: any, triggers: any[]): Promise<any[]> {
@@ -145,8 +145,8 @@ async function attachArtistFamilyKeys(adminClient: any, triggers: any[]): Promis
       ? star.star_type === "member"
         ? `group:${star.group_star_id || star.id}`
         : `group:${star.id}`
-      : trigger.wiki_entry_id
-        ? `wiki:${trigger.wiki_entry_id}`
+      : trigger.star_id
+        ? `star:${trigger.star_id}`
         : `artist:${normalizeTrendText(trigger.artist_name)}`;
 
     return {
@@ -620,7 +620,7 @@ async function handleTool(
       for (const row of data as TierAliasCandidate[]) {
         if (!row.id) continue;
         allRows.push({
-          wiki_entry_id: row.id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
         });
@@ -1016,7 +1016,7 @@ async function handleTool(
             displayIlikeRes.data?.[0] ??
             null;
 
-          if (aliasExact?.wiki_entry_id) {
+          if (aliasExact?.id) {
             wikiMatch = [{
               id: aliasExact.id,
               title: aliasExact.display_name ?? aliasExact.name_ko ?? targetArtistName,
@@ -1035,7 +1035,7 @@ async function handleTool(
                 return variants.some((v) => v === normalizedTarget);
               });
 
-              if (normalizedExact?.wiki_entry_id) {
+              if (normalizedExact?.id) {
                 wikiMatch = [{
                   id: normalizedExact.id,
                   title: normalizedExact.display_name ?? normalizedExact.name_ko ?? targetArtistName,
@@ -1223,7 +1223,6 @@ async function handleTool(
           const { error: slotUpdateErr } = await adminClient
             .from("ktrenz_agent_slots")
             .update({
-              wiki_entry_id: wikiId,
               artist_name: resolvedName,
               avatar_url: avatarUrl,
             })
@@ -1312,7 +1311,7 @@ async function handleTool(
         .from("ktrenz_trend_triggers")
         .select("influence_index")
         .eq("status", "active");
-      if (w.id) watchQuery = watchQuery.eq("wiki_entry_id", w.id);
+      // wiki_entry_id removed from ktrenz_watched_artists
       else watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
       const { data: watchTriggers } = await watchQuery;
       const kwCount = (watchTriggers || []).length;
@@ -1331,7 +1330,7 @@ async function handleTool(
     case "get_streaming_guide": {
       const artistName = args.artist_name;
 
-      // Find wiki_entry_id
+      // Find star by name
       const { data: wikiMatch } = await adminClient
         .from("wiki_entries")
         .select("id, title")
@@ -1466,7 +1465,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Find wiki_entry_id
+      // Find star by name
       const { data: wikiMatch } = await adminClient
         .from("wiki_entries")
         .select("id, title")
@@ -1892,7 +1891,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Find wiki_entry_id (try exact, then Korean name, then partial)
+      // Find star by name (try exact, then Korean name, then partial)
       let wikiId: string | null = null;
       let resolvedName = artistName;
 
@@ -1909,7 +1908,7 @@ JSON 구조:
         // Try Korean name
         const { data: koMatch } = await adminClient
           .from("ktrenz_stars")
-          .select("wiki_entry_id, display_name")
+          .select("id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
         if (koMatch && koMatch.length > 0) {
@@ -1929,7 +1928,7 @@ JSON 구조:
         }
       }
 
-      // Query ktrenz_schedules by wiki_entry_id or artist_name
+      // Query ktrenz_schedules by star_id or artist_name
       const today = new Date().toISOString().split("T")[0];
       let scheduleQuery = adminClient
         .from("ktrenz_schedules")
@@ -1999,7 +1998,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Resolve wiki_entry_id
+      // Resolve star_id
       let wikiId: string | null = null;
       let resolvedName = artistName;
 
@@ -2015,7 +2014,7 @@ JSON 구조:
       } else {
         const { data: koMatch } = await adminClient
           .from("ktrenz_stars")
-          .select("wiki_entry_id, display_name")
+          .select("id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
         if (koMatch && koMatch.length > 0) {
@@ -2156,7 +2155,7 @@ JSON 구조:
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
-        .select("id, star_id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
+        .select("id, star_id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
         .limit(fetchLimit);
@@ -2645,8 +2644,8 @@ Deno.serve(async (req) => {
 
         if (w.id) {
           const [tierRes, buzzRes, entryRes] = await Promise.all([
-            adminClient.from("ktrenz_stars").select("latest_video_title").eq("wiki_entry_id", w.id).maybeSingle(),
-            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", w.id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("ktrenz_stars").select("latest_video_title").eq("id", w.id).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("id", w.id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
             adminClient.from("wiki_entries").select("image_url").eq("id", w.id).maybeSingle(),
           ]);
           latestVideoTitle = (tierRes.data as any)?.latest_video_title ?? null;
@@ -2778,7 +2777,7 @@ Deno.serve(async (req) => {
 
     // Fetch watched artists to inject into system prompt context
     // Only inject if the active slot already has an artist assigned.
-    // If the slot has no wiki_entry_id, the user hasn't set a bias for this slot yet —
+    // If the slot has no artist, the user hasn't set a bias for this slot yet —
     // don't inject global watched artists to avoid the AI auto-assuming a bias.
     let watchedContext = "";
     let milestoneContext = "";
@@ -2790,7 +2789,7 @@ Deno.serve(async (req) => {
       const { data: milestones } = await adminClient
         .from("ktrenz_milestone_events")
         .select("id, event_type, event_data, created_at")
-        .eq("wiki_entry_id", activeSlotWikiEntryId)
+        .eq("id", activeSlotWikiEntryId)
         .eq("notified", false)
         .order("created_at", { ascending: false })
         .limit(5);
