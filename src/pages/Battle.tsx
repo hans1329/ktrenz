@@ -92,6 +92,7 @@ interface B2Item {
   title_en: string | null;
   title_ja: string | null;
   title_zh: string | null;
+  title_ko: string | null;
   description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
