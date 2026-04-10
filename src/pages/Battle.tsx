@@ -512,18 +512,23 @@ export default function Battle() {
       }
     }
 
+    // Remove pairs where either side has fewer than 5 items
+    const validPairs = pairs.filter(pair => {
+      const runIds = pair.runs.map(r => r.id);
+      return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
+    });
+
     // Trigger on-demand translation for non-Korean users (only on first load)
     if (!skipTranslation && language !== "ko") {
-      const allItems = pairs.flatMap(p => Object.values(p.items).flat());
+      const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
-          // Refetch with translated data, skip re-triggering translation
           loadBattleData(true);
         });
       }
     }
 
-    setBattlePairs(pairs);
+    setBattlePairs(validPairs);
     setLoading(false);
   }
 
