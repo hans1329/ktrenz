@@ -436,6 +436,31 @@ Deno.serve(async (req) => {
                   updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
                 }
               }
+              // Fallback: extract first large image from article body
+              if (!updated.thumbnail) {
+                const bodyImgMatches = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
+                for (const imgTag of bodyImgMatches) {
+                  // Skip tiny icons, logos, banners, sns icons, ads
+                  if (/ico_|btn_|logo|banner|ad_|\.gif/i.test(imgTag)) continue;
+                  // Prefer images with width >= 300 or no width constraint
+                  const widthMatch = imgTag.match(/width=["']?(\d+)/i);
+                  if (widthMatch && parseInt(widthMatch[1]) < 200) continue;
+                  const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
+                  if (srcMatch?.[1]) {
+                    let imgUrl = srcMatch[1];
+                    if (imgUrl.startsWith("//")) imgUrl = `https:${imgUrl}`;
+                    else if (imgUrl.startsWith("/")) {
+                      const origin = new URL(item.url).origin;
+                      imgUrl = `${origin}${imgUrl}`;
+                    }
+                    // Skip data URIs and very short paths
+                    if (!imgUrl.startsWith("data:") && imgUrl.length > 20) {
+                      updated.thumbnail = imgUrl;
+                      break;
+                    }
+                  }
+                }
+              }
             }
           } catch { /* skip enrichment on error */ }
           return updated;
