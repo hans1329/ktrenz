@@ -560,33 +560,48 @@ export default function Battle() {
         <V3Header />
       </div>
 
-      <div className="pt-16 pb-24 space-y-5">
-        {/* Title + Flip Timer */}
-        <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
-          <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
-            {t("pickWinner")}
-          </h2>
-          <FlipTimer />
+      <div className="pt-16 pb-24">
+        {/* Primary zone: Title + Timer + A section */}
+        <div className="bg-primary pb-6">
+          <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
+            <h2 className="text-xl text-primary-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
+              {t("pickWinner")}
+            </h2>
+            <FlipTimer />
+          </div>
+
+          {/* A section */}
+          {currentPair && runs[0] && (
+            <div className="w-full px-2 sm:px-4">
+              <ArtistSection
+                runItems={items[runs[0].id] || []}
+                starName={runs[0].star?.display_name || "Unknown"}
+                contentScore={parseFloat((runs[0].content_score + getHotBonus(runs[0].id)).toFixed(1))}
+                scoreLabel={t("contentScore")}
+                isPicked={pickedRunId === runs[0].id}
+                onPick={() => handlePick(runs[0].id)}
+                onCardTap={(item) => setDrawerItem(item)}
+                disabled={submitted}
+                index={0}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Card carousels — full width */}
-        {currentPair && (
-          <div className="w-full px-2 sm:px-4 space-y-10">
-            {runs.map((run, idx) => (
-              <div key={run.id} className="space-y-2">
-                <ArtistSection
-                  runItems={items[run.id] || []}
-                  starName={run.star?.display_name || "Unknown"}
-                  contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-                  scoreLabel={t("contentScore")}
-                  isPicked={pickedRunId === run.id}
-                  onPick={() => handlePick(run.id)}
-                  onCardTap={(item) => setDrawerItem(item)}
-                  disabled={submitted}
-                  index={idx}
-                />
-              </div>
-            ))}
+        {/* B section — normal background */}
+        {currentPair && runs[1] && (
+          <div className="w-full px-2 sm:px-4 mt-10">
+            <ArtistSection
+              runItems={items[runs[1].id] || []}
+              starName={runs[1].star?.display_name || "Unknown"}
+              contentScore={parseFloat((runs[1].content_score + getHotBonus(runs[1].id)).toFixed(1))}
+              scoreLabel={t("contentScore")}
+              isPicked={pickedRunId === runs[1].id}
+              onPick={() => handlePick(runs[1].id)}
+              onCardTap={(item) => setDrawerItem(item)}
+              disabled={submitted}
+              index={1}
+            />
           </div>
         )}
 
