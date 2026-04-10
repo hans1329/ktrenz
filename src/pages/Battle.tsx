@@ -614,7 +614,12 @@ export default function Battle() {
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="fixed top-0 left-0 right-0 z-50 bg-card/70 backdrop-blur-md">
-        <V3Header />
+        <V3Header rightSlot={
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted/60">
+            <Ticket className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-bold text-foreground">{remainingTickets}</span>
+          </div>
+        } />
       </div>
 
       <div className="pt-16 pb-24 space-y-5">
@@ -742,11 +747,6 @@ export default function Battle() {
             </div>
           )}
 
-          <div className="text-center pb-2">
-            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-              {t("dailyRemaining")} <Ticket className="w-3.5 h-3.5 text-primary" /> <span className="font-bold text-foreground">{remainingTickets}</span>
-            </p>
-          </div>
 
           {/* History Section */}
           {predictions.length > 0 && (
