@@ -117,9 +117,9 @@ const AdminStars = () => {
   const runNaverFillLoop = useCallback(async () => {
     setNaverFilling(true);
     stopNaverRef.current = false;
-    setNaverStats({ progress: "0/?", totalCandidates: 0, currentOffset: 0, qualifierUpdated: 0, igUpdated: 0, errors: 0, recentResults: [], elapsedSec: 0 });
+    setNaverStats({ progress: "0/?", totalCandidates: 0, currentOffset: 0, qualifierUpdated: 0, socialUpdated: 0, errors: 0, recentResults: [], elapsedSec: 0 });
     let consecutiveErrors = 0;
-    let totalQualifier = 0, totalIg = 0, totalErrors = 0;
+    let totalQualifier = 0, totalSocial = 0, totalErrors = 0;
     const startTime = Date.now();
     try {
       for (let i = 0; i < 200; i++) {
@@ -134,14 +134,14 @@ const AdminStars = () => {
         consecutiveErrors = 0;
         const res = typeof data === "string" ? JSON.parse(data) : data;
         totalQualifier += res?.qualifier_updated ?? 0;
-        totalIg += res?.ig_updated ?? 0;
+        totalSocial += res?.social_updated ?? 0;
         totalErrors += res?.errors ?? 0;
         setNaverStats({
           progress: res?.progress || `${res?.batch_offset ?? 0}/?`,
           totalCandidates: res?.next_offset !== null ? parseInt(res?.progress?.split("/")[1] || "0") : 0,
           currentOffset: parseInt(res?.progress?.split("/")[0] || "0"),
           qualifierUpdated: totalQualifier,
-          igUpdated: totalIg,
+          socialUpdated: totalSocial,
           errors: totalErrors,
           recentResults: (res?.results || []).slice(-5),
           elapsedSec: Math.round((Date.now() - startTime) / 1000),
@@ -484,8 +484,8 @@ const AdminStars = () => {
               <p className="text-[10px] text-muted-foreground">분류 업데이트</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-primary">{naverStats.igUpdated}</p>
-              <p className="text-[10px] text-muted-foreground">IG 업데이트</p>
+              <p className="text-lg font-bold text-primary">{naverStats.socialUpdated}</p>
+              <p className="text-[10px] text-muted-foreground">소셜 업데이트</p>
             </div>
             <div>
               <p className="text-lg font-bold text-destructive">{naverStats.errors}</p>
