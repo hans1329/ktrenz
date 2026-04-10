@@ -300,7 +300,7 @@ function ArtistSection({
             className="snap-center flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
-            <div className="rounded-xl overflow-hidden bg-white">
+            <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
               {/* Square image */}
               <div className="relative aspect-square bg-muted">
                 {item.thumbnail ? (
@@ -308,12 +308,16 @@ function ArtistSection({
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
                 )}
+                {/* Light purple overlay */}
+                <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+                {/* Bottom gradient for text readability */}
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-primary/15 to-transparent pointer-events-none" />
                 <div className="absolute top-1.5 right-1.5">
                   {sourceIcon(item.source)}
                 </div>
               </div>
               {/* Content area */}
-              <div className="p-3 min-h-[40px] flex items-center">
+              <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
                 <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
                   {decodeHtml(item.title)}
                 </p>
