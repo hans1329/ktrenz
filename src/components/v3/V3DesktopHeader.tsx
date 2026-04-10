@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe, Zap } from "lucide-react";
+import { TrendingUp, Bot, Activity, Bell, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
@@ -14,22 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import ktrenzLogo from "@/assets/logo_col3.webp";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
-interface SearchResult {
-  id: string;
-  title: string;
-  slug: string;
-  image_url: string | null;
-  schema_type: string;
-}
 
-interface KeywordResult {
-  id: string;
-  keyword: string;
-  keyword_ko: string | null;
-  artist_name: string;
-  keyword_category: string;
-  star_id: string | null;
-}
+
 
 const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
@@ -41,6 +27,36 @@ interface V3DesktopHeaderProps {
   activeTab: V3Tab;
   onTabChange: (tab: V3Tab) => void;
 }
+
+const SPOTIFY_GOAL = 9000;
+
+const SpotifyGoalBarDesktop = () => {
+  const { kPoints } = useAuth();
+  const navigate = useNavigate();
+  const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+
+  return (
+    <button
+      onClick={() => navigate("/kpass")}
+      className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-muted/50 transition-colors"
+      title={`${kPoints.toLocaleString()} / ${SPOTIFY_GOAL.toLocaleString()} K`}
+    >
+      <span className="text-xs font-medium text-muted-foreground">🎧</span>
+      <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${progress}%`,
+            backgroundColor: "hsl(142, 71%, 45%)",
+          }}
+        />
+      </div>
+      <span className="text-xs font-medium text-muted-foreground">
+        {kPoints.toLocaleString()} / {SPOTIFY_GOAL.toLocaleString()}
+      </span>
+    </button>
+  );
+};
 
 const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const navigate = useNavigate();
@@ -57,11 +73,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
       window.history.replaceState({}, "");
     }
   }, [location.state]);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [keywordResults, setKeywordResults] = useState<KeywordResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+
+
 
   // Check for unread daily news notification (red dot)
   const { data: watchedArtists } = useQuery({
@@ -101,64 +114,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
 
   const showAgentBadge = user && hasUnread;
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
-    setIsSearching(true);
-    const q = query.trim();
-    const qNoSpace = q.replace(/\s+/g, "");
-    const starFilter = q === qNoSpace
-      ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
-      : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
-    try {
-      const { data: starsData } = await (supabase as any)
-        .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url")
-        .eq("is_active", true)
-        .or(starFilter)
-        .limit(10);
 
-      const { data: kwData } = await (supabase as any)
-        .from("ktrenz_trend_triggers")
-        .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
-        .eq("status", "active")
-        .or(`keyword.ilike.%${q}%,keyword_ko.ilike.%${q}%,keyword_en.ilike.%${q}%`)
-        .order("detected_at", { ascending: false })
-        .limit(8);
 
-      const stars = starsData ?? [];
-      const kws = kwData ?? [];
-
-      const results: any[] = stars.map((s: any) => ({
-        id: s.id, title: s.display_name, slug: s.id,
-        image_url: s.image_url ?? null,
-        schema_type: s.star_type === "group" ? "artist" : "member",
-        starId: s.id,
-      }));
-      setSearchResults(results.slice(0, 8));
-
-      const seenKw = new Set<string>();
-      const uniqueKw: KeywordResult[] = [];
-      for (const kw of kwData as KeywordResult[]) {
-        const key = `${kw.keyword}-${kw.artist_name}`;
-        if (!seenKw.has(key)) { seenKw.add(key); uniqueKw.push(kw); }
-      }
-      setKeywordResults(uniqueKw.slice(0, 6));
-    } catch (err) { console.error("Search error:", err); }
-    finally { setIsSearching(false); }
-  };
-
-  const handleResultClick = (result: any) => {
-    navigate(result.starId ? `/t2/artist/${result.starId}` : `/t2/artist/${result.id}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
-  };
-
-  const handleKeywordClick = (kw: KeywordResult) => {
-    navigate(`/t2/${kw.id}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
-  };
-
-  const hasResults = searchResults.length > 0 || keywordResults.length > 0;
 
   return (
     <>
@@ -199,76 +156,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
 
           {/* Right: Search + Lang + Profile */}
           <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative">
-              {isSearchOpen ? (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      autoFocus
-                      type="text"
-                      placeholder={t("search.placeholder")}
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="pl-9 pr-4 h-9 w-64 bg-muted/50 border-0 rounded-full focus-visible:ring-1 focus-visible:ring-primary"
-                    />
-                    {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />}
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]); }} className="w-8 h-8 rounded-full">
-                    <X className="w-4 h-4" />
-                  </Button>
-                  {(hasResults || (searchQuery.length >= 2 && !isSearching)) && (
-                    <div className="absolute top-full right-0 mt-2 w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-96 overflow-y-auto">
-                      {/* Artist results */}
-                      {searchResults.length > 0 && (
-                        <>
-                          <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Artists</div>
-                          {searchResults.map((result) => (
-                            <button key={result.id} onClick={() => handleResultClick(result)}
-                              className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
-                              <Avatar className="w-9 h-9 rounded-lg shrink-0">
-                                <AvatarImage src={result.image_url || undefined} className="object-cover" />
-                                <AvatarFallback className="rounded-lg text-xs bg-muted">{result.title.slice(0, 2)}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground truncate">{result.title}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{result.schema_type}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </>
-                      )}
-                      {/* Keyword results */}
-                      {keywordResults.length > 0 && (
-                        <>
-                          <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Keywords</div>
-                          {keywordResults.map((kw) => (
-                            <button key={kw.id} onClick={() => handleKeywordClick(kw)}
-                              className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
-                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                <Zap className="w-4 h-4 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground truncate">{kw.keyword_ko || kw.keyword}</p>
-                                <p className="text-xs text-muted-foreground truncate">{kw.artist_name} · {kw.keyword_category}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </>
-                      )}
-                      {!hasResults && (
-                        <div className="p-4 text-center text-sm text-muted-foreground">{t("search.noResults")}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)} className="w-9 h-9 rounded-full">
-                  <Search className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
+            {/* Spotify Goal Bar */}
+            <SpotifyGoalBarDesktop />
 
             {/* Language */}
             <Button
