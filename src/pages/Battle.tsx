@@ -595,7 +595,7 @@ export default function Battle() {
 
     const validPairs = pairs.filter(pair => {
       const runIds = pair.runs.map(r => r.id);
-      return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
+      return runIds.every(id => (pair.items[id]?.length ?? 0) >= 3);
     });
 
     if (!skipTranslation) {
