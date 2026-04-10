@@ -65,7 +65,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 // star_type + star_category 기반 검색어 생성
 function buildSearchQuery(
-  star: { name_ko: string | null; display_name: string; star_type: string; star_category: string },
+  star: { name_ko: string | null; display_name: string; star_type: string; search_qualifier: string | null },
   groupNameKo: string | null
 ): string {
   const name = star.name_ko || star.display_name;
