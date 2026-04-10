@@ -931,7 +931,24 @@ export default function Battle() {
           );
         })}
 
-        {/* History Section */}
+        {/* Empty state for filter */}
+        {battlePairs.every((_, idx) => {
+          const s = getPairState(idx);
+          const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
+          if (battleFilter === "live") return s.submitted && p?.status !== "pending";
+          if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
+          if (battleFilter === "myBets") return !s.submitted;
+          return false;
+        }) && (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            {battleFilter === "settled"
+              ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
+              : battleFilter === "myBets"
+              ? (language === "ko" ? "참여한 배틀이 없습니다" : "No battles joined yet")
+              : (language === "ko" ? "라이브 배틀이 없습니다" : "No live battles")}
+          </div>
+        )}
+
         <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
           {predictions.length > 0 && (
             <div className="pb-4">
