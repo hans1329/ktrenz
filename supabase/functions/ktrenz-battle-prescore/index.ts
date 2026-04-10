@@ -186,18 +186,8 @@ Deno.serve(async (req) => {
     const nextOffset = offset + CHUNK_SIZE;
     const hasMore = nextOffset < allStars.length;
 
-    // If more stars remain, self-chain
+    // If more stars remain, return progress for client to call next chunk
     if (hasMore) {
-      const fnUrl = `${supabaseUrl}/functions/v1/ktrenz-battle-prescore`;
-      fetch(fnUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ offset: nextOffset, batch_id: batchId, _chain: true }),
-      }).catch((e) => console.error("Self-chain failed:", e));
-
       return new Response(JSON.stringify({
         success: true,
         phase: "scoring",
