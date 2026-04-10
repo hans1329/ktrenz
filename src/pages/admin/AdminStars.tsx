@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import {
-  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe,
+  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe, X,
 } from "lucide-react";
 
 /* ───── types ───── */
