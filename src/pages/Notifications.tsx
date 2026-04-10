@@ -36,7 +36,7 @@ const Notifications = () => {
       if (!user?.id) return [];
       const { data } = await supabase
         .from("ktrenz_watched_artists")
-        .select("id, artist_name, wiki_entry_id")
+        .select("id, artist_name")
         .eq("user_id", user.id);
       return data ?? [];
     },
@@ -48,9 +48,8 @@ const Notifications = () => {
     queryKey: ["notifications-scores", watchedArtists],
     queryFn: async (): Promise<WatchedArtistScore[]> => {
       if (!watchedArtists?.length) return [];
-
-      const wikiIds = watchedArtists.filter(w => w.wiki_entry_id).map(w => w.wiki_entry_id!);
-      if (!wikiIds.length) return [];
+      // wiki_entry_id removed - return empty for now as scoring relies on v3_scores
+      return [];
 
       // Get all latest scores
       const { data: allScores } = await supabase

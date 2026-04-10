@@ -275,7 +275,7 @@ const AdminIntents = () => {
                           {s.summary_date}
                         </TableCell>
                         <TableCell className="text-xs font-mono truncate max-w-[140px]">
-                          {s.wiki_entry_id?.slice(0, 8)}...
+                          {s.id?.slice(0, 8)}...
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={INTENT_COLORS[s.intent_category] || INTENT_COLORS.general}>
