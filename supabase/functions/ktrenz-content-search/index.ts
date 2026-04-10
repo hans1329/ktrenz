@@ -405,19 +405,47 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    // Reddit: try og:image from embedded links in snippet, then from post URL itself
+    // Reddit: og:title for full title + og:image
     const enrichReddit = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
         toEnrich.map(async (item: any) => {
-          if (item.thumbnail) return item;
-          const embeddedUrl = extractUrlFromText(item.description || "");
-          if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
-            const ogImg = await extractOgImage(embeddedUrl);
-            if (ogImg) return { ...item, thumbnail: ogImg };
-          }
-          const ogImg = await extractOgImage(item.url);
-          return ogImg ? { ...item, thumbnail: ogImg } : item;
+          let updated = { ...item };
+          try {
+            const pageUrl = item.url || "";
+            if (pageUrl) {
+              const res = await fetchWithTimeout(pageUrl, {
+                headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
+              }, 5000);
+              if (res.ok) {
+                const html = await res.text();
+                // Full title
+                const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+                  || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+                if (ogTitleMatch?.[1]) {
+                  const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").trim();
+                  if (fullTitle.length > updated.title.length) {
+                    updated.title = fullTitle;
+                  }
+                }
+                // og:image
+                if (!updated.thumbnail) {
+                  const embeddedUrl = extractUrlFromText(updated.description || "");
+                  if (embeddedUrl && !embeddedUrl.includes("reddit.com")) {
+                    const ogImg = await extractOgImage(embeddedUrl);
+                    if (ogImg) { updated.thumbnail = ogImg; return updated; }
+                  }
+                  const ogImgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+                  if (ogImgMatch?.[1]) {
+                    const imgUrl = ogImgMatch[1];
+                    updated.thumbnail = imgUrl.startsWith("//") ? `https:${imgUrl}` : imgUrl;
+                  }
+                }
+              }
+            }
+          } catch { /* skip */ }
+          return updated;
         })
       );
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
