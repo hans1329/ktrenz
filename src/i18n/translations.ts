@@ -808,7 +808,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.nextSettlement": { en: "Next settlement in", ko: "다음 정산까지", ja: "次の精算まで", zh: "距下次结算" },
   "battle.contentScore": { en: "Score", ko: "점수", ja: "スコア", zh: "分数" },
   "battle.pickWinner": { en: "Which trend will rise tomorrow?", ko: "어떤 트렌드가 내일 더 유행할까요?", ja: "明日はどちらのトレンドが伸びる？", zh: "明天哪个趋势会更火？" },
-  "battle.predictGrowth": { en: "Your pick:", ko: "당신의 선택:", ja: "あなたの選択:", zh: "你的选择:" },
+  "battle.predictGrowth": { en: "Your Trend Prediction", ko: "당신의 트렌드 예측", ja: "あなたのトレンド予測", zh: "你的趋势预测" },
   "battle.bandSteady": { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" },
   "battle.bandRising": { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
   "battle.bandSurge": { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" },
