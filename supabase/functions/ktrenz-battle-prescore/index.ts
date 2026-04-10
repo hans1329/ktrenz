@@ -59,7 +59,7 @@ async function getNaverNewsCount(
     let count = 0;
     for (const item of data.items) {
       const pubTime = new Date(item.pubDate).getTime();
-      if (pubTime >= oneDayAgo) {
+      if (pubTime >= twoDaysAgo) {
         count++;
       } else {
         // sort=date이므로 오래된 기사가 나오면 이후는 모두 오래된 것
