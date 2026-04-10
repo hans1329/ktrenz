@@ -598,7 +598,7 @@ export default function Battle() {
       return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
     });
 
-    if (!skipTranslation && language !== "ko") {
+    if (!skipTranslation) {
       const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
