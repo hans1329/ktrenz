@@ -36,18 +36,15 @@ async function getNaverNewsCount(
   clientId: string, clientSecret: string, query: string
 ): Promise<number> {
   try {
-    // 최근 24시간 기사만 필터링: ds/de 파라미터 사용 (yyyy.mm.dd 형식)
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const formatDate = (d: Date) =>
-      `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+    // 네이버 API는 ds/de 파라미터를 공식 지원하지 않으므로
+    // 최근 기사 100건을 가져와서 pubDate로 24시간 내 기사만 직접 카운트
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
     const url = new URL("https://openapi.naver.com/v1/search/news.json");
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "1");
+    url.searchParams.set("display", "100");
     url.searchParams.set("sort", "date");
-    url.searchParams.set("ds", formatDate(yesterday));
-    url.searchParams.set("de", formatDate(now));
     const res = await fetchWithTimeout(url.toString(), {
       headers: {
         "X-Naver-Client-Id": clientId,
@@ -56,7 +53,20 @@ async function getNaverNewsCount(
     });
     if (!res.ok) return 0;
     const data = await res.json();
-    return data.total || 0;
+    if (!data.items || data.items.length === 0) return 0;
+
+    // pubDate 파싱하여 24시간 내 기사만 카운트
+    let count = 0;
+    for (const item of data.items) {
+      const pubTime = new Date(item.pubDate).getTime();
+      if (pubTime >= oneDayAgo) {
+        count++;
+      } else {
+        // sort=date이므로 오래된 기사가 나오면 이후는 모두 오래된 것
+        break;
+      }
+    }
+    return count;
   } catch {
     return 0;
   }
