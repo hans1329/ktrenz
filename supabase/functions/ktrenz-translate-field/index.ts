@@ -6,11 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPPORTED_LANGS = ["en", "ja", "zh"] as const;
+const SUPPORTED_LANGS = ["en", "ja", "zh", "ko"] as const;
 type Lang = (typeof SUPPORTED_LANGS)[number];
 
 // Maps table + field prefix to the source (Korean) column and target columns
-const FIELD_MAP: Record<string, { source: string; targets: Record<Lang, string> }> = {
+const FIELD_MAP: Record<string, { source: string; targets: Record<string, string> }> = {
   "ktrenz_keywords.keyword": {
     source: "keyword_ko",
     targets: { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
@@ -29,7 +29,7 @@ const FIELD_MAP: Record<string, { source: string; targets: Record<Lang, string> 
   },
   "ktrenz_b2_items.title": {
     source: "title",
-    targets: { en: "title_en", ja: "title_ja", zh: "title_zh" },
+    targets: { en: "title_en", ja: "title_ja", zh: "title_zh", ko: "title_ko" },
   },
 };
 
@@ -37,7 +37,13 @@ const langLabel: Record<Lang, string> = {
   en: "English",
   ja: "Japanese",
   zh: "Chinese (Simplified)",
+  ko: "Korean",
 };
+
+// Detect if text contains Japanese-specific characters (Hiragana, Katakana)
+function containsJapanese(text: string): boolean {
+  return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -69,6 +75,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    const targetCol = mapping.targets[lang];
+    if (!targetCol) {
+      return new Response(JSON.stringify({ error: `No target column for ${lang}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!ids || ids.length === 0 || ids.length > 20) {
       return new Response(JSON.stringify({ error: "ids must be 1-20 items" }), {
         status: 400,
@@ -79,8 +93,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const targetCol = mapping.targets[lang];
 
     // Fetch rows where source exists, then filter rows that still need translation
     const { data: rows, error: fetchErr } = await supabase
@@ -100,6 +112,11 @@ Deno.serve(async (req) => {
         typeof sourceValue === "string" &&
         typeof targetValue === "string" &&
         targetValue.trim() === sourceValue.trim();
+
+      // For ko target: only translate if source contains Japanese
+      if (lang === "ko") {
+        return !targetValue && typeof sourceValue === "string" && containsJapanese(sourceValue);
+      }
 
       return !targetValue || isEnglishContextStale;
     });
@@ -129,7 +146,11 @@ Deno.serve(async (req) => {
       ? `\n\nIMPORTANT: The following are artist/group names. Do NOT translate them. Use them exactly as listed here:\n${nameList.join(", ")}`
       : "";
 
-    const prompt = `Translate the following Korean texts to ${langLabel[lang]}. Return ONLY a JSON array of translated strings in the same order. Keep translations concise and natural.${nameInstruction}
+    // Detect source language for the prompt
+    const hasJapanese = textsToTranslate.some(t => containsJapanese(t));
+    const sourceLabel = hasJapanese ? "Japanese" : "Korean";
+
+    const prompt = `Translate the following ${sourceLabel} texts to ${langLabel[lang]}. Return ONLY a JSON array of translated strings in the same order. Keep translations concise and natural. Remove hashtags from the output.${nameInstruction}
 
 Input:
 ${JSON.stringify(textsToTranslate)}`;
@@ -143,7 +164,7 @@ ${JSON.stringify(textsToTranslate)}`;
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a professional Korean translator. Artist names, group names, and member names must be kept exactly as provided in the name list — never translate, romanize differently, or localize them. Output only valid JSON arrays." },
+          { role: "system", content: "You are a professional translator. Artist names, group names, and member names must be kept exactly as provided in the name list — never translate, romanize differently, or localize them. Output only valid JSON arrays." },
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
