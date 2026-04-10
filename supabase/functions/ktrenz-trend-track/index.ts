@@ -666,7 +666,6 @@ Deno.serve(async (req) => {
         const { error: trackInsertErr } = await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: triggerId,
           keyword_id: kw.id,
-          wiki_entry_id: null,
           keyword: kw.keyword,
           interest_score: buzzScore,
           region: "multi",
