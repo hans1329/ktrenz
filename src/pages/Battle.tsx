@@ -663,7 +663,7 @@ export default function Battle() {
         <V3Header rightSlot={
           <div className="flex items-center gap-1.5">
             <Ticket className="w-5 h-5 text-primary" />
-            <span className="text-base font-extrabold text-foreground">{remainingTickets}</span>
+            <span className="text-base font-extrabold text-primary">{remainingTickets}</span>
           </div>
         } />
       </div>
