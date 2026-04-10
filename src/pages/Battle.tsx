@@ -217,7 +217,7 @@ function ArtistSection({
     if (!el || itemCount <= 1) return;
     requestAnimationFrame(() => {
       const child = el.children[offset] as HTMLElement;
-      if (child) el.scrollLeft = child.offsetLeft - (el.offsetWidth - child.offsetWidth) / 2;
+      if (child) el.scrollLeft = child.offsetLeft;
     });
   }, [itemCount, offset]);
 
