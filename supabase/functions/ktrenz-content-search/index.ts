@@ -19,6 +19,48 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOU
   }
 }
 
+// ── Charset-aware text decoder ──
+// Many Korean news sites serve EUC-KR; res.text() defaults to UTF-8 and garbles the text.
+async function fetchTextWithCharset(res: Response): Promise<string> {
+  // 1. Check Content-Type header for charset
+  const ct = res.headers.get("content-type") || "";
+  const charsetMatch = ct.match(/charset=["']?([^;"'\s]+)/i);
+  let charset = charsetMatch?.[1]?.toLowerCase() || "";
+
+  const buf = await res.arrayBuffer();
+
+  // 2. If header doesn't specify, peek into first 2KB for <meta charset="...">
+  if (!charset) {
+    const peek = new TextDecoder("utf-8", { fatal: false }).decode(buf.slice(0, 2048));
+    const metaMatch = peek.match(/<meta[^>]+charset=["']?([^"';\s>]+)/i)
+      || peek.match(/<meta[^>]+content=["'][^"']*charset=([^"';\s]+)/i);
+    if (metaMatch?.[1]) charset = metaMatch[1].toLowerCase();
+  }
+
+  // 3. Normalise common aliases
+  if (charset === "euc-kr" || charset === "euc_kr" || charset === "x-euc-kr") charset = "euc-kr";
+  if (!charset || charset === "utf-8") charset = "utf-8";
+
+  try {
+    return new TextDecoder(charset, { fatal: false }).decode(buf);
+  } catch {
+    // Fallback to UTF-8 if decoder doesn't support the charset
+    return new TextDecoder("utf-8", { fatal: false }).decode(buf);
+  }
+}
+
+// ── Check if a string contains garbled (mojibake) text ──
+function isGarbled(text: string): boolean {
+  if (!text || text.length === 0) return false;
+  // Count replacement characters and non-printable chars
+  let badChars = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 0xFFFD) badChars++; // Unicode replacement char
+  }
+  return badChars > text.length * 0.1; // >10% replacement chars = garbled
+}
+
 // ── Extract og:image from a page ──
 async function extractOgImage(pageUrl: string): Promise<string | null> {
   try {
@@ -26,7 +68,7 @@ async function extractOgImage(pageUrl: string): Promise<string | null> {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
     }, 5000);
     if (!res.ok) return null;
-    const html = await res.text();
+    const html = await fetchTextWithCharset(res);
     const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     if (ogMatch?.[1]) {
@@ -44,8 +86,7 @@ async function scrapeBodyText(pageUrl: string, maxChars = 500): Promise<string |
       headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
     }, 5000);
     if (!res.ok) return null;
-    const html = await res.text();
-    // Try article body selectors common in Korean news sites
+    const html = await fetchTextWithCharset(res);
     const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
       || html.match(/id=["']?articleBody["']?[^>]*>([\s\S]*?)<\/div>/i)
       || html.match(/id=["']?newsct_article["']?[^>]*>([\s\S]*?)<\/div>/i)
@@ -61,12 +102,11 @@ async function scrapeBodyText(pageUrl: string, maxChars = 500): Promise<string |
         .replace(/&amp;/g, "&")
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">")
-        .replace(/&#39;/g, "'")
+        .replace(/&#0?39;/g, "'")
         .replace(/\s+/g, " ")
         .trim();
       return text.length > 0 ? text.substring(0, maxChars) : null;
     }
-    // Fallback: extract from <p> tags
     const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
     const combined = paragraphs
       .map((p: string) => p.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim())
@@ -345,7 +385,7 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    // Enrich naver news: og:image + body text + full title scraping
+    // Enrich naver news: og:image + body text + full title scraping (charset-aware)
     const enrichNaverNews = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
@@ -356,22 +396,21 @@ Deno.serve(async (req) => {
               headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
             }, 5000);
             if (res.ok) {
-              const html = await res.text();
+              const html = await fetchTextWithCharset(res);
               // Full title from og:title or <title>
               const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
                 || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
               if (ogTitleMatch?.[1]) {
-                const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").trim();
-                if (fullTitle.length > updated.title.length) {
+                const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+                if (fullTitle.length > updated.title.length && !isGarbled(fullTitle)) {
                   updated.title = fullTitle;
                 }
               } else {
                 const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
                 if (titleTagMatch?.[1]) {
-                  const rawTitle = titleTagMatch[1].replace(/<[^>]*>/g, "").trim();
-                  // Remove common suffixes like " - 매체명" or " | 매체명"
+                  const rawTitle = titleTagMatch[1].replace(/<[^>]*>/g, "").replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").trim();
                   const cleanTitle = rawTitle.replace(/\s*[-|]\s*[^-|]+$/, "").trim();
-                  if (cleanTitle.length > updated.title.length) {
+                  if (cleanTitle.length > updated.title.length && !isGarbled(cleanTitle)) {
                     updated.title = cleanTitle;
                   }
                 }
@@ -383,8 +422,8 @@ Deno.serve(async (req) => {
                 || html.match(/class=["'][^"']*article[_-]?body[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)
                 || html.match(/class=["'][^"']*news[_-]?content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
               if (articleMatch?.[1]) {
-                const bodyText = articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/\s+/g, " ").trim();
-                if (bodyText.length > (updated.description || "").length) {
+                const bodyText = articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/&#\d+;/g, " ").replace(/\s+/g, " ").trim();
+                if (bodyText.length > (updated.description || "").length && !isGarbled(bodyText)) {
                   updated.description = bodyText.substring(0, 500);
                 }
               }
@@ -498,12 +537,25 @@ Deno.serve(async (req) => {
         ...redditEnriched.map((i: any) => ({ ...i, source: i.source || "reddit" })),
       ];
 
-      // Validate thumbnail URLs with HEAD request (parallel, with timeout)
+      // Validate thumbnail URLs: try HEAD first, fallback to GET for CDNs that block HEAD
       const validateThumbnail = async (url: string | null): Promise<string | null> => {
         if (!url) return null;
         try {
-          const res = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
-          if (res.ok && (res.headers.get("content-type") || "").startsWith("image")) return url;
+          // Try HEAD first (fast)
+          const headRes = await fetchWithTimeout(url, { method: "HEAD" }, 3000);
+          if (headRes.ok) {
+            const ct = headRes.headers.get("content-type") || "";
+            // Accept if content-type is image OR if server doesn't specify (some CDNs omit it for HEAD)
+            if (ct.startsWith("image") || !ct) return url;
+          }
+          // If HEAD fails (405, 403, etc.) or wrong content-type, try GET with range header
+          if (!headRes.ok || headRes.status === 405 || headRes.status === 403) {
+            const getRes = await fetchWithTimeout(url, {
+              method: "GET",
+              headers: { "Range": "bytes=0-0" },
+            }, 3000);
+            if (getRes.ok || getRes.status === 206) return url;
+          }
           return null;
         } catch { return null; }
       };
