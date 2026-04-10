@@ -613,7 +613,7 @@ export default function Battle() {
       const allRunIds = validPairs.flatMap(p => p.runs.map(r => r.id));
       const { data: existingPreds } = await supabase
         .from("b2_predictions")
-        .select("picked_run_id, opponent_run_id, band")
+        .select("picked_run_id, opponent_run_id, band, status, settled_at")
         .eq("user_id", currentUser.id)
         .in("picked_run_id", allRunIds);
 
@@ -645,7 +645,7 @@ export default function Battle() {
             band: p.band as Band,
             pickedStarName: pickedRun?.star?.display_name || "Unknown",
             opponentStarName: opponentRun?.star?.display_name || "Unknown",
-            status: "pending",
+            status: (p as any).status || "pending",
             created_at: new Date().toISOString(),
           };
         });
