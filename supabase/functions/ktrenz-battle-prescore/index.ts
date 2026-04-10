@@ -13,14 +13,6 @@ const corsHeaders = {
 const BATCH_SIZE = 10;      // 동시 API 호출 수
 const TIMEOUT_MS = 8000;
 const CHUNK_SIZE = 100;     // 한 호출당 처리할 스타 수
-const BATTLE_PICK_COUNT = 20;
-const COOLDOWN_DAYS = 3;
-
-const TIER_CONFIG = [
-  { name: "top", count: 6, startPct: 0, endPct: 0.1 },
-  { name: "mid", count: 8, startPct: 0.1, endPct: 0.4 },
-  { name: "low", count: 6, startPct: 0.4, endPct: 1.0 },
-];
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
@@ -229,7 +221,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // === FINAL CHUNK: Do tier selection ===
+    // === FINAL CHUNK: Return all scores (no tier selection here) ===
     const { data: allPrescores } = await sb
       .from("ktrenz_b2_prescores")
       .select("star_id, news_count, pre_score")
@@ -237,60 +229,13 @@ Deno.serve(async (req) => {
       .order("pre_score", { ascending: false });
 
     const scoredResults = (allPrescores || []).filter((r: any) => r.news_count > 0);
-    const totalScored = scoredResults.length;
-
-    // Cooldown check
-    const cooldownDate = new Date();
-    cooldownDate.setDate(cooldownDate.getDate() - COOLDOWN_DAYS);
-    const { data: recentRuns } = await sb
-      .from("ktrenz_b2_runs")
-      .select("star_id")
-      .gte("created_at", cooldownDate.toISOString());
-    const recentStarIds = new Set((recentRuns || []).map((r: any) => r.star_id));
-
-    const selectedStarIds: string[] = [];
-    for (const tier of TIER_CONFIG) {
-      const startIdx = Math.floor(totalScored * tier.startPct);
-      const endIdx = Math.floor(totalScored * tier.endPct);
-      const tierPool = scoredResults.slice(startIdx, endIdx);
-      const available = tierPool.filter((r: any) => !recentStarIds.has(r.star_id));
-      const cooldownOnly = tierPool.filter((r: any) => recentStarIds.has(r.star_id));
-      const shuffled = shuffle(available);
-      const picked = shuffled.slice(0, tier.count);
-      if (picked.length < tier.count) {
-        const remaining = tier.count - picked.length;
-        picked.push(...shuffle(cooldownOnly).slice(0, remaining));
-      }
-      selectedStarIds.push(...picked.map((r: any) => r.star_id));
-    }
-
-    const selectedDetails = selectedStarIds.map((sid) => {
-      const star = allStars.find((s) => s.id === sid);
-      const score = scoredResults.find((r: any) => r.star_id === sid);
-      const groupNameKo = star?.group_star_id
-        ? groupNameMap.get(star.group_star_id) || null
-        : null;
-      const searchQuery = star ? buildSearchQuery(star, groupNameKo) : "";
-      return {
-        star_id: sid,
-        name: star?.display_name,
-        name_ko: star?.name_ko,
-        star_type: star?.star_type,
-        search_query: searchQuery,
-        news_count: score?.news_count || 0,
-        is_cooldown: recentStarIds.has(sid),
-      };
-    });
 
     return new Response(JSON.stringify({
       success: true,
       phase: "complete",
       batch_id: batchId,
       total_stars: allStars.length,
-      scored: totalScored,
-      cooldown_excluded: recentStarIds.size,
-      selected_count: selectedStarIds.length,
-      selected: selectedDetails,
+      scored: scoredResults.length,
       top_10: scoredResults.slice(0, 10).map((r: any) => {
         const star = allStars.find((s) => s.id === r.star_id);
         const groupNameKo = star?.group_star_id
@@ -303,7 +248,6 @@ Deno.serve(async (req) => {
           star_type: star?.star_type,
           search_query: searchQuery,
           news_count: r.news_count,
-          in_cooldown: recentStarIds.has(r.star_id),
         };
       }),
     }), {
