@@ -1,0 +1,1 @@
+UPDATE ktrenz_stars SET search_qualifier = '가수' WHERE search_qualifier = '모델' AND is_active = true;
