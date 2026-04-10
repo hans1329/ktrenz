@@ -40,21 +40,19 @@ const SpotifyGoalBar = () => {
   return (
     <button
       onClick={() => navigate("/kpass")}
-      className="flex items-center gap-1.5 px-1 py-1 active:opacity-60 transition-opacity"
+      className="flex items-center gap-0 px-0.5 py-1 active:opacity-60 transition-opacity"
       title={`${kPoints.toLocaleString()} / ${SPOTIFY_GOAL.toLocaleString()} K`}
     >
-      <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+      <div className="relative w-10 h-3 rounded-full bg-muted overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
-            width: `${progress}%`,
+            width: `${Math.max(progress, 8)}%`,
             backgroundColor: "hsl(142, 71%, 45%)",
           }}
         />
+        <span className="absolute inset-0 flex items-center justify-center text-[7px]">🎧</span>
       </div>
-      <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-        {kPoints >= 1000 ? `${(kPoints / 1000).toFixed(1)}K` : kPoints}
-      </span>
     </button>
   );
 };
