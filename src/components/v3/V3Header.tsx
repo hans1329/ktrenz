@@ -301,8 +301,8 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
               {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
               <div className="flex items-center gap-2 shrink-0">
                 <T2AdminControls />
-                {rightSlot}
                 <SpotifyGoalBar />
+                {rightSlot}
               </div>
             </>
           )}
