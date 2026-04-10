@@ -57,12 +57,31 @@ const ContentSearchPage = () => {
     staleTime: 30000,
   });
 
-  // Pre-score collection mutation (includes tier selection)
+  // Pre-score collection mutation with chunked processing
+  const [prescoreProgress, setPrescoreProgress] = useState<{ processed: number; total: number } | null>(null);
   const prescoreMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore");
-      if (error) throw error;
-      return data;
+      setPrescoreProgress(null);
+      let offset = 0;
+      let batchId: string | undefined;
+      let lastData: any = null;
+
+      while (true) {
+        const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore", {
+          body: { offset, batch_id: batchId },
+        });
+        if (error) throw error;
+        lastData = data;
+        batchId = data.batch_id;
+
+        if (data.phase === "scoring" && data.has_more) {
+          setPrescoreProgress({ processed: data.processed, total: data.total });
+          offset = data.processed;
+        } else {
+          setPrescoreProgress(null);
+          return lastData;
+        }
+      }
     },
     onSuccess: () => {
       refetchPrescores();
