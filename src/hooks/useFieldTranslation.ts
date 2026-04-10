@@ -13,8 +13,8 @@ export const useFieldTranslation = () => {
 
   const translateIfNeeded = useCallback(
     async (
-      table: "ktrenz_keywords" | "ktrenz_trend_triggers",
-      field: "keyword" | "context",
+      table: "ktrenz_keywords" | "ktrenz_trend_triggers" | "ktrenz_b2_items",
+      field: "keyword" | "context" | "title",
       items: { id: string; [key: string]: any }[],
       onTranslated?: () => void
     ) => {
@@ -26,6 +26,7 @@ export const useFieldTranslation = () => {
         "ktrenz_keywords.context": { en: "context", ja: "context_ja", zh: "context_zh" },
         "ktrenz_trend_triggers.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
         "ktrenz_trend_triggers.context": { en: "context", ja: "context_ja", zh: "context_zh" },
+        "ktrenz_b2_items.title": { en: "title_en", ja: "title_ja", zh: "title_zh" },
       };
 
       const key = `${table}.${field}`;
