@@ -586,20 +586,29 @@ export default function Battle() {
 
         {/* Card carousels — full width */}
         {currentPair && (
-          <div className="w-full px-2 sm:px-4 space-y-10">
+          <div className="w-full px-2 sm:px-4">
             {runs.map((run, idx) => (
-              <div key={run.id} className="space-y-2">
-                <ArtistSection
-                  runItems={items[run.id] || []}
-                  starName={run.star?.display_name || "Unknown"}
-                  contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-                  scoreLabel={t("contentScore")}
-                  isPicked={pickedRunId === run.id}
-                  onPick={() => handlePick(run.id)}
-                  onCardTap={(item) => setDrawerItem(item)}
-                  disabled={submitted}
-                  index={idx}
-                />
+              <div key={run.id}>
+                {idx > 0 && (
+                  <div className="my-6 flex items-center gap-3 px-4">
+                    <div className="flex-1 h-px bg-border/60" />
+                    <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">vs</span>
+                    <div className="flex-1 h-px bg-border/60" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <ArtistSection
+                    runItems={items[run.id] || []}
+                    starName={run.star?.display_name || "Unknown"}
+                    contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
+                    scoreLabel={t("contentScore")}
+                    isPicked={pickedRunId === run.id}
+                    onPick={() => handlePick(run.id)}
+                    onCardTap={(item) => setDrawerItem(item)}
+                    disabled={submitted}
+                    index={idx}
+                  />
+                </div>
               </div>
             ))}
           </div>
