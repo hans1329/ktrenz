@@ -290,8 +290,8 @@ const Notifications = () => {
             <div className="space-y-2">
               {artistScores.map((artist) => (
                 <button
-                  key={artist.wiki_entry_id ?? artist.artist_name}
-                  onClick={() => artist.wiki_entry_id && navigate(`/artist/${artist.wiki_entry_id}`)}
+                  key={artist.artist_name}
+                  onClick={() => navigate(`/`)}
                   className="w-full rounded-xl bg-card/80 border border-border/50 p-3 flex items-center gap-3 hover:border-primary/30 transition-colors text-left"
                 >
                   {artist.image_url ? (
