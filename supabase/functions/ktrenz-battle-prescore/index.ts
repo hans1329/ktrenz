@@ -76,19 +76,24 @@ function buildSearchQuery(
   star: { name_ko: string | null; display_name: string; star_type: string; search_qualifier: string | null },
   groupNameKo: string | null
 ): string {
-  const name = star.name_ko || star.display_name;
+  const nameKo = star.name_ko;
+  const nameEn = star.display_name;
   const qualifier = star.search_qualifier || "연예인";
 
   switch (star.star_type) {
     case "member":
-      if (groupNameKo) return `${groupNameKo} ${name}`;
-      return `${name} ${qualifier}`;
+      if (groupNameKo) return `${groupNameKo} ${nameKo || nameEn}`;
+      return `${nameKo || nameEn} ${qualifier}`;
     case "solo":
-      return `${name} ${qualifier}`;
+      // 한글명과 영문명이 다르면 OR 결합
+      if (nameKo && nameKo !== nameEn) return `${nameKo} OR ${nameEn}`;
+      return `${nameKo || nameEn} ${qualifier}`;
     case "group":
-      return `${name} ${qualifier}`;
+      // 그룹은 한글명 OR 영문명으로 검색 (예: "방탄소년단 OR BTS")
+      if (nameKo && nameKo !== nameEn) return `${nameKo} OR ${nameEn}`;
+      return `${nameKo || nameEn} ${qualifier}`;
     default:
-      return `${name} ${qualifier}`;
+      return `${nameKo || nameEn} ${qualifier}`;
   }
 }
 
