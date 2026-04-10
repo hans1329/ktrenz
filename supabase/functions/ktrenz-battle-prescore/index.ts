@@ -41,13 +41,31 @@ async function getNaverNewsCount(
       url.searchParams.set("display", "100");
       url.searchParams.set("start", String(start));
       url.searchParams.set("sort", "date");
-      const res = await fetchWithTimeout(url.toString(), {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-      });
-      if (!res.ok) break;
+
+      let res: Response | null = null;
+      let retries = 0;
+      const maxRetries = 3;
+
+      while (retries < maxRetries) {
+        res = await fetchWithTimeout(url.toString(), {
+          headers: {
+            "X-Naver-Client-Id": clientId,
+            "X-Naver-Client-Secret": clientSecret,
+          },
+        });
+        if (res.status === 429) {
+          retries++;
+          console.log(`[prescore] 429 rate limit for "${query}" start=${start}, retry ${retries}/${maxRetries}`);
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
+          continue;
+        }
+        break;
+      }
+
+      if (!res || !res.ok) {
+        console.log(`[prescore] API fail for "${query}" start=${start}, status=${res?.status}`);
+        break;
+      }
       const data = await res.json();
       if (!data.items || data.items.length === 0) break;
 
@@ -64,10 +82,13 @@ async function getNaverNewsCount(
 
       if (reachedOld || data.items.length < 100) break;
       start += 100;
+      // 페이지 간 딜레이 (rate limit 방지)
+      await new Promise((r) => setTimeout(r, 150));
     }
 
     return totalCount;
-  } catch {
+  } catch (e) {
+    console.log(`[prescore] Error for "${query}":`, e);
     return 0;
   }
 }
