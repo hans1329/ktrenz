@@ -10,9 +10,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const BATCH_SIZE = 10;      // 동시 API 호출 수
-const TIMEOUT_MS = 8000;
+const BATCH_SIZE = 3;       // 동시 API 호출 수 (네이버 rate limit 방지)
+const TIMEOUT_MS = 10000;
 const CHUNK_SIZE = 100;     // 한 호출당 처리할 스타 수
+const RETRY_DELAY_MS = 300; // 429 재시도 대기
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
@@ -40,13 +41,31 @@ async function getNaverNewsCount(
       url.searchParams.set("display", "100");
       url.searchParams.set("start", String(start));
       url.searchParams.set("sort", "date");
-      const res = await fetchWithTimeout(url.toString(), {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-      });
-      if (!res.ok) break;
+
+      let res: Response | null = null;
+      let retries = 0;
+      const maxRetries = 3;
+
+      while (retries < maxRetries) {
+        res = await fetchWithTimeout(url.toString(), {
+          headers: {
+            "X-Naver-Client-Id": clientId,
+            "X-Naver-Client-Secret": clientSecret,
+          },
+        });
+        if (res.status === 429) {
+          retries++;
+          console.log(`[prescore] 429 rate limit for "${query}" start=${start}, retry ${retries}/${maxRetries}`);
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * retries));
+          continue;
+        }
+        break;
+      }
+
+      if (!res || !res.ok) {
+        console.log(`[prescore] API fail for "${query}" start=${start}, status=${res?.status}`);
+        break;
+      }
       const data = await res.json();
       if (!data.items || data.items.length === 0) break;
 
@@ -63,10 +82,13 @@ async function getNaverNewsCount(
 
       if (reachedOld || data.items.length < 100) break;
       start += 100;
+      // 페이지 간 딜레이 (rate limit 방지)
+      await new Promise((r) => setTimeout(r, 150));
     }
 
     return totalCount;
-  } catch {
+  } catch (e) {
+    console.log(`[prescore] Error for "${query}":`, e);
     return 0;
   }
 }
@@ -186,7 +208,7 @@ Deno.serve(async (req) => {
         );
         chunkResults.push(...batchResults);
         if (i + BATCH_SIZE < chunk.length) {
-          await new Promise((r) => setTimeout(r, 200));
+          await new Promise((r) => setTimeout(r, 500));
         }
       }
 
