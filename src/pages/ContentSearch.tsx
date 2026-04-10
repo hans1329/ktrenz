@@ -57,7 +57,7 @@ const ContentSearchPage = () => {
     staleTime: 30000,
   });
 
-  // Pre-score collection mutation
+  // Pre-score collection mutation (includes tier selection)
   const prescoreMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore");
@@ -66,6 +66,52 @@ const ContentSearchPage = () => {
     },
     onSuccess: () => {
       refetchPrescores();
+    },
+  });
+
+  // Batch queue status
+  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery({
+    queryKey: ["battle-batch-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+        body: { action: "status" },
+      });
+      if (error) return null;
+      return data;
+    },
+    enabled: viewMode === "prescore",
+    staleTime: 5000,
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (d && (d.pending > 0 || d.running > 0)) return 3000;
+      return false;
+    },
+  });
+
+  // Start batch collection
+  const startBatchMutation = useMutation({
+    mutationFn: async (starIds: string[]) => {
+      // Start the queue
+      const { data: startResult, error: startErr } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+        body: { action: "start", star_ids: starIds },
+      });
+      if (startErr) throw startErr;
+
+      // Process all items sequentially by polling
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
+          body: { action: "process_next" },
+        });
+        if (error) throw error;
+        hasMore = data?.has_more ?? false;
+        refetchBatchStatus();
+      }
+
+      return startResult;
+    },
+    onSuccess: () => {
+      refetchBatchStatus();
     },
   });
 
@@ -623,12 +669,84 @@ const ContentSearchPage = () => {
             </div>
 
             {prescoreMutation.isSuccess && prescoreMutation.data && (
-              <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
                 <p className="text-xs font-medium text-foreground">
-                  ✅ {prescoreMutation.data.total_stars}명 스코어링 완료 · {prescoreMutation.data.scored}명 기사 발견
+                  ✅ {prescoreMutation.data.total_stars}명 스코어링 · {prescoreMutation.data.scored}명 기사 발견 · 쿨다운 제외 {prescoreMutation.data.cooldown_excluded}명
                 </p>
+                {prescoreMutation.data.selected && prescoreMutation.data.selected.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] font-semibold text-foreground">
+                        🎯 배틀 선발 {prescoreMutation.data.selected_count}명
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full gap-1 h-7 text-[10px]"
+                        disabled={startBatchMutation.isPending}
+                        onClick={() => {
+                          const ids = prescoreMutation.data.selected.map((s: any) => s.star_id);
+                          startBatchMutation.mutate(ids);
+                        }}
+                      >
+                        {startBatchMutation.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Zap className="w-3 h-3" />
+                        )}
+                        {startBatchMutation.isPending ? "수집중..." : "콘텐츠 일괄수집"}
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {prescoreMutation.data.selected.map((s: any) => (
+                        <span key={s.star_id} className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full border",
+                          s.is_cooldown ? "bg-muted text-muted-foreground border-border" : "bg-primary/10 text-primary border-primary/20"
+                        )}>
+                          {s.name_ko || s.name} ({s.news_count})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Batch progress */}
+            {batchStatus && batchStatus.total > 0 && (
+              <div className="mb-4 p-3 rounded-xl bg-muted/50 border border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-foreground">
+                    📦 배치 수집 진행 ({batchStatus.done + batchStatus.error}/{batchStatus.total})
+                  </p>
+                  {(batchStatus.pending > 0 || batchStatus.running > 0) && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  )}
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all duration-500"
+                    style={{ width: `${((batchStatus.done + batchStatus.error) / batchStatus.total) * 100}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {(batchStatus.items || []).map((item: any) => (
+                    <span key={item.id} className={cn(
+                      "text-[10px] px-1.5 py-0.5 rounded-full",
+                      item.status === "done" ? "bg-primary/10 text-primary" :
+                      item.status === "error" ? "bg-destructive/10 text-destructive" :
+                      item.status === "running" ? "bg-amber-500/10 text-amber-600" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      {item.star_name_ko || item.star_name}
+                      {item.status === "done" && item.result?.content_score ? ` (${item.result.content_score})` : ""}
+                      {item.status === "error" ? " ✗" : item.status === "done" ? " ✓" : item.status === "running" ? " ⟳" : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {prescoreMutation.isError && (
               <div className="mb-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
                 <p className="text-xs text-destructive">수집 실패: {String(prescoreMutation.error)}</p>
