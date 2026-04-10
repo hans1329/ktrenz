@@ -136,6 +136,68 @@ const ContentSearchPage = () => {
     staleTime: 60000,
   });
 
+  // Battle history for the selected collected star
+  const { data: battleHistory } = useQuery({
+    queryKey: ["battle-history", collectedStarId],
+    queryFn: async () => {
+      // Get all run IDs for this star
+      const { data: runs } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("id, content_score, created_at")
+        .eq("star_id", collectedStarId);
+      if (!runs || runs.length === 0) return [];
+
+      const runIds = runs.map((r: any) => r.id);
+
+      // Get predictions where this star was picked or was opponent
+      const { data: asPicked } = await (supabase as any)
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, settled_at, battle_date, user_id")
+        .in("picked_run_id", runIds);
+
+      const { data: asOpponent } = await (supabase as any)
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, settled_at, battle_date, user_id")
+        .in("opponent_run_id", runIds);
+
+      // Combine and deduplicate
+      const all = [...(asPicked || []), ...(asOpponent || [])];
+      const unique = Array.from(new Map(all.map((p: any) => [p.id, p])).values());
+
+      // Get opponent star info
+      const opponentRunIds = unique.map((p: any) =>
+        runIds.includes(p.picked_run_id) ? p.opponent_run_id : p.picked_run_id
+      );
+      const { data: opponentRuns } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("id, star_id, content_score")
+        .in("id", [...new Set(opponentRunIds)]);
+
+      const opponentRunMap = new Map((opponentRuns || []).map((r: any) => [r.id, r]));
+      const opponentStarIds = [...new Set((opponentRuns || []).map((r: any) => r.star_id))];
+      const { data: opponentStars } = await (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, image_url")
+        .in("id", opponentStarIds);
+      const starMap = new Map((opponentStars || []).map((s: any) => [s.id, s]));
+
+      return unique.map((p: any) => {
+        const isPickedStar = runIds.includes(p.picked_run_id);
+        const opponentRunId = isPickedStar ? p.opponent_run_id : p.picked_run_id;
+        const opponentRun = opponentRunMap.get(opponentRunId);
+        const opponentStar = opponentRun ? starMap.get(opponentRun.star_id) : null;
+        return {
+          ...p,
+          isPickedStar,
+          opponentName: opponentStar?.display_name || "Unknown",
+          opponentImage: opponentStar?.image_url,
+        };
+      }).sort((a: any, b: any) => new Date(b.battle_date).getTime() - new Date(a.battle_date).getTime());
+    },
+    enabled: !!collectedStarId,
+    staleTime: 60000,
+  });
+
   const selectStar = useCallback((star: any) => {
     setSelectedStarId(star.id);
     setSelectedStarName(star.name_ko || star.display_name);
