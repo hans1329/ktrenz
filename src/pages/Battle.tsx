@@ -1028,6 +1028,7 @@ export default function Battle() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Detail Drawer */}
