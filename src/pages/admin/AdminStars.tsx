@@ -99,6 +99,7 @@ const AdminStars = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStar, setEditingStar] = useState<StarRow | null>(null);
+  const [naverFilling, setNaverFilling] = useState(false);
 
   /* form state */
   const [form, setForm] = useState({
