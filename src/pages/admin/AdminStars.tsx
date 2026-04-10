@@ -101,19 +101,51 @@ const AdminStars = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStar, setEditingStar] = useState<StarRow | null>(null);
   const [naverFilling, setNaverFilling] = useState(false);
-  const [naverProgress, setNaverProgress] = useState<string | null>(null);
+  const [naverStats, setNaverStats] = useState<{
+    progress: string;
+    totalCandidates: number;
+    currentOffset: number;
+    qualifierUpdated: number;
+    igUpdated: number;
+    errors: number;
+    recentResults: string[];
+    elapsedSec: number;
+  } | null>(null);
+
+  const stopNaverRef = { current: false };
 
   const runNaverFillLoop = useCallback(async () => {
     setNaverFilling(true);
-    setNaverProgress("시작 중...");
+    stopNaverRef.current = false;
+    setNaverStats({ progress: "0/?", totalCandidates: 0, currentOffset: 0, qualifierUpdated: 0, igUpdated: 0, errors: 0, recentResults: [], elapsedSec: 0 });
     let consecutiveErrors = 0;
+    let totalQualifier = 0, totalIg = 0, totalErrors = 0;
+    const startTime = Date.now();
     try {
       for (let i = 0; i < 200; i++) {
+        if (stopNaverRef.current) break;
         const { data, error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: { batchSize: 5 } });
-        if (error) { consecutiveErrors++; if (consecutiveErrors >= 3) throw error; continue; }
+        if (error) {
+          consecutiveErrors++;
+          totalErrors++;
+          if (consecutiveErrors >= 3) throw error;
+          continue;
+        }
         consecutiveErrors = 0;
         const res = typeof data === "string" ? JSON.parse(data) : data;
-        setNaverProgress(res?.progress || `${res?.batch_offset ?? 0}/?`);
+        totalQualifier += res?.qualifier_updated ?? 0;
+        totalIg += res?.ig_updated ?? 0;
+        totalErrors += res?.errors ?? 0;
+        setNaverStats({
+          progress: res?.progress || `${res?.batch_offset ?? 0}/?`,
+          totalCandidates: res?.next_offset !== null ? parseInt(res?.progress?.split("/")[1] || "0") : 0,
+          currentOffset: parseInt(res?.progress?.split("/")[0] || "0"),
+          qualifierUpdated: totalQualifier,
+          igUpdated: totalIg,
+          errors: totalErrors,
+          recentResults: (res?.results || []).slice(-5),
+          elapsedSec: Math.round((Date.now() - startTime) / 1000),
+        });
         if (res?.is_done) {
           toast({ title: `네이버 프로필 채우기 완료 (${res.progress})` });
           break;
@@ -124,7 +156,6 @@ const AdminStars = () => {
       toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
     } finally {
       setNaverFilling(false);
-      setNaverProgress(null);
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
     }
   }, [qc]);
