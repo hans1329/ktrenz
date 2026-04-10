@@ -65,12 +65,87 @@ Deno.serve(async (req) => {
       Prefer: "return=representation",
     };
 
-    // ── 요청 파라미터: force=true면 모든 활성 스타 대상, 아니면 search_qualifier가 기본값인 것만 ──
+    // ── 요청 파라미터 ──
     let forceAll = false;
+    let testStarIds: string[] | null = null;
+    let dryRun = false;
     try {
       const body = await req.json();
       forceAll = body?.force === true;
+      testStarIds = body?.testStarIds || null;
+      dryRun = body?.dryRun === true;
     } catch { /* no body */ }
+
+    // ── 테스트 모드: 특정 스타만 처리 (파이프라인 상태 무시) ──
+    if (testStarIds && testStarIds.length > 0) {
+      const starsResp = await fetch(
+        `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name,star_type,group_star_id,search_qualifier,social_handles&id=in.(${testStarIds.join(",")})`,
+        { headers: dbHeaders }
+      );
+      const stars = await starsResp.json();
+
+      // 그룹명 조회
+      const groupIds = [...new Set(stars.filter((s: any) => s.star_type === "member" && s.group_star_id).map((s: any) => s.group_star_id))];
+      const groupNameMap = new Map<string, string>();
+      if (groupIds.length > 0) {
+        const gResp = await fetch(
+          `${supabaseUrl}/rest/v1/ktrenz_stars?select=id,name_ko,display_name&id=in.(${groupIds.join(",")})`,
+          { headers: dbHeaders }
+        );
+        const groups = await gResp.json();
+        for (const g of groups || []) groupNameMap.set(g.id, g.name_ko || g.display_name);
+      }
+
+      const results: any[] = [];
+      for (const star of stars) {
+        const searchName = star.name_ko || star.display_name;
+        let searchQuery = searchName;
+        if (star.star_type === "member" && star.group_star_id) {
+          const groupName = groupNameMap.get(star.group_star_id);
+          if (groupName) searchQuery = `${groupName} ${searchName}`;
+        }
+
+        const profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
+
+        const qualifier = profileData.profession ? mapProfession(profileData.profession) : null;
+        results.push({
+          name: searchName,
+          searchQuery,
+          currentQualifier: star.search_qualifier,
+          detectedProfession: profileData.profession,
+          mappedQualifier: qualifier,
+          detectedInstagram: profileData.instagram,
+          currentInstagram: star.social_handles?.instagram,
+          wouldUpdate: !dryRun,
+        });
+
+        // 실제 업데이트 (dryRun이 아닌 경우)
+        if (!dryRun) {
+          const updates: Record<string, any> = {};
+          if (qualifier && qualifier !== star.search_qualifier) updates.search_qualifier = qualifier;
+          if (profileData.instagram) {
+            const existing = star.social_handles || {};
+            if (!existing.instagram || existing.instagram_unverified === "true") {
+              const merged = { ...existing, instagram: profileData.instagram };
+              delete merged.instagram_unverified;
+              updates.social_handles = merged;
+            }
+          }
+          if (Object.keys(updates).length > 0) {
+            await fetch(`${supabaseUrl}/rest/v1/ktrenz_stars?id=eq.${star.id}`, {
+              method: "PATCH", headers: dbHeaders, body: JSON.stringify(updates),
+            });
+          }
+        }
+
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, mode: dryRun ? "dry_run" : "test", results, elapsed_ms: Date.now() - startTime }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ── 1. 파이프라인 상태 조회/생성 ──
     const stateResp = await fetch(
