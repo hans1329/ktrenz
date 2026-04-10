@@ -113,6 +113,8 @@ const ContentSearchPage = () => {
         .from("ktrenz_b2_items")
         .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, published_at, metadata, run_id")
         .in("run_id", runIds)
+        .eq("has_thumbnail", true)
+        .not("source", "eq", "naver_blog")
         .order("engagement_score", { ascending: false })
         .limit(100);
       return items || [];
