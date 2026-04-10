@@ -178,14 +178,14 @@ async function runFastFullAudit(
     for (const platform of allPlatforms) {
       const { data: snapshots } = await supabase
         .from("ktrenz_data_snapshots")
-        .select("wiki_entry_id, platform, collected_at, metrics")
-        .in("wiki_entry_id", ids)
+        .select("star_id, platform, collected_at, metrics")
+        .in("star_id", ids)
         .eq("platform", platform)
         .order("collected_at", { ascending: false })
         .limit(ids.length * 2);
 
       for (const snap of snapshots ?? []) {
-        const key = `${snap.wiki_entry_id}|${snap.platform}`;
+        const key = `${snap.star_id}|${snap.platform}`;
         if (!snapshotsByKey.has(key)) snapshotsByKey.set(key, []);
         const arr = snapshotsByKey.get(key)!;
         if (arr.length < 2) arr.push(snap);
@@ -198,12 +198,12 @@ async function runFastFullAudit(
   for (const ids of batches) {
     const { data: socialSnaps } = await supabase
       .from("ktrenz_data_snapshots")
-      .select("wiki_entry_id")
-      .in("wiki_entry_id", ids)
+      .select("star_id")
+      .in("star_id", ids)
       .eq("platform", "social_followers")
       .limit(ids.length);
     for (const s of socialSnaps ?? []) {
-      socialSnapshotSet.add(s.wiki_entry_id);
+      socialSnapshotSet.add(s.star_id);
     }
   }
 
@@ -229,7 +229,7 @@ async function runFastFullAudit(
         if (isOptional) continue;
 
         issues.push({
-          wiki_entry_id: wikiId,
+          star_id: wikiId,
           artist_name: artistName,
           issue_type: "stale_data",
           platform,
@@ -248,7 +248,7 @@ async function runFastFullAudit(
         const hoursAgo = Math.round((now - latestTime) / (1000 * 60 * 60));
         // 선택 플랫폼 stale은 medium severity
         issues.push({
-          wiki_entry_id: wikiId,
+          star_id: wikiId,
           artist_name: artistName,
           issue_type: "stale_data",
           platform,
@@ -273,7 +273,7 @@ async function runFastFullAudit(
           const val = metrics[field];
           if (val === 0 || val === null || val === undefined) {
             issues.push({
-              wiki_entry_id: wikiId,
+              star_id: wikiId,
               artist_name: artistName,
               issue_type: "zero_score",
               platform,
@@ -299,7 +299,7 @@ async function runFastFullAudit(
         const val = score[sf.key];
         if (val === 0 || val === null) {
           issues.push({
-            wiki_entry_id: wikiId,
+            star_id: wikiId,
             artist_name: artistName,
             issue_type: "zero_score",
             platform: sf.key,
@@ -317,7 +317,7 @@ async function runFastFullAudit(
         const socialVal = score.social_score;
         if (socialVal === 0 || socialVal === null) {
           issues.push({
-            wiki_entry_id: wikiId,
+            star_id: wikiId,
             artist_name: artistName,
             issue_type: "zero_score",
             platform: "social_score",
@@ -340,7 +340,7 @@ async function runFastFullAudit(
       const value = artist[req.key];
       if (!value || value === "null") {
         issues.push({
-          wiki_entry_id: wikiId,
+          star_id: wikiId,
           artist_name: artistName,
           issue_type: "missing_source",
           platform: req.key,
@@ -546,7 +546,7 @@ async function autoResolveForFullAudit(
     const { data } = await supabase
       .from("ktrenz_data_quality_issues")
       .select("id, wiki_entry_id, issue_type, platform")
-      .in("wiki_entry_id", ids)
+      .in("star_id", ids)
       .eq("resolved", false);
     if (data) allOpen.push(...data);
   }

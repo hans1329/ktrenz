@@ -476,7 +476,6 @@ async function detectForMember(
       }
       batchInsertedKeys.add(kwLower);
       rowsToInsert.push({
-        wiki_entry_id: null,
         star_id: member.id || null,
         trigger_type: "youtube_mention",
         trigger_source: "youtube",

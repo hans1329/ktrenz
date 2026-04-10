@@ -2899,7 +2899,6 @@ async function detectForMember(
         const kr = keywordsToInsert[idx].keywordRow;
         const sr = keywordsToInsert[idx].sourceRow;
         return {
-          wiki_entry_id: null,
           star_id: sr.star_id,
           trigger_type: sr.trigger_type,
           trigger_source: sr.trigger_source,

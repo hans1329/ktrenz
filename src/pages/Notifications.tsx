@@ -11,7 +11,7 @@ import SEO from "@/components/SEO";
 
 interface WatchedArtistScore {
   artist_name: string;
-  wiki_entry_id: string | null;
+  
   image_url: string | null;
   energy_score: number;
   energy_change_24h: number;
@@ -36,7 +36,7 @@ const Notifications = () => {
       if (!user?.id) return [];
       const { data } = await supabase
         .from("ktrenz_watched_artists")
-        .select("id, artist_name, wiki_entry_id")
+        .select("id, artist_name")
         .eq("user_id", user.id);
       return data ?? [];
     },
@@ -48,9 +48,8 @@ const Notifications = () => {
     queryKey: ["notifications-scores", watchedArtists],
     queryFn: async (): Promise<WatchedArtistScore[]> => {
       if (!watchedArtists?.length) return [];
-
-      const wikiIds = watchedArtists.filter(w => w.wiki_entry_id).map(w => w.wiki_entry_id!);
-      if (!wikiIds.length) return [];
+      // wiki_entry_id removed - return empty for now as scoring relies on v3_scores
+      return [];
 
       // Get all latest scores
       const { data: allScores } = await supabase
@@ -72,11 +71,10 @@ const Notifications = () => {
 
       // Map watched artists
       return watchedArtists.map(w => {
-        const score = seen.get(w.wiki_entry_id ?? "");
+        const score = seen.get(w.id ?? "");
         const rank = score ? sorted.indexOf(score) + 1 : 999;
         return {
           artist_name: w.artist_name,
-          wiki_entry_id: w.wiki_entry_id,
           image_url: (score?.wiki_entries as any)?.image_url ?? null,
           energy_score: score?.energy_score ?? 0,
           energy_change_24h: score?.energy_change_24h ?? 0,
@@ -292,8 +290,8 @@ const Notifications = () => {
             <div className="space-y-2">
               {artistScores.map((artist) => (
                 <button
-                  key={artist.wiki_entry_id ?? artist.artist_name}
-                  onClick={() => artist.wiki_entry_id && navigate(`/artist/${artist.wiki_entry_id}`)}
+                  key={artist.artist_name}
+                  onClick={() => navigate(`/`)}
                   className="w-full rounded-xl bg-card/80 border border-border/50 p-3 flex items-center gap-3 hover:border-primary/30 transition-colors text-left"
                 >
                   {artist.image_url ? (

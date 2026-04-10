@@ -119,7 +119,7 @@ function areTrendItemsNearDuplicate(
 }
 
 function defaultTrendBucketKey(trigger: any): string {
-  return normalizeTrendText(trigger.artist_family_key || trigger.artist_name || trigger.wiki_entry_id || trigger.star_id);
+  return normalizeTrendText(trigger.artist_family_key || trigger.artist_name || trigger.star_id);
 }
 
 async function attachArtistFamilyKeys(adminClient: any, triggers: any[]): Promise<any[]> {
@@ -145,8 +145,8 @@ async function attachArtistFamilyKeys(adminClient: any, triggers: any[]): Promis
       ? star.star_type === "member"
         ? `group:${star.group_star_id || star.id}`
         : `group:${star.id}`
-      : trigger.wiki_entry_id
-        ? `wiki:${trigger.wiki_entry_id}`
+      : trigger.star_id
+        ? `star:${trigger.star_id}`
         : `artist:${normalizeTrendText(trigger.artist_name)}`;
 
     return {
@@ -524,7 +524,6 @@ User: "스밍 가이드 보여줘" → {"intent_category":"streaming","sub_topic
 
     await adminClient.from("ktrenz_agent_intents").insert({
       user_id: userId,
-      wiki_entry_id: wikiEntryId || null,
       intent_category: INTENT_CATEGORIES.includes(intent.intent_category) ? intent.intent_category : "general",
       sub_topic: intent.sub_topic || null,
       entities: intent.entities || {},
@@ -557,12 +556,12 @@ async function handleTool(
 
     const { data: scores } = await adminClient
       .from("ktrenz_trend_triggers")
-      .select("artist_name, star_id, wiki_entry_id, influence_index, keyword_category")
+      .select("artist_name, star_id, influence_index, keyword_category")
       .eq("status", "active");
 
     const artistMap = new Map<string, any>();
     for (const t of scores || []) {
-      const key = t.wiki_entry_id || t.star_id || t.artist_name;
+      const key = t.star_id || t.artist_name;
       if (!key) continue;
       const existing = artistMap.get(key);
       if (existing) {
@@ -571,7 +570,7 @@ async function handleTool(
         existing.categories[t.keyword_category] = (existing.categories[t.keyword_category] || 0) + 1;
       } else {
         artistMap.set(key, {
-          wiki_entry_id: t.wiki_entry_id,
+          star_id: t.star_id,
           star_id: t.star_id,
           artist_name: t.artist_name,
           keyword_count: 1,
@@ -589,7 +588,7 @@ async function handleTool(
 
   // Helper: Korean name map (cached)
   type TierAliasCandidate = {
-    wiki_entry_id: string;
+    id: string;
     display_name: string | null;
     name_ko: string | null;
   };
@@ -607,7 +606,7 @@ async function handleTool(
     while (true) {
       const { data, error } = await adminClient
         .from("ktrenz_stars")
-        .select("wiki_entry_id, display_name, name_ko")
+        .select("id, display_name, name_ko")
         .eq("is_active", true)
         .range(from, from + pageSize - 1);
 
@@ -619,9 +618,9 @@ async function handleTool(
       if (!data || data.length === 0) break;
 
       for (const row of data as TierAliasCandidate[]) {
-        if (!row.wiki_entry_id) continue;
+        if (!row.id) continue;
         allRows.push({
-          wiki_entry_id: row.wiki_entry_id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
         });
@@ -641,7 +640,7 @@ async function handleTool(
 
     koNameMap = new Map();
     for (const row of candidates) {
-      if (row.name_ko) koNameMap.set(row.wiki_entry_id, row.name_ko.toLowerCase());
+      if (row.name_ko) koNameMap.set(row.id, row.name_ko.toLowerCase());
     }
     return koNameMap;
   }
@@ -679,7 +678,7 @@ async function handleTool(
     return matrix[a.length][b.length];
   }
 
-  async function findClosestTierArtist(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number } | null> {
+  async function findClosestTierArtist(query: string): Promise<{ id: string; display_name: string | null; name_ko: string | null; distance: number } | null> {
     const normalizedQuery = normalizeArtistName(query);
     if (!normalizedQuery) return null;
 
@@ -697,14 +696,14 @@ async function handleTool(
 
         const bestDistance = Math.min(...variants.map((v) => levenshteinDistance(normalizedQuery, v)));
         return {
-          wiki_entry_id: row.wiki_entry_id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
           distance: bestDistance,
         };
       })
       .filter(Boolean)
-      .sort((a: any, b: any) => a.distance - b.distance) as { wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number }[];
+      .sort((a: any, b: any) => a.distance - b.distance) as { id: string; display_name: string | null; name_ko: string | null; distance: number }[];
 
     if (scored.length === 0) return null;
 
@@ -718,7 +717,7 @@ async function handleTool(
     return null;
   }
 
-  async function resolveTierArtistCandidate(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; wiki_title: string | null } | null> {
+  async function resolveTierArtistCandidate(query: string): Promise<{ id: string; display_name: string | null; name_ko: string | null; wiki_title: string | null } | null> {
     const sanitizedQuery = sanitizeArtistCandidate(query);
     const normalizedQuery = normalizeArtistName(sanitizedQuery);
     if (!normalizedQuery) return null;
@@ -740,7 +739,7 @@ async function handleTool(
         const bestDistance = Math.min(...variants.map((v: { raw: string; normalized: string }) => levenshteinDistance(normalizedQuery, v.normalized)));
 
         return {
-          wiki_entry_id: row.wiki_entry_id,
+          id: row.id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
           wiki_title: null,
@@ -750,7 +749,7 @@ async function handleTool(
         };
       })
       .filter(Boolean) as {
-        wiki_entry_id: string;
+        id: string;
         display_name: string | null;
         name_ko: string | null;
         wiki_title: string | null;
@@ -786,7 +785,7 @@ async function handleTool(
     // Try exact match in ktrenz_stars
     const { data: exactMatches } = await adminClient
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .select("id, display_name, name_ko, star_type, image_url, social_handles, star_category")
       .eq("is_active", true)
       .or(`display_name.ilike.${lower},name_ko.ilike.${lower}`)
       .limit(1);
@@ -796,29 +795,12 @@ async function handleTool(
     // Try partial match
     const { data: partialMatches } = await adminClient
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .select("id, display_name, name_ko, star_type, image_url, social_handles, star_category")
       .eq("is_active", true)
       .or(`display_name.ilike.%${lower}%,name_ko.ilike.%${lower}%`)
       .limit(1);
 
     if (partialMatches?.[0]) return partialMatches[0];
-
-    // wiki_entries fallback
-    const { data: wikiMatch } = await adminClient
-      .from("wiki_entries")
-      .select("id, title")
-      .ilike("title", `%${lower}%`)
-      .limit(1);
-
-    if (wikiMatch?.[0]) {
-      const { data: starMatch } = await adminClient
-        .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
-        .eq("wiki_entry_id", wikiMatch[0].id)
-        .limit(1);
-      if (starMatch?.[0]) return starMatch[0];
-      return { wiki_entry_id: wikiMatch[0].id, display_name: wikiMatch[0].title, name_ko: null, id: null, star_type: null, image_url: null };
-    }
 
     return null;
   }
@@ -828,7 +810,7 @@ async function handleTool(
     const { data } = await adminClient
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, image_url, star_type, star_category, social_handles")
-      .eq("wiki_entry_id", wikiId)
+      .eq("id", wikiId)
       .maybeSingle();
     return data;
   }
@@ -863,7 +845,7 @@ async function handleTool(
         return JSON.stringify({ error: "not_found", message: `"${args.artist_name}" was not found in the database.` });
       }
 
-      const wikiId = found.wiki_entry_id;
+      const wikiId = found.id;
       const artistName = found.display_name || found.name_ko || args.artist_name;
       const starId = found.id;
 
@@ -876,7 +858,7 @@ async function handleTool(
         .limit(10);
 
       if (starId) triggerQuery = triggerQuery.eq("star_id", starId);
-      else if (wikiId) triggerQuery = triggerQuery.eq("wiki_entry_id", wikiId);
+      else if (wikiId) triggerQuery = triggerQuery.eq("id", wikiId);
       else triggerQuery = triggerQuery.ilike("artist_name", `%${artistName}%`);
 
       const { data: artistTriggers } = await triggerQuery;
@@ -914,13 +896,13 @@ async function handleTool(
         const found = await findArtist(n);
         if (found) {
           const starId = found.id;
-          const wikiId = found.wiki_entry_id;
+          const wikiId = found.id;
           let cmpQuery = adminClient
             .from("ktrenz_trend_triggers")
             .select("influence_index, keyword_category")
             .eq("status", "active");
           if (starId) cmpQuery = cmpQuery.eq("star_id", starId);
-          else if (wikiId) cmpQuery = cmpQuery.eq("wiki_entry_id", wikiId);
+          else if (wikiId) cmpQuery = cmpQuery.eq("id", wikiId);
           const { data: cmpTriggers } = await cmpQuery;
           const cmpCategories: Record<string, number> = {};
           let cmpInfluence = 0;
@@ -952,7 +934,7 @@ async function handleTool(
       // Search by Korean/English aliases in tier table
       const { data: koMatches } = await adminClient
         .from("ktrenz_stars")
-        .select("wiki_entry_id, display_name, name_ko")
+        .select("id, display_name, name_ko")
         .or(`name_ko.ilike.%${args.query}%,display_name.ilike.%${args.query}%`)
         .limit(10);
 
@@ -1015,10 +997,10 @@ async function handleTool(
         // Step 2: Try exact Korean/alias name match in tier table (no relation join dependency)
         if (!wikiMatch || wikiMatch.length === 0) {
           const [koEqRes, displayEqRes, koIlikeRes, displayIlikeRes] = await Promise.all([
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").eq("name_ko", targetArtistName).limit(1),
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").eq("display_name", targetArtistName).limit(1),
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", targetArtistName).limit(1),
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").eq("name_ko", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").eq("display_name", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("name_ko", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("display_name", targetArtistName).limit(1),
           ]);
 
           const tierExactError = koEqRes.error || displayEqRes.error || koIlikeRes.error || displayIlikeRes.error;
@@ -1034,9 +1016,9 @@ async function handleTool(
             displayIlikeRes.data?.[0] ??
             null;
 
-          if (aliasExact?.wiki_entry_id) {
+          if (aliasExact?.id) {
             wikiMatch = [{
-              id: aliasExact.wiki_entry_id,
+              id: aliasExact.id,
               title: aliasExact.display_name ?? aliasExact.name_ko ?? targetArtistName,
             }];
           }
@@ -1053,9 +1035,9 @@ async function handleTool(
                 return variants.some((v) => v === normalizedTarget);
               });
 
-              if (normalizedExact?.wiki_entry_id) {
+              if (normalizedExact?.id) {
                 wikiMatch = [{
-                  id: normalizedExact.wiki_entry_id,
+                  id: normalizedExact.id,
                   title: normalizedExact.display_name ?? normalizedExact.name_ko ?? targetArtistName,
                 }];
               }
@@ -1068,7 +1050,7 @@ async function handleTool(
           const resolvedCandidate = await resolveTierArtistCandidate(targetArtistName);
           if (resolvedCandidate) {
             wikiMatch = [{
-              id: resolvedCandidate.wiki_entry_id,
+              id: resolvedCandidate.id,
               title: resolvedCandidate.display_name || resolvedCandidate.wiki_title || resolvedCandidate.name_ko || targetArtistName,
             }];
           }
@@ -1095,8 +1077,8 @@ async function handleTool(
         // Step 5: Try partial Korean/alias match (safe queries, no .or parsing)
         if (!wikiMatch || wikiMatch.length === 0) {
           const [koPartialRes, displayPartialRes] = await Promise.all([
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
 
           if (koPartialRes.error || displayPartialRes.error) {
@@ -1104,16 +1086,16 @@ async function handleTool(
             console.error("[FanAgent] Tier partial alias match error:", koPartialRes.error?.message || displayPartialRes.error?.message);
           }
 
-          const partialMap = new Map<string, { wiki_entry_id: string; display_name: string | null; name_ko: string | null }>();
+          const partialMap = new Map<string, { id: string; display_name: string | null; name_ko: string | null }>();
           for (const row of [...(koPartialRes.data ?? []), ...(displayPartialRes.data ?? [])]) {
-            if (!partialMap.has(row.wiki_entry_id)) {
-              partialMap.set(row.wiki_entry_id, row);
+            if (!partialMap.has(row.id)) {
+              partialMap.set(row.id, row);
             }
           }
           const aliasPartial = [...partialMap.values()];
 
           if (aliasPartial.length === 1) {
-            wikiMatch = [{ id: aliasPartial[0].wiki_entry_id, title: aliasPartial[0].display_name }];
+            wikiMatch = [{ id: aliasPartial[0].id, title: aliasPartial[0].display_name }];
           } else if (aliasPartial.length > 1) {
             const suggestions = aliasPartial.map((km: any) => km.name_ko ? `${km.display_name} (${km.name_ko})` : km.display_name);
             return JSON.stringify({
@@ -1130,7 +1112,7 @@ async function handleTool(
         if (!wikiMatch || wikiMatch.length === 0) {
           const closest = await findClosestTierArtist(targetArtistName);
           if (closest) {
-            wikiMatch = [{ id: closest.wiki_entry_id, title: closest.display_name || closest.name_ko || targetArtistName }];
+            wikiMatch = [{ id: closest.id, title: closest.display_name || closest.name_ko || targetArtistName }];
           }
         }
 
@@ -1142,8 +1124,8 @@ async function handleTool(
             .limit(5);
 
           const [koAliasMatchesRes, displayAliasMatchesRes] = await Promise.all([
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
-            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
 
           if (fuzzyTitleErr || koAliasMatchesRes.error || displayAliasMatchesRes.error) {
@@ -1151,9 +1133,9 @@ async function handleTool(
             console.error("[FanAgent] Fallback artist lookup error:", fuzzyTitleErr?.message || koAliasMatchesRes.error?.message || displayAliasMatchesRes.error?.message);
           }
 
-          const aliasMap = new Map<string, { wiki_entry_id: string; display_name: string | null; name_ko: string | null }>();
+          const aliasMap = new Map<string, { id: string; display_name: string | null; name_ko: string | null }>();
           for (const row of [...(koAliasMatchesRes.data ?? []), ...(displayAliasMatchesRes.data ?? [])]) {
-            if (!aliasMap.has(row.wiki_entry_id)) aliasMap.set(row.wiki_entry_id, row);
+            if (!aliasMap.has(row.id)) aliasMap.set(row.id, row);
           }
           const aliasMatches = [...aliasMap.values()];
 
@@ -1200,7 +1182,7 @@ async function handleTool(
         const { data: tierRow } = await adminClient
           .from("ktrenz_stars")
           .select("tier")
-          .eq("wiki_entry_id", wikiId)
+          .eq("id", wikiId)
           .maybeSingle();
 
         if (!tierRow) {
@@ -1220,7 +1202,7 @@ async function handleTool(
 
         const { error: insertErr } = await adminClient
           .from("ktrenz_watched_artists")
-          .insert({ user_id: userId, artist_name: resolvedName, wiki_entry_id: wikiId });
+          .insert({ user_id: userId, artist_name: resolvedName });
 
         if (insertErr) {
           return JSON.stringify({ success: false, message: `Failed to set bias artist: ${insertErr.message}` });
@@ -1241,7 +1223,6 @@ async function handleTool(
           const { error: slotUpdateErr } = await adminClient
             .from("ktrenz_agent_slots")
             .update({
-              wiki_entry_id: wikiId,
               artist_name: resolvedName,
               avatar_url: avatarUrl,
             })
@@ -1272,7 +1253,7 @@ async function handleTool(
           const { data: tierRow } = await adminClient
             .from("ktrenz_stars")
             .select("id, tier")
-            .eq("wiki_entry_id", wikiId)
+            .eq("id", wikiId)
             .maybeSingle();
           if (tierRow && tierRow.tier === 2) {
             await adminClient
@@ -1317,7 +1298,7 @@ async function handleTool(
     case "get_watched_artists": {
       const { data: watched } = await adminClient
         .from("ktrenz_watched_artists")
-        .select("artist_name, wiki_entry_id")
+        .select("artist_name")
         .eq("user_id", userId);
 
       if (!watched || watched.length === 0) {
@@ -1330,8 +1311,7 @@ async function handleTool(
         .from("ktrenz_trend_triggers")
         .select("influence_index")
         .eq("status", "active");
-      if (w.wiki_entry_id) watchQuery = watchQuery.eq("wiki_entry_id", w.wiki_entry_id);
-      else watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
+      watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
       const { data: watchTriggers } = await watchQuery;
       const kwCount = (watchTriggers || []).length;
       const totalInf = (watchTriggers || []).reduce((s: number, t: any) => s + (t.influence_index || 0), 0);
@@ -1349,7 +1329,7 @@ async function handleTool(
     case "get_streaming_guide": {
       const artistName = args.artist_name;
 
-      // Find wiki_entry_id
+      // Find star by name
       const { data: wikiMatch } = await adminClient
         .from("wiki_entries")
         .select("id, title")
@@ -1367,7 +1347,7 @@ async function handleTool(
       const { data: cached } = await adminClient
         .from("ktrenz_streaming_guides")
         .select("guide_data")
-        .eq("wiki_entry_id", wikiId)
+        .eq("id", wikiId)
         .eq("user_id", userId)
         .gt("expires_at", new Date().toISOString())
         .order("generated_at", { ascending: false })
@@ -1382,14 +1362,14 @@ async function handleTool(
       const [trendKwRes, salesRes, tierRes] = await Promise.all([
         adminClient.from("ktrenz_trend_triggers")
           .select("keyword, keyword_ko, keyword_category, influence_index, trigger_source")
-          .eq("status", "active").eq("wiki_entry_id", wikiId)
+          .eq("status", "active").eq("id", wikiId)
           .order("influence_index", { ascending: false, nullsFirst: false }).limit(10),
         adminClient.from("ktrenz_data_snapshots")
           .select("metrics, platform")
-          .eq("wiki_entry_id", wikiId).in("platform", ["circle_chart", "hanteo"])
+          .eq("id", wikiId).in("platform", ["circle_chart", "hanteo"])
           .order("collected_at", { ascending: false }).limit(5),
         adminClient.from("ktrenz_stars")
-          .select("display_name, star_type, star_category, image_url").eq("wiki_entry_id", wikiId).eq("is_active", true).maybeSingle(),
+          .select("display_name, star_type, star_category, image_url").eq("id", wikiId).eq("is_active", true).maybeSingle(),
       ]);
 
       const trendKws = trendKwRes.data || [];
@@ -1400,7 +1380,7 @@ async function handleTool(
       const { data: musicSnap } = await adminClient
         .from("ktrenz_data_snapshots")
         .select("metrics")
-        .eq("wiki_entry_id", wikiId)
+        .eq("id", wikiId)
         .eq("platform", "music_multi")
         .order("collected_at", { ascending: false })
         .limit(1)
@@ -1474,7 +1454,7 @@ JSON 구조:
 
       // Cache the guide
       await adminClient.from("ktrenz_streaming_guides").insert({
-        user_id: userId, wiki_entry_id: wikiId, artist_name: resolvedName, guide_data: guideData,
+        user_id: userId, artist_name: resolvedName, guide_data: guideData,
       });
 
       return JSON.stringify({ artist: resolvedName, guide: guideData, cached: false });
@@ -1484,7 +1464,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Find wiki_entry_id
+      // Find star by name
       const { data: wikiMatch } = await adminClient
         .from("wiki_entries")
         .select("id, title")
@@ -1502,7 +1482,7 @@ JSON 구조:
       const { data: newsSnapshots } = await adminClient
         .from("ktrenz_data_snapshots")
         .select("metrics, raw_response, collected_at")
-        .eq("wiki_entry_id", wikiId)
+        .eq("id", wikiId)
         .eq("platform", "naver_news")
         .order("collected_at", { ascending: false })
         .limit(3);
@@ -1595,7 +1575,7 @@ JSON 구조:
       // Get watched artists
       const { data: watched } = await adminClient
         .from("ktrenz_watched_artists")
-        .select("artist_name, wiki_entry_id")
+        .select("artist_name")
         .eq("user_id", userId);
 
       if (!watched || watched.length === 0) {
@@ -1605,14 +1585,14 @@ JSON 구조:
       // Pick a random watched artist for variety
       const artist = watched[Math.floor(Math.random() * watched.length)];
       const artistName = artist.artist_name;
-      const wikiId = artist.wiki_entry_id;
+      const wikiId = artist.id;
 
       // Get T2 trend count for context
       const { count: trendCount } = await adminClient
         .from("ktrenz_trend_triggers")
         .select("id", { count: "exact", head: true })
         .eq("status", "active")
-        .eq("wiki_entry_id", wikiId);
+        .eq("id", wikiId);
 
       // Get star info for social handles
       let latestVideoTitle: string | null = null;
@@ -1624,7 +1604,7 @@ JSON 구조:
         const { data: starData } = await adminClient
           .from("ktrenz_stars")
           .select("social_handles, display_name")
-          .eq("wiki_entry_id", wikiId)
+          .eq("id", wikiId)
           .maybeSingle();
         const handles = starData?.social_handles as any;
         youtubeChannelId = handles?.youtube ?? null;
@@ -1638,7 +1618,7 @@ JSON 구조:
         const { data: musicSnap } = await adminClient
           .from("ktrenz_data_snapshots")
           .select("metrics")
-          .eq("wiki_entry_id", wikiId)
+          .eq("id", wikiId)
           .eq("platform", "music_multi")
           .order("collected_at", { ascending: false })
           .limit(1)
@@ -1658,7 +1638,7 @@ JSON 구조:
         const { data: ytmSnap } = await adminClient
           .from("ktrenz_data_snapshots")
           .select("metrics")
-          .eq("wiki_entry_id", wikiId)
+          .eq("id", wikiId)
           .eq("platform", "youtube_music")
           .order("collected_at", { ascending: false })
           .limit(1)
@@ -1672,7 +1652,7 @@ JSON 구조:
         const { data: newsSnap } = await adminClient
           .from("ktrenz_data_snapshots")
           .select("metrics, raw_response")
-          .eq("wiki_entry_id", wikiId)
+          .eq("id", wikiId)
           .eq("platform", "naver_news")
           .order("collected_at", { ascending: false })
           .limit(1)
@@ -1910,7 +1890,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Find wiki_entry_id (try exact, then Korean name, then partial)
+      // Find star by name (try exact, then Korean name, then partial)
       let wikiId: string | null = null;
       let resolvedName = artistName;
 
@@ -1927,11 +1907,11 @@ JSON 구조:
         // Try Korean name
         const { data: koMatch } = await adminClient
           .from("ktrenz_stars")
-          .select("wiki_entry_id, display_name")
+          .select("id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
         if (koMatch && koMatch.length > 0) {
-          wikiId = koMatch[0].wiki_entry_id;
+          wikiId = koMatch[0].id;
           resolvedName = koMatch[0].display_name;
         } else {
           // Partial match
@@ -1947,7 +1927,7 @@ JSON 구조:
         }
       }
 
-      // Query ktrenz_schedules by wiki_entry_id or artist_name
+      // Query ktrenz_schedules by star_id or artist_name
       const today = new Date().toISOString().split("T")[0];
       let scheduleQuery = adminClient
         .from("ktrenz_schedules")
@@ -1957,7 +1937,7 @@ JSON 구조:
         .limit(limit);
 
       if (wikiId) {
-        scheduleQuery = scheduleQuery.eq("wiki_entry_id", wikiId);
+        scheduleQuery = scheduleQuery.eq("id", wikiId);
       } else {
         scheduleQuery = scheduleQuery.ilike("artist_name", `%${artistName}%`);
       }
@@ -2017,7 +1997,7 @@ JSON 구조:
       const artistName = args.artist_name;
       const limit = Math.min(args.limit || 10, 20);
 
-      // Resolve wiki_entry_id
+      // Resolve star_id
       let wikiId: string | null = null;
       let resolvedName = artistName;
 
@@ -2033,11 +2013,11 @@ JSON 구조:
       } else {
         const { data: koMatch } = await adminClient
           .from("ktrenz_stars")
-          .select("wiki_entry_id, display_name")
+          .select("id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
         if (koMatch && koMatch.length > 0) {
-          wikiId = koMatch[0].wiki_entry_id;
+          wikiId = koMatch[0].id;
           resolvedName = koMatch[0].display_name;
         } else {
           const { data: partialMatch } = await adminClient
@@ -2060,7 +2040,7 @@ JSON 구조:
       const { data: triggers } = await adminClient
         .from("ktrenz_trend_triggers")
         .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score, status")
-        .eq("wiki_entry_id", wikiId)
+        .eq("id", wikiId)
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
         .limit(limit);
@@ -2174,7 +2154,7 @@ JSON 구조:
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
-        .select("id, star_id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
+        .select("id, star_id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
         .limit(fetchLimit);
@@ -2320,7 +2300,7 @@ async function cacheKnowledge(
         query_hash: queryHash,
         query_text: query,
         topic_type: topicType,
-        wiki_entry_id: wikiEntryId,
+        
         content_raw: content,
         content_structured: structured,
         citations,
@@ -2346,7 +2326,7 @@ async function cacheKnowledge(
         content_raw: content,
         citations,
         content_structured: structured,
-        wiki_entry_id: wikiEntryId,
+        
         recency_filter: recency,
         fetched_at: now,
         expires_at: expiresAt,
@@ -2573,7 +2553,7 @@ Deno.serve(async (req) => {
     if (typeof agent_slot_id === "string" && agent_slot_id.length > 0) {
       const { data: ownedSlot, error: slotError } = await adminClient
         .from("ktrenz_agent_slots")
-        .select("id, slot_index, wiki_entry_id, artist_name")
+        .select("id, slot_index, artist_name")
         .eq("id", agent_slot_id)
         .eq("user_id", userId)
         .maybeSingle();
@@ -2587,7 +2567,7 @@ Deno.serve(async (req) => {
 
       activeSlotId = ownedSlot.id;
       activeSlotIndex = ownedSlot.slot_index;
-      activeSlotWikiEntryId = ownedSlot.wiki_entry_id ?? null;
+      activeSlotWikiEntryId = ownedSlot.id ?? null;
       activeSlotArtistName = ownedSlot.artist_name ?? null;
     }
 
@@ -2637,7 +2617,7 @@ Deno.serve(async (req) => {
     if (isBriefingMode) {
       const { data: watchedArtists } = await adminClient
         .from("ktrenz_watched_artists")
-        .select("artist_name, wiki_entry_id")
+        .select("artist_name")
         .eq("user_id", userId);
 
       if (!watchedArtists || watchedArtists.length === 0) {
@@ -2661,11 +2641,11 @@ Deno.serve(async (req) => {
         let imageUrl: string | null = null;
         let topMention: string | null = null;
 
-        if (w.wiki_entry_id) {
+        if (w.id) {
           const [tierRes, buzzRes, entryRes] = await Promise.all([
-            adminClient.from("ktrenz_stars").select("latest_video_title").eq("wiki_entry_id", w.wiki_entry_id).maybeSingle(),
-            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", w.wiki_entry_id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
-            adminClient.from("wiki_entries").select("image_url").eq("id", w.wiki_entry_id).maybeSingle(),
+            adminClient.from("ktrenz_stars").select("latest_video_title").eq("id", w.id).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("id", w.id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("wiki_entries").select("image_url").eq("id", w.id).maybeSingle(),
           ]);
           latestVideoTitle = (tierRes.data as any)?.latest_video_title ?? null;
           const buzzMetrics = (buzzRes.data?.metrics as any) || {};
@@ -2796,7 +2776,7 @@ Deno.serve(async (req) => {
 
     // Fetch watched artists to inject into system prompt context
     // Only inject if the active slot already has an artist assigned.
-    // If the slot has no wiki_entry_id, the user hasn't set a bias for this slot yet —
+    // If the slot has no artist, the user hasn't set a bias for this slot yet —
     // don't inject global watched artists to avoid the AI auto-assuming a bias.
     let watchedContext = "";
     let milestoneContext = "";
@@ -2808,7 +2788,7 @@ Deno.serve(async (req) => {
       const { data: milestones } = await adminClient
         .from("ktrenz_milestone_events")
         .select("id, event_type, event_data, created_at")
-        .eq("wiki_entry_id", activeSlotWikiEntryId)
+        .eq("id", activeSlotWikiEntryId)
         .eq("notified", false)
         .order("created_at", { ascending: false })
         .limit(5);

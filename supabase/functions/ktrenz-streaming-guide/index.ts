@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     // 관심 아티스트 조회
     const { data: watchedArtists } = await adminClient
       .from("ktrenz_watched_artists")
-      .select("artist_name, wiki_entry_id")
+      .select("artist_name")
       .eq("user_id", user.id);
 
     if (!watchedArtists || watchedArtists.length === 0) {
@@ -73,15 +73,15 @@ Deno.serve(async (req) => {
       .order("generated_at", { ascending: false });
 
     const cachedMap = new Map(
-      (cachedGuides ?? []).map((g: any) => [g.wiki_entry_id, g])
+      (cachedGuides ?? []).map((g: any) => [g.star_id, g])
     );
 
     const guides: any[] = [];
 
     for (const wa of watchedArtists) {
       // 캐시 히트
-      if (wa.wiki_entry_id && cachedMap.has(wa.wiki_entry_id)) {
-        guides.push(cachedMap.get(wa.wiki_entry_id));
+      if (wa.star_id && cachedMap.has(wa.star_id)) {
+        guides.push(cachedMap.get(wa.star_id));
         continue;
       }
 
@@ -90,12 +90,12 @@ Deno.serve(async (req) => {
       let salesData: any[] = [];
       let youtubeData: any = null;
 
-      if (wa.wiki_entry_id) {
+      if (wa.star_id) {
         // FES 점수 + 음악 데이터
         const { data: fes } = await adminClient
           .from("v3_scores")
           .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, energy_rank, music_score, music_data, album_sales_score, album_sales_data")
-          .eq("wiki_entry_id", wa.wiki_entry_id)
+          .eq("wiki_entry_id", wa.star_id)
           .order("scored_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         const { data: sales } = await adminClient
           .from("ktrenz_data_snapshots")
           .select("metrics, collected_at, platform")
-          .eq("wiki_entry_id", wa.wiki_entry_id)
+          .eq("wiki_entry_id", wa.star_id)
           .in("platform", ["circle_chart", "hanteo"])
           .order("collected_at", { ascending: false })
           .limit(5);
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         const { data: ytRaw } = await adminClient
           .from("v3_scores")
           .select("raw_data")
-          .eq("wiki_entry_id", wa.wiki_entry_id)
+          .eq("wiki_entry_id", wa.star_id)
           .not("raw_data", "is", null)
           .order("scored_at", { ascending: false })
           .limit(1)
@@ -262,7 +262,7 @@ Deno.serve(async (req) => {
       // 저장
       const guideRow = {
         user_id: user.id,
-        wiki_entry_id: wa.wiki_entry_id,
+        star_id: wa.star_id,
         artist_name: wa.artist_name,
         guide_data: guideData,
       };

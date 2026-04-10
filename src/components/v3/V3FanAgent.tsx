@@ -531,7 +531,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("ktrenz_watched_artists")
-        .select("id, artist_name, wiki_entry_id")
+        .select("id, artist_name")
         .eq("user_id", user.id);
       if (error) console.error("Watched artists fetch error:", error);
       return data ?? [];
@@ -847,15 +847,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     if (!latestArtist) return;
     const syncSlotWithArtist = async () => {
       const updatePayload: Record<string, any> = { artist_name: latestArtist.artist_name };
-      if (latestArtist.wiki_entry_id) {
-        updatePayload.wiki_entry_id = latestArtist.wiki_entry_id;
-        const { data: wiki } = await supabase
-          .from("wiki_entries")
-          .select("image_url")
-          .eq("id", latestArtist.wiki_entry_id)
-          .single();
-        if (wiki?.image_url) updatePayload.avatar_url = wiki.image_url;
-      }
       await (supabase as any)
         .from("ktrenz_agent_slots")
         .update(updatePayload)
@@ -1128,8 +1119,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             await supabase.from("ktrenz_watched_artists").insert({
               user_id: user.id,
               artist_name: activeSlot.artist_name,
-              wiki_entry_id: activeSlot.wiki_entry_id,
-            });
+            } as any);
             queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
             localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
             queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
@@ -1292,7 +1282,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               onClick={async () => {
                 setShowMenu(false);
                 if (!hasAlertOn) {
-                  if (activeSlot?.wiki_entry_id && activeSlot?.artist_name && user?.id) {
+                  if (activeSlot?.artist_name && user?.id) {
                     // Delete existing then insert fresh to avoid conflict issues
                     await supabase
                       .from("ktrenz_watched_artists")
@@ -1303,7 +1293,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                       .insert({
                         user_id: user.id,
                         artist_name: activeSlot.artist_name,
-                        wiki_entry_id: activeSlot.wiki_entry_id,
                       } as any);
                     queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
                     // Mark daily news as pending for red dot

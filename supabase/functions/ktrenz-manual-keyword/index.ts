@@ -106,7 +106,6 @@ Deno.serve(async (req) => {
 
     // 5. 트렌드 트리거 생성
     const triggerRow = {
-      wiki_entry_id: null,
       star_id: star.id,
       trigger_type: "manual",
       trigger_source: "admin",

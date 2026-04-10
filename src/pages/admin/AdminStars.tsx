@@ -26,7 +26,7 @@ interface StarRow {
   name_ko: string | null;
   star_type: string;
   is_active: boolean | null;
-  wiki_entry_id: string | null;
+  
   group_star_id: string | null;
   social_handles: Record<string, string> | null;
   influence_categories: string[] | null;
@@ -166,7 +166,6 @@ const AdminStars = () => {
     name_ko: "",
     star_type: "group" as string,
     star_category: "kpop" as string,
-    wiki_entry_id: "",
     group_star_id: "",
     namuwiki_url: "",
     agency: "",
@@ -282,7 +281,7 @@ const AdminStars = () => {
         name_ko: form.name_ko || null,
         star_type: form.star_type,
         star_category: form.star_category,
-        wiki_entry_id: form.wiki_entry_id || null,
+        
         group_star_id: form.group_star_id || null,
         namuwiki_url: form.namuwiki_url || null,
         agency: form.agency || null,
@@ -369,7 +368,7 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true, social_instagram: "", social_youtube: "", social_tiktok: "", social_x: "" });
+    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", group_star_id: "", namuwiki_url: "", agency: "", is_active: true, social_instagram: "", social_youtube: "", social_tiktok: "", social_x: "" });
     setNamuUrl("");
     setNamuResult(null);
     setDialogOpen(true);
@@ -382,7 +381,6 @@ const AdminStars = () => {
       display_name: s.display_name,
       name_ko: s.name_ko ?? "",
       star_type: s.star_type,
-      wiki_entry_id: s.wiki_entry_id ?? "",
       group_star_id: s.group_star_id ?? "",
       namuwiki_url: (s as any).namuwiki_url ?? "",
       agency: (s as any).agency ?? "",
@@ -782,16 +780,6 @@ const AdminStars = () => {
               </div>
             )}
 
-            {/* wiki_entry_id */}
-            <div>
-              <label className="text-xs font-medium mb-1 block">wiki_entry_id</label>
-              <Input
-                value={form.wiki_entry_id}
-                onChange={(e) => setForm({ ...form, wiki_entry_id: e.target.value })}
-                className="h-9 text-xs font-mono"
-                placeholder="내부 위키 연결 (선택)"
-              />
-            </div>
             {/* social handles */}
             <div>
               <label className="text-xs font-medium mb-1 block">📱 소셜 핸들</label>
