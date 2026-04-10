@@ -849,9 +849,26 @@ export default function Battle() {
 
           return (
             <div key={pairIdx} className={cn("space-y-5 relative", isLocked && "opacity-40 pointer-events-none select-none")}>
-              <div className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5")}>
+              <div
+                className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5", battleFilter === "live" && pairState.submitted && "cursor-pointer")}
+                onClick={() => {
+                  if (battleFilter === "live" && pairState.submitted) {
+                    setCollapsedPairs(prev => {
+                      const next = new Set(prev);
+                      if (next.has(pairIdx)) next.delete(pairIdx);
+                      else next.add(pairIdx);
+                      return next;
+                    });
+                  }
+                }}
+              >
                 <div className="flex-1 h-px bg-primary/30" />
-                <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}</span>
+                <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1 flex items-center gap-1.5", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>
+                  Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}
+                  {battleFilter === "live" && pairState.submitted && (
+                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", collapsedPairs.has(pairIdx) && "rotate-180")} />
+                  )}
+                </span>
                 <div className="flex-1 h-px bg-primary/30" />
               </div>
 
