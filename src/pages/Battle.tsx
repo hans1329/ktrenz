@@ -211,13 +211,15 @@ function ArtistSection({
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
 
-  // Initialize scroll to the middle (original) set
+  // Initialize scroll to the first card in the middle (original) set
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
+    // Immediately set scroll position (no animation) to first original card
+    el.scrollLeft = 0;
     requestAnimationFrame(() => {
       const child = el.children[offset] as HTMLElement;
-      if (child) el.scrollLeft = child.offsetLeft;
+      if (child) el.scrollLeft = child.offsetLeft - el.offsetLeft;
     });
   }, [itemCount, offset]);
 
@@ -304,12 +306,12 @@ function ArtistSection({
       {/* Horizontal card carousel (infinite loop) */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1 sm:max-w-[80%] sm:mx-auto"
+        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-${loopIdx}`}
-            className="snap-center flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
+            className="snap-start flex-shrink-0 w-[75%] sm:w-80 lg:w-96 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
             <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
