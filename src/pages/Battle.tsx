@@ -199,6 +199,7 @@ function ArtistSection({
   disabled: boolean;
   index: number;
 }) {
+  const { language } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
@@ -329,7 +330,7 @@ function ArtistSection({
               {/* Content area */}
               <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
                 <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
-                  {decodeHtml(item.title)}
+                  {decodeHtml(getLocalizedTitle(item, language))}
                 </p>
               </div>
             </div>
