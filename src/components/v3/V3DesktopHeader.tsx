@@ -128,64 +128,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
 
   const showAgentBadge = user && hasUnread;
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
-    setIsSearching(true);
-    const q = query.trim();
-    const qNoSpace = q.replace(/\s+/g, "");
-    const starFilter = q === qNoSpace
-      ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
-      : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
-    try {
-      const { data: starsData } = await (supabase as any)
-        .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url")
-        .eq("is_active", true)
-        .or(starFilter)
-        .limit(10);
 
-      const { data: kwData } = await (supabase as any)
-        .from("ktrenz_trend_triggers")
-        .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
-        .eq("status", "active")
-        .or(`keyword.ilike.%${q}%,keyword_ko.ilike.%${q}%,keyword_en.ilike.%${q}%`)
-        .order("detected_at", { ascending: false })
-        .limit(8);
 
-      const stars = starsData ?? [];
-      const kws = kwData ?? [];
-
-      const results: any[] = stars.map((s: any) => ({
-        id: s.id, title: s.display_name, slug: s.id,
-        image_url: s.image_url ?? null,
-        schema_type: s.star_type === "group" ? "artist" : "member",
-        starId: s.id,
-      }));
-      setSearchResults(results.slice(0, 8));
-
-      const seenKw = new Set<string>();
-      const uniqueKw: KeywordResult[] = [];
-      for (const kw of kwData as KeywordResult[]) {
-        const key = `${kw.keyword}-${kw.artist_name}`;
-        if (!seenKw.has(key)) { seenKw.add(key); uniqueKw.push(kw); }
-      }
-      setKeywordResults(uniqueKw.slice(0, 6));
-    } catch (err) { console.error("Search error:", err); }
-    finally { setIsSearching(false); }
-  };
-
-  const handleResultClick = (result: any) => {
-    navigate(result.starId ? `/t2/artist/${result.starId}` : `/t2/artist/${result.id}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
-  };
-
-  const handleKeywordClick = (kw: KeywordResult) => {
-    navigate(`/t2/${kw.id}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
-  };
-
-  const hasResults = searchResults.length > 0 || keywordResults.length > 0;
 
   return (
     <>
