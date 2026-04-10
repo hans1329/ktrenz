@@ -411,26 +411,31 @@ export default function Battle() {
   const { translateIfNeeded } = useFieldTranslation();
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
-  const [currentPairIndex, setCurrentPairIndex] = useState(0);
-  const [pickedRunId, setPickedRunId] = useState<string | null>(null);
-  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
-  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
+  const [drawerPairIndex, setDrawerPairIndex] = useState<number>(0);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
 
-  const currentPair = battlePairs[currentPairIndex];
-  const runs = currentPair?.runs || [];
-  const items = currentPair?.items || {};
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
 
-  function getHotBonus(runId: string): number {
-    const runItems = items[runId] || [];
-    const count = runItems.filter((i) => hotVotes.has(i.id)).length;
+  function getPairState(idx: number) {
+    return pairStates[idx] || { pickedRunId: null, selectedBand: null, submitted: false, hotVotes: new Set<string>() };
+  }
+
+  function updatePairState(idx: number, updates: Partial<{ pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>) {
+    setPairStates(prev => ({ ...prev, [idx]: { ...getPairState(idx), ...updates } }));
+  }
+
+  function getHotBonus(pairIdx: number, runId: string): number {
+    const pair = battlePairs[pairIdx];
+    if (!pair) return 0;
+    const runItems = pair.items[runId] || [];
+    const hv = getPairState(pairIdx).hotVotes;
+    const count = runItems.filter((i) => hv.has(i.id)).length;
     return count * 0.2;
   }
 
