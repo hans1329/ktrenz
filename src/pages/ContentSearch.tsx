@@ -185,12 +185,12 @@ const ContentSearchPage = () => {
         const isPickedStar = runIds.includes(p.picked_run_id);
         const opponentRunId = isPickedStar ? p.opponent_run_id : p.picked_run_id;
         const opponentRun = opponentRunMap.get(opponentRunId);
-        const opponentStar = opponentRun ? starMap.get(opponentRun.star_id) : null;
+        const opponentStar = opponentRun ? starMap.get((opponentRun as any).star_id) : null;
         return {
           ...p,
           isPickedStar,
-          opponentName: opponentStar?.display_name || "Unknown",
-          opponentImage: opponentStar?.image_url,
+          opponentName: (opponentStar as any)?.display_name || "Unknown",
+          opponentImage: (opponentStar as any)?.image_url,
         };
       }).sort((a: any, b: any) => new Date(b.battle_date).getTime() - new Date(a.battle_date).getTime());
     },
