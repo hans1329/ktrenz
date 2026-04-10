@@ -31,12 +31,12 @@ const TicketInfoPopup = ({ open, onClose, remaining, total }: { open: boolean; o
   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
   const title = lang === "ko" ? "예측 티켓" : lang === "ja" ? "予測チケット" : lang === "zh" ? "预测票" : "Prediction Tickets";
   const desc = lang === "ko"
-    ? "매일 00:00(KST)에 새로 지급되며, 미사용 티켓은 소멸됩니다."
+    ? "매일 00:00(GMT)에 새로 지급되며, 미사용 티켓은 소멸됩니다."
     : lang === "ja"
-    ? "毎日00:00(KST)に新しく支給され、未使用チケットは消滅します。"
+    ? "毎日00:00(GMT)に新しく支給され、未使用チケットは消滅します。"
     : lang === "zh"
-    ? "每天00:00(KST)重新发放，未使用的票将失效。"
-    : "Tickets reset daily at 00:00 KST. Unused tickets do not carry over.";
+    ? "每天00:00(GMT)重新发放，未使用的票将失效。"
+    : "Tickets reset daily at 00:00 GMT. Unused tickets do not carry over.";
   const tierLabel = lang === "ko" ? "등급" : lang === "ja" ? "ランク" : lang === "zh" ? "等级" : "Tier";
   const dailyLabel = lang === "ko" ? "일일 티켓" : lang === "ja" ? "日次チケット" : lang === "zh" ? "每日票数" : "Daily Tickets";
   const closeText = lang === "ko" ? "닫기" : lang === "ja" ? "閉じる" : lang === "zh" ? "关闭" : "Close";
