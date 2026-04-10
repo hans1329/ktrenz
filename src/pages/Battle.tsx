@@ -411,36 +411,40 @@ export default function Battle() {
   const { translateIfNeeded } = useFieldTranslation();
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
-  const [currentPairIndex, setCurrentPairIndex] = useState(0);
-  const [pickedRunId, setPickedRunId] = useState<string | null>(null);
-  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
-  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
+  const [drawerPairIndex, setDrawerPairIndex] = useState<number>(0);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
 
-  const currentPair = battlePairs[currentPairIndex];
-  const runs = currentPair?.runs || [];
-  const items = currentPair?.items || {};
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
 
-  function getHotBonus(runId: string): number {
-    const runItems = items[runId] || [];
-    const count = runItems.filter((i) => hotVotes.has(i.id)).length;
+  function getPairState(idx: number) {
+    return pairStates[idx] || { pickedRunId: null, selectedBand: null, submitted: false, hotVotes: new Set<string>() };
+  }
+
+  function updatePairState(idx: number, updates: Partial<{ pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>) {
+    setPairStates(prev => ({ ...prev, [idx]: { ...getPairState(idx), ...updates } }));
+  }
+
+  function getHotBonus(pairIdx: number, runId: string): number {
+    const pair = battlePairs[pairIdx];
+    if (!pair) return 0;
+    const runItems = pair.items[runId] || [];
+    const hv = getPairState(pairIdx).hotVotes;
+    const count = runItems.filter((i) => hv.has(i.id)).length;
     return count * 0.2;
   }
 
-  function toggleHot(itemId: string) {
-    setHotVotes((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
+  function toggleHot(pairIdx: number, itemId: string) {
+    const state = getPairState(pairIdx);
+    const next = new Set(state.hotVotes);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    updatePairState(pairIdx, { hotVotes: next });
   }
 
   // Load ticket info
@@ -456,7 +460,6 @@ export default function Battle() {
   useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
 
   async function loadBattleData(skipTranslation = false) {
-    // Load runs — get enough stars for multiple pairs
     const { data: runsData } = await (supabase
       .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
@@ -468,7 +471,6 @@ export default function Battle() {
       return;
     }
 
-    // Group by star and pick best per star
     const allRuns = runsData as B2Run[];
     const starBest = new Map<string, B2Run>();
     allRuns.forEach((r) => {
@@ -480,7 +482,6 @@ export default function Battle() {
     const bestRuns = Array.from(starBest.values()).sort((a, b) => b.content_score - a.content_score);
     if (bestRuns.length < 2) { setLoading(false); return; }
 
-    // Fetch star names
     const starIds = bestRuns.map((r) => r.star_id);
     const { data: starsData } = await supabase
       .from("ktrenz_stars")
@@ -490,14 +491,12 @@ export default function Battle() {
     const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
     const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
-    // Create pairs of 2
     const pairs: BattlePair[] = [];
     for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
 
-    // Load items for all pairs
     for (const pair of pairs) {
       for (const run of pair.runs) {
         const { data: runItems } = await supabase
@@ -512,13 +511,11 @@ export default function Battle() {
       }
     }
 
-    // Remove pairs where either side has fewer than 5 items
     const validPairs = pairs.filter(pair => {
       const runIds = pair.runs.map(r => r.id);
       return runIds.every(id => (pair.items[id]?.length ?? 0) >= 5);
     });
 
-    // Trigger on-demand translation for non-Korean users (only on first load)
     if (!skipTranslation && language !== "ko") {
       const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
@@ -532,59 +529,59 @@ export default function Battle() {
     setLoading(false);
   }
 
-  function handlePick(runId: string) {
-    if (submitted) return;
+  function handlePick(pairIdx: number, runId: string) {
+    const state = getPairState(pairIdx);
+    if (state.submitted) return;
     if (!user) {
       toast({ title: "Please log in to participate.", variant: "destructive" });
       navigate("/login");
       return;
     }
-    setPickedRunId(prev => prev === runId ? null : runId);
-    setSelectedBand(null);
+    updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
   }
 
-  function handleBandSelect(band: Band) {
-    if (submitted || !pickedRunId) return;
-    setSelectedBand(prev => prev === band ? null : band);
+  function handleBandSelect(pairIdx: number, band: Band) {
+    const state = getPairState(pairIdx);
+    if (state.submitted || !state.pickedRunId) return;
+    updatePairState(pairIdx, { selectedBand: state.selectedBand === band ? null : band });
   }
 
-  function handleSubmit() {
-    if (!pickedRunId || !selectedBand || !currentPair) return;
-    const opponentRun = runs.find((r) => r.id !== pickedRunId);
+  function handleSubmit(pairIdx: number) {
+    const pair = battlePairs[pairIdx];
+    const state = getPairState(pairIdx);
+    if (!state.pickedRunId || !state.selectedBand || !pair) return;
+    const pairRuns = pair.runs;
+    const opponentRun = pairRuns.find((r) => r.id !== state.pickedRunId);
     if (!opponentRun) return;
 
     const prediction: Prediction = {
-      pickedRunId,
+      pickedRunId: state.pickedRunId,
       opponentRunId: opponentRun.id,
-      band: selectedBand,
-      pickedStarName: runs.find((r) => r.id === pickedRunId)?.star?.display_name || "Unknown",
+      band: state.selectedBand,
+      pickedStarName: pairRuns.find((r) => r.id === state.pickedRunId)?.star?.display_name || "Unknown",
       opponentStarName: opponentRun.star?.display_name || "Unknown",
       status: "pending",
       created_at: new Date().toISOString(),
     };
 
     setPredictions((prev) => [...prev, prediction]);
-    setSubmitted(true);
+    updatePairState(pairIdx, { submitted: true });
 
-    // Use ticket and save prediction
+    const capturedPickedRunId = state.pickedRunId;
+    const capturedSelectedBand = state.selectedBand;
+
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        console.warn("[Battle] No authenticated user found for ticket/prediction save");
-        return;
-      }
+      if (!user) return;
       try {
-        // Use prediction ticket
         const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
         if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
         else console.log("[Battle] ticket used:", ticketResult);
-        // Refresh ticket count
         await loadTickets();
-        // Save prediction
         const { error: predError } = await supabase.from("b2_predictions").insert({
           user_id: user.id,
-          picked_run_id: pickedRunId,
+          picked_run_id: capturedPickedRunId,
           opponent_run_id: opponentRun.id,
-          band: selectedBand,
+          band: capturedSelectedBand,
         });
         if (predError) console.error("[Battle] prediction insert error:", predError);
       } catch (e) {
@@ -593,17 +590,6 @@ export default function Battle() {
     });
   }
 
-  function handleNextBattle() {
-    if (currentPairIndex + 1 >= battlePairs.length || remainingTickets <= 0) return;
-    setCurrentPairIndex((prev) => prev + 1);
-    setPickedRunId(null);
-    setSelectedBand(null);
-    setSubmitted(false);
-    setHotVotes(new Set());
-  }
-
-  const pickedRun = runs.find((r) => r.id === pickedRunId);
-  const allBattlesDone = remainingTickets <= 0 || (submitted && currentPairIndex + 1 >= battlePairs.length);
 
   if (loading) {
     return (
@@ -636,124 +622,118 @@ export default function Battle() {
           <FlipTimer />
         </div>
 
-        {/* Card carousels — full width */}
-        {currentPair && (
-          <div className="w-full px-2 sm:px-4">
-            {runs.map((run, idx) => (
-              <div key={run.id}>
-                {idx > 0 && (
-                  <div className="my-6 flex items-center gap-3 px-4">
-                    <div className="flex-1 h-px bg-border/60" />
-                    <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">vs</span>
-                    <div className="flex-1 h-px bg-border/60" />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <ArtistSection
-                    runItems={items[run.id] || []}
-                    starName={run.star?.display_name || "Unknown"}
-                    contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-                    scoreLabel={t("contentScore")}
-                    isPicked={pickedRunId === run.id}
-                    onPick={() => handlePick(run.id)}
-                    onCardTap={(item) => setDrawerItem(item)}
-                    disabled={submitted}
-                    index={idx}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* All battle pairs rendered vertically */}
+        {battlePairs.map((pair, pairIdx) => {
+          const pairState = getPairState(pairIdx);
+          const pairRuns = pair.runs;
+          const pairItems = pair.items;
+          const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
-        {/* Band Selection + Submit — constrained width */}
-        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
-          {/* Band Selection */}
-          {pickedRunId && !submitted && (
-            <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-1">
-                {t("predictGrowth")} <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> <span className="text-primary">{pickedRun?.star?.display_name}</span>
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {BANDS.map((band) => {
-                  const isSelected = selectedBand === band.key;
-                  const BandIcon = band.icon;
-                  const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
-                  return (
-                    <button
-                      key={band.key}
-                      onClick={() => handleBandSelect(band.key)}
-                      className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "ring-2 ring-primary scale-[1.03]" : "hover:ring-1 hover:ring-primary/30"}`}
-                    >
-                      <BandIcon className={`w-6 h-6 sm:w-8 sm:h-8 mb-1 ${band.iconColor}`} />
-                      <span className="text-[10px] sm:text-xs font-medium">{bandLabel}</span>
-                      <span className="text-base sm:text-lg font-extrabold mt-0.5">{band.range}</span>
-                      <span className="text-[10px] sm:text-xs font-bold text-muted-foreground mt-0.5">+{band.reward.toLocaleString()} K</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Submit / Result */}
-          {!submitted ? (
-            pickedRunId && selectedBand ? (
-              <Button onClick={handleSubmit} className="w-full h-12 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-bottom-2">
-                <Zap className="w-5 h-5 mr-2" />
-                {t("submitPrediction")}
-                <span className="ml-2 text-xs font-normal opacity-70">
-                  +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes
-                </span>
-              </Button>
-            ) : null
-          ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  {t("predictionSubmitted")}
-                </p>
-                <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
-                <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
-                  <div>
-                    <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
-                  </div>
-                  <Badge variant="outline" className="text-sm px-3 py-1">
-                    {BANDS.find((b) => b.key === selectedBand)?.label} +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K
-                  </Badge>
-                </div>
-                <div className="pt-2 border-t border-border mt-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
-                    <span className="text-[10px] text-muted-foreground"><span className="font-bold text-foreground">1,250</span> / 9,000 K-Cashes</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500 transition-all"
-                      style={{ width: `${(1250 / 9000) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Next Battle button */}
-              {!allBattlesDone ? (
-                <Button onClick={handleNextBattle} variant="outline" className="w-full h-12 rounded-2xl text-base font-bold">
-                  <ChevronRight className="w-5 h-5 mr-2" />
-                  {t("nextBattle")} ({remainingTickets - 1} {t("dailyRemaining").replace(":", "").trim()})
-                </Button>
-              ) : (
-                <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 text-center">
-                  <p className="text-sm font-bold text-foreground">🎉 {t("allDone")}</p>
+          return (
+            <div key={pairIdx} className="space-y-5">
+              {pairIdx > 0 && (
+                <div className="my-4 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">Battle {pairIdx + 1}</span>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
               )}
+
+              {/* Card carousels — full width */}
+              <div className="w-full px-2 sm:px-4">
+                {pairRuns.map((run, idx) => (
+                  <div key={run.id}>
+                    {idx > 0 && (
+                      <div className="my-6 flex items-center gap-3 px-4">
+                        <div className="flex-1 h-px bg-border/60" />
+                        <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">vs</span>
+                        <div className="flex-1 h-px bg-border/60" />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <ArtistSection
+                        runItems={pairItems[run.id] || []}
+                        starName={run.star?.display_name || "Unknown"}
+                        contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
+                        scoreLabel={t("contentScore")}
+                        isPicked={pairState.pickedRunId === run.id}
+                        onPick={() => handlePick(pairIdx, run.id)}
+                        onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
+                        disabled={pairState.submitted}
+                        index={idx}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Band Selection + Submit — constrained width */}
+              <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
+                {pairState.pickedRunId && !pairState.submitted && (
+                  <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1">
+                      {t("predictGrowth")} <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> <span className="text-primary">{pickedRun?.star?.display_name}</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {BANDS.map((band) => {
+                        const isSelected = pairState.selectedBand === band.key;
+                        const BandIcon = band.icon;
+                        const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                        return (
+                          <button
+                            key={band.key}
+                            onClick={() => handleBandSelect(pairIdx, band.key)}
+                            className={`rounded-xl px-2 py-3 sm:px-3 sm:py-4 text-center transition-all bg-white text-foreground aspect-square flex flex-col items-center justify-center ${isSelected ? "ring-2 ring-primary scale-[1.03]" : "hover:ring-1 hover:ring-primary/30"}`}
+                          >
+                            <BandIcon className={`w-6 h-6 sm:w-8 sm:h-8 mb-1 ${band.iconColor}`} />
+                            <span className="text-[10px] sm:text-xs font-medium">{bandLabel}</span>
+                            <span className="text-base sm:text-lg font-extrabold mt-0.5">{band.range}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground mt-0.5">+{band.reward.toLocaleString()} K</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit / Result */}
+                {!pairState.submitted ? (
+                  pairState.pickedRunId && pairState.selectedBand ? (
+                    <Button onClick={() => handleSubmit(pairIdx)} className="w-full h-12 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-bottom-2">
+                      <Zap className="w-5 h-5 mr-2" />
+                      {t("submitPrediction")}
+                      <span className="ml-2 text-xs font-normal opacity-70">
+                        +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K-Cashes
+                      </span>
+                    </Button>
+                  ) : null
+                ) : (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                      <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-primary" />
+                        {t("predictionSubmitted")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
+                      <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
+                        <div>
+                          <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+                        </div>
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          {BANDS.find((b) => b.key === pairState.selectedBand)?.label} +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          );
+        })}
 
-
-          {/* History Section */}
+        {/* History Section */}
+        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
           {predictions.length > 0 && (
             <div className="pb-4">
               <button
@@ -795,7 +775,9 @@ export default function Battle() {
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
           {drawerItem && (() => {
-            const starRun = runs.find((r) => r.star_id === drawerItem.star_id);
+            const drawerPair = battlePairs[drawerPairIndex];
+            const drawerRuns = drawerPair?.runs || [];
+            const starRun = drawerRuns.find((r) => r.star_id === drawerItem.star_id);
             const meta = drawerItem.metadata || {};
             return (
               <>
@@ -963,15 +945,15 @@ export default function Battle() {
 
                 {/* Hot button */}
                 <button
-                  onClick={() => toggleHot(drawerItem.id)}
+                  onClick={() => toggleHot(drawerPairIndex, drawerItem.id)}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all text-sm font-semibold focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
-                    hotVotes.has(drawerItem.id)
+                    getPairState(drawerPairIndex).hotVotes.has(drawerItem.id)
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary"
                   }`}
                 >
-                  <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
-                  {hotVotes.has(drawerItem.id) ? "Hot!" : t("markHot")}
+                  <Flame className={`w-4 h-4 ${getPairState(drawerPairIndex).hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
+                  {getPairState(drawerPairIndex).hotVotes.has(drawerItem.id) ? "Hot!" : t("markHot")}
                 </button>
               </>
             );
