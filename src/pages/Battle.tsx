@@ -496,6 +496,7 @@ export default function Battle() {
   const [showHistory, setShowHistory] = useState(false);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [showTicketInfo, setShowTicketInfo] = useState(false);
+  const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
