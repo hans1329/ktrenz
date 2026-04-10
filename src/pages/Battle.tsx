@@ -17,6 +17,9 @@ interface B2Item {
   id: string;
   source: string;
   title: string;
+  title_en: string | null;
+  title_ja: string | null;
+  title_zh: string | null;
   description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
@@ -460,7 +463,7 @@ export default function Battle() {
       for (const run of pair.runs) {
         const { data: runItems } = await supabase
           .from("ktrenz_b2_items")
-          .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+          .select("id, source, title, title_en, title_ja, title_zh, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
           .eq("run_id", run.id)
           .eq("has_thumbnail", true)
           .not("source", "eq", "naver_blog")
