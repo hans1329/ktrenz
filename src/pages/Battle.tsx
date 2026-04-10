@@ -303,7 +303,7 @@ function ArtistSection({
           onClick={onPick}
           disabled={disabled}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm ${
-            isPicked ? "bg-white border-primary/30 shadow-primary/10" : "bg-white border-transparent hover:bg-white/90"
+            isPicked ? "bg-white border-primary/30 shadow-primary/10" : "bg-white border-purple-300/50 hover:border-purple-400/60"
           } ${disabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
