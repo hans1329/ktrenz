@@ -836,7 +836,7 @@ export default function Battle() {
                           {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {BANDS.find((b) => b.key === pred.band)?.label} · {BANDS.find((b) => b.key === pred.band)?.range}
+                          {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
                         </p>
                       </div>
                       <Badge variant="outline" className="ml-2 shrink-0">
