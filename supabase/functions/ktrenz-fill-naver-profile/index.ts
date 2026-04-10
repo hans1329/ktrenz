@@ -312,35 +312,50 @@ async function scrapeNaverProfile(
     return { profession: null, instagram: null };
   }
 
-  // 1. 직업 추출
-  // 패턴: "다른이름이지은, IU" 다음 줄에 "가수, 탤런트" 형태
-  // 또는 헤더 아래에 "이지은, IU가수, 탤런트" 형태
-  let profession: string | null = null;
+  // ── 프로필 섹션만 추출 (## **이름** ~ 다음 ## 또는 끝) ──
+  // 네이버 인물정보 패널은 "## **이름**펴고 접기" 형태로 시작
+  const profileMatch = markdown.match(/##\s*\*{2}[^*]+\*{2}[^\n]*\n([\s\S]*?)(?=\n##\s|\n---|\n\*{3,}|$)/);
+  const profileSection = profileMatch ? profileMatch[0] : "";
 
-  // 패턴 1: "## **이름**\n\n다른이름...\n가수, 탤런트" 형태
-  const profBlock = markdown.match(/\*{2}[^*]+\*{2}[^\n]*\n+([^\n]*(?:가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|모델|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼)[^\n]*)/i);
-  if (profBlock) {
-    profession = profBlock[1].trim();
+  if (!profileSection) {
+    console.log(`[naver-profile] No profile section found for query`);
+    return { profession: null, instagram: null };
   }
 
-  // 패턴 2: "IU가수, 탤런트" 같이 이름 뒤에 바로 직업이 오는 패턴
-  if (!profession) {
-    const inlineProf = markdown.match(/(?:가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|모델|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼)(?:[,\s]*(?:가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|모델|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼))*/);
-    if (inlineProf) {
-      profession = inlineProf[0].trim();
+  // 1. 직업 추출 - 프로필 섹션 내에서만
+  let profession: string | null = null;
+  const PROF_KEYWORDS = "가수|배우|탤런트|래퍼|유튜버|코미디언|개그맨|모델|방송인|싱어송라이터|MC|아나운서|댄서|안무가|크리에이터|프로듀서|작곡가|인터넷방송인|영화배우|뮤지컬배우|성우|힙합|개그우먼";
+
+  // 패턴: "JEON WOONG가수" 또는 "이지은, IU가수, 탤런트" - 프로필 헤더 바로 아래
+  const profRegex = new RegExp(`[A-Za-z\\s,]+(?:${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`);
+  const profMatch = profileSection.match(profRegex);
+  if (profMatch) {
+    // 영문이름 부분 제거하고 직업만 추출
+    const fullMatch = profMatch[0];
+    const profOnly = fullMatch.match(new RegExp(`(${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`));
+    if (profOnly) {
+      profession = profOnly[0].trim();
     }
   }
 
-  // 2. 인스타그램 핸들 추출
+  // fallback: 프로필 섹션 내 첫 번째 직업 키워드 (단독 등장)
+  if (!profession) {
+    const simpleMatch = profileSection.match(new RegExp(`(?:^|\\n|\\s)(${PROF_KEYWORDS})(?:[,\\s]*(?:${PROF_KEYWORDS}))*`, "m"));
+    if (simpleMatch) {
+      profession = simpleMatch[0].trim();
+    }
+  }
+
+  // 2. 인스타그램 핸들 추출 - 프로필 섹션 내에서만
   let instagram: string | null = null;
-  const igMatch = markdown.match(/인스타그램[^\n]*\]\(https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]{2,30})\)/i);
+  const igMatch = profileSection.match(/인스타그램[^\n]*\]\(https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]{2,30})\)/i);
   if (igMatch) {
     instagram = igMatch[1].toLowerCase();
   }
 
-  // fallback: 일반 링크에서 instagram.com 추출
+  // fallback: 프로필 섹션 내 instagram.com 링크
   if (!instagram) {
-    const igLinkMatch = markdown.match(/instagram\.com\/([a-zA-Z0-9_.]{2,30})/i);
+    const igLinkMatch = profileSection.match(/instagram\.com\/([a-zA-Z0-9_.]{2,30})/i);
     if (igLinkMatch) {
       const handle = igLinkMatch[1].toLowerCase();
       const EXCLUDE = new Set(["p", "explore", "reel", "stories", "accounts", "about", "developer", "legal", "api", "static", "help", "reels"]);
