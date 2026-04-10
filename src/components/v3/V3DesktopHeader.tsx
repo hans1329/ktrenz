@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, Bot, Activity, Bell, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
@@ -14,22 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import ktrenzLogo from "@/assets/logo_col3.webp";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
-interface SearchResult {
-  id: string;
-  title: string;
-  slug: string;
-  image_url: string | null;
-  schema_type: string;
-}
 
-interface KeywordResult {
-  id: string;
-  keyword: string;
-  keyword_ko: string | null;
-  artist_name: string;
-  keyword_category: string;
-  star_id: string | null;
-}
+
 
 const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
