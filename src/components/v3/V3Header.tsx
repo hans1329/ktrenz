@@ -30,6 +30,35 @@ interface KeywordResult {
   star_id: string | null;
 }
 
+const SPOTIFY_GOAL = 9000;
+
+const SpotifyGoalBar = () => {
+  const { kPoints } = useAuth();
+  const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+  const navigate = useNavigate();
+
+  return (
+    <button
+      onClick={() => navigate("/kpass")}
+      className="flex items-center gap-1.5 px-1 py-1 active:opacity-60 transition-opacity"
+      title={`${kPoints.toLocaleString()} / ${SPOTIFY_GOAL.toLocaleString()} K`}
+    >
+      <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${progress}%`,
+            backgroundColor: "hsl(142, 71%, 45%)",
+          }}
+        />
+      </div>
+      <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+        {kPoints >= 1000 ? `${(kPoints / 1000).toFixed(1)}K` : kPoints}
+      </span>
+    </button>
+  );
+};
+
 const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rightSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
