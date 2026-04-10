@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -101,64 +101,55 @@ const AdminStars = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStar, setEditingStar] = useState<StarRow | null>(null);
   const [naverFilling, setNaverFilling] = useState(false);
-  const [naverStats, setNaverStats] = useState<{
-    progress: string;
-    totalCandidates: number;
-    currentOffset: number;
-    qualifierUpdated: number;
-    socialUpdated: number;
-    errors: number;
-    recentResults: string[];
-    elapsedSec: number;
-  } | null>(null);
+  const naverStartedRef = useRef<number | null>(null);
 
-  const stopNaverRef = { current: false };
+  // DB 폴링: fill_naver_profile 파이프라인 상태 실시간 추적
+  const { data: naverPipelineState } = useQuery({
+    queryKey: ["naver-profile-pipeline"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("id, run_id, phase, status, current_offset, total_candidates, last_error, created_at, updated_at")
+        .eq("phase", "fill_naver_profile")
+        .in("status", ["running", "running_inflight"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return (data as any[])?.[0] ?? null;
+    },
+    refetchInterval: 3000,
+  });
 
-  const runNaverFillLoop = useCallback(async () => {
-    setNaverFilling(true);
-    stopNaverRef.current = false;
-    setNaverStats({ progress: "0/?", totalCandidates: 0, currentOffset: 0, qualifierUpdated: 0, socialUpdated: 0, errors: 0, recentResults: [], elapsedSec: 0 });
-    let consecutiveErrors = 0;
-    let totalQualifier = 0, totalSocial = 0, totalErrors = 0;
-    const startTime = Date.now();
-    try {
-      for (let i = 0; i < 200; i++) {
-        if (stopNaverRef.current) break;
-        const { data, error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: { batchSize: 5 } });
-        if (error) {
-          consecutiveErrors++;
-          totalErrors++;
-          if (consecutiveErrors >= 3) throw error;
-          continue;
-        }
-        consecutiveErrors = 0;
-        const res = typeof data === "string" ? JSON.parse(data) : data;
-        totalQualifier += res?.qualifier_updated ?? 0;
-        totalSocial += res?.social_updated ?? 0;
-        totalErrors += res?.errors ?? 0;
-        setNaverStats({
-          progress: res?.progress || `${res?.batch_offset ?? 0}/?`,
-          totalCandidates: res?.next_offset !== null ? parseInt(res?.progress?.split("/")[1] || "0") : 0,
-          currentOffset: parseInt(res?.progress?.split("/")[0] || "0"),
-          qualifierUpdated: totalQualifier,
-          socialUpdated: totalSocial,
-          errors: totalErrors,
-          recentResults: (res?.results || []).slice(-5),
-          elapsedSec: Math.round((Date.now() - startTime) / 1000),
-        });
-        if (res?.is_done) {
-          toast({ title: `네이버 프로필 채우기 완료 (${res.progress})` });
-          break;
-        }
-        await new Promise(r => setTimeout(r, 500));
-      }
-    } catch (err) {
-      toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
-    } finally {
+  // 파이프라인 활성 여부 자동 감지
+  useEffect(() => {
+    if (naverPipelineState) {
+      if (!naverFilling) setNaverFilling(true);
+      if (!naverStartedRef.current) naverStartedRef.current = Date.now();
+    } else if (naverFilling) {
       setNaverFilling(false);
+      naverStartedRef.current = null;
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
     }
-  }, [qc]);
+  }, [naverPipelineState, naverFilling, qc]);
+
+  const naverStats = naverPipelineState ? {
+    progress: `${naverPipelineState.current_offset}/${naverPipelineState.total_candidates}`,
+    totalCandidates: naverPipelineState.total_candidates || 0,
+    currentOffset: naverPipelineState.current_offset || 0,
+    elapsedSec: naverStartedRef.current ? Math.round((Date.now() - naverStartedRef.current) / 1000) : 0,
+  } : null;
+
+  const runNaverFill = useCallback(async () => {
+    try {
+      setNaverFilling(true);
+      naverStartedRef.current = Date.now();
+      const { error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: {} });
+      if (error) throw error;
+      toast({ title: "네이버 프로필 채우기 시작 (서버 자가 진행)" });
+    } catch (err) {
+      toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
+      setNaverFilling(false);
+    }
+  }, []);
 
   /* form state */
   const [form, setForm] = useState({
@@ -440,15 +431,10 @@ const AdminStars = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={naverFilling} onClick={runNaverFillLoop}>
+          <Button size="sm" variant="outline" disabled={naverFilling} onClick={runNaverFill}>
             {naverFilling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Globe className="w-4 h-4 mr-1" />}
             {naverStats ? `프로필 ${naverStats.progress}` : "네이버 프로필"}
           </Button>
-          {naverFilling && (
-            <Button size="sm" variant="ghost" onClick={() => { stopNaverRef.current = true; }}>
-              <X className="w-4 h-4" />
-            </Button>
-          )}
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" /> 등록
           </Button>
@@ -463,41 +449,28 @@ const AdminStars = () => {
               <Globe className="w-4 h-4 text-primary" />
               네이버 프로필 채우기
               {naverFilling && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-              {!naverFilling && <Badge variant="outline" className="text-[10px]">완료</Badge>}
             </p>
-            {!naverFilling && (
-              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setNaverStats(null)}>
-                <X className="w-3 h-3" />
-              </Button>
-            )}
           </div>
           <Progress value={naverStats.totalCandidates > 0 ? (naverStats.currentOffset / naverStats.totalCandidates) * 100 : 0} className="h-2" />
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-lg font-bold">{naverStats.progress}</p>
               <p className="text-[10px] text-muted-foreground">진행</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-primary">{naverStats.qualifierUpdated}</p>
-              <p className="text-[10px] text-muted-foreground">분류 업데이트</p>
+              <p className="text-lg font-bold text-primary">
+                {naverStats.totalCandidates > 0
+                  ? `${Math.round((naverStats.currentOffset / naverStats.totalCandidates) * 100)}%`
+                  : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">완료율</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-primary">{naverStats.socialUpdated}</p>
-              <p className="text-[10px] text-muted-foreground">소셜 업데이트</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-destructive">{naverStats.errors}</p>
-              <p className="text-[10px] text-muted-foreground">에러</p>
+              <p className="text-lg font-bold">{naverStats.elapsedSec}s</p>
+              <p className="text-[10px] text-muted-foreground">경과</p>
             </div>
           </div>
-          {naverStats.recentResults.length > 0 && (
-            <div className="bg-muted/50 rounded-md p-2 max-h-32 overflow-y-auto">
-              {naverStats.recentResults.map((r, i) => (
-                <p key={i} className="text-[11px] font-mono leading-relaxed">{r}</p>
-              ))}
-            </div>
-          )}
-          <p className="text-[10px] text-muted-foreground text-right">{naverStats.elapsedSec}초 경과</p>
+          <p className="text-[10px] text-muted-foreground">서버 자가 진행 중 — 페이지를 닫아도 계속됩니다</p>
         </Card>
       )}
 
