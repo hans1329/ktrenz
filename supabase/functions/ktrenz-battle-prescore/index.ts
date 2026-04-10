@@ -1,5 +1,6 @@
-// ktrenz-battle-prescore: 전체 tier-1 스타 대상 네이버 뉴스 기사수 기반 가점수 스코어링
+// ktrenz-battle-prescore: 전체 스타 대상 네이버 뉴스 기사수 기반 가점수 스코어링
 // + 티어 분할 + 3일 쿨다운 기반 배틀 20명 자동 선발
+// + star_type별 검색어 최적화 (member→그룹+이름, solo→이름+가수, group→그룹명)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,14 +11,13 @@ const corsHeaders = {
 
 const BATCH_SIZE = 10;
 const TIMEOUT_MS = 8000;
-const BATTLE_PICK_COUNT = 20; // 배틀 선발 인원
+const BATTLE_PICK_COUNT = 20;
 const COOLDOWN_DAYS = 3;
 
-// 티어 분할: 상위 6, 중위 8, 하위 6
 const TIER_CONFIG = [
-  { name: "top", count: 6, startPct: 0, endPct: 0.1 },     // 상위 10%
-  { name: "mid", count: 8, startPct: 0.1, endPct: 0.4 },   // 중위 10-40%
-  { name: "low", count: 6, startPct: 0.4, endPct: 1.0 },   // 하위 40-100%
+  { name: "top", count: 6, startPct: 0, endPct: 0.1 },
+  { name: "mid", count: 8, startPct: 0.1, endPct: 0.4 },
+  { name: "low", count: 6, startPct: 0.4, endPct: 1.0 },
 ];
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOUT_MS): Promise<Response> {
@@ -52,7 +52,6 @@ async function getNaverNewsCount(
   }
 }
 
-// Fisher-Yates shuffle
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -60,6 +59,35 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// star_type별 검색어 생성
+function buildSearchQuery(
+  star: { name_ko: string | null; display_name: string; star_type: string },
+  groupNameKo: string | null
+): string {
+  const name = star.name_ko || star.display_name;
+
+  switch (star.star_type) {
+    case "member":
+      // 멤버: "그룹명 멤버명" (예: "세븐틴 준")
+      if (groupNameKo) {
+        return `${groupNameKo} ${name}`;
+      }
+      // 그룹 정보 없으면 이름+가수 fallback
+      return `${name} 가수`;
+
+    case "solo":
+      // 솔로: "이름 가수" (예: "아이유 가수")
+      return `${name} 가수`;
+
+    case "group":
+      // 그룹: 그룹명 자체가 고유하므로 그대로 사용
+      return name;
+
+    default:
+      return `${name} 가수`;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -81,10 +109,10 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Get all active stars
+    // Get all active stars with group info
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_category, image_url, star_type")
+      .select("id, display_name, name_ko, star_category, image_url, star_type, group_star_id")
       .eq("is_active", true)
       .order("display_name");
 
@@ -95,16 +123,43 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Build group name lookup: group_star_id → name_ko
+    const groupStarIds = [...new Set(
+      stars.filter((s) => s.star_type === "member" && s.group_star_id)
+        .map((s) => s.group_star_id!)
+    )];
+    const groupNameMap = new Map<string, string>();
+    for (const gid of groupStarIds) {
+      const group = stars.find((s) => s.id === gid);
+      if (group) {
+        groupNameMap.set(gid, group.name_ko || group.display_name);
+      }
+    }
+    // If some group stars aren't in the active list, fetch them
+    const missingGroupIds = groupStarIds.filter((gid) => !groupNameMap.has(gid));
+    if (missingGroupIds.length > 0) {
+      const { data: missingGroups } = await sb
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko")
+        .in("id", missingGroupIds);
+      for (const g of missingGroups || []) {
+        groupNameMap.set(g.id, g.name_ko || g.display_name);
+      }
+    }
+
     const batchId = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
     const results: any[] = [];
 
-    // Phase 1: Naver news count pre-scoring for ALL stars
+    // Phase 1: Naver news count pre-scoring with optimized search queries
     for (let i = 0; i < stars.length; i += BATCH_SIZE) {
       const batch = stars.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
         batch.map(async (star) => {
-          const searchName = star.name_ko || star.display_name;
-          const newsCount = await getNaverNewsCount(naverId, naverSecret, searchName);
+          const groupNameKo = star.group_star_id
+            ? groupNameMap.get(star.group_star_id) || null
+            : null;
+          const searchQuery = buildSearchQuery(star, groupNameKo);
+          const newsCount = await getNaverNewsCount(naverId, naverSecret, searchQuery);
           return {
             star_id: star.id,
             news_count: newsCount,
@@ -127,7 +182,6 @@ Deno.serve(async (req) => {
     }
 
     // Phase 2: Tier-based selection with cooldown
-    // Get recently battled star_ids (last N days)
     const cooldownDate = new Date();
     cooldownDate.setDate(cooldownDate.getDate() - COOLDOWN_DAYS);
     const { data: recentRuns } = await sb
@@ -136,7 +190,6 @@ Deno.serve(async (req) => {
       .gte("created_at", cooldownDate.toISOString());
     const recentStarIds = new Set((recentRuns || []).map((r: any) => r.star_id));
 
-    // Filter: news_count > 0 only, sorted by pre_score desc
     const scoredResults = results
       .filter((r) => r.news_count > 0)
       .sort((a, b) => b.pre_score - a.pre_score);
@@ -149,15 +202,12 @@ Deno.serve(async (req) => {
       const endIdx = Math.floor(totalScored * tier.endPct);
       const tierPool = scoredResults.slice(startIdx, endIdx);
 
-      // Prioritize non-cooldown stars, then fill from cooldown if needed
       const available = tierPool.filter((r) => !recentStarIds.has(r.star_id));
       const cooldownOnly = tierPool.filter((r) => recentStarIds.has(r.star_id));
 
-      // Shuffle available to add variety within tier
       const shuffled = shuffle(available);
       const picked = shuffled.slice(0, tier.count);
 
-      // If not enough, fill from cooldown pool
       if (picked.length < tier.count) {
         const remaining = tier.count - picked.length;
         picked.push(...shuffle(cooldownOnly).slice(0, remaining));
@@ -166,14 +216,20 @@ Deno.serve(async (req) => {
       selectedStarIds.push(...picked.map((r) => r.star_id));
     }
 
-    // Build selection summary
+    // Build selection summary with search query info
     const selectedDetails = selectedStarIds.map((sid) => {
       const star = stars.find((s) => s.id === sid);
       const score = results.find((r) => r.star_id === sid);
+      const groupNameKo = star?.group_star_id
+        ? groupNameMap.get(star.group_star_id) || null
+        : null;
+      const searchQuery = star ? buildSearchQuery(star, groupNameKo) : "";
       return {
         star_id: sid,
         name: star?.display_name,
         name_ko: star?.name_ko,
+        star_type: star?.star_type,
+        search_query: searchQuery,
         news_count: score?.news_count || 0,
         is_cooldown: recentStarIds.has(sid),
       };
@@ -189,9 +245,15 @@ Deno.serve(async (req) => {
       selected: selectedDetails,
       top_10: scoredResults.slice(0, 10).map((r) => {
         const star = stars.find((s) => s.id === r.star_id);
+        const groupNameKo = star?.group_star_id
+          ? groupNameMap.get(star.group_star_id) || null
+          : null;
+        const searchQuery = star ? buildSearchQuery(star, groupNameKo) : "";
         return {
           name: star?.display_name,
           name_ko: star?.name_ko,
+          star_type: star?.star_type,
+          search_query: searchQuery,
           news_count: r.news_count,
           in_cooldown: recentStarIds.has(r.star_id),
         };
