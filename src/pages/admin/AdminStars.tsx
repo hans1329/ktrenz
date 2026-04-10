@@ -382,9 +382,28 @@ const AdminStars = () => {
             그룹 {counts.group} · 멤버 {counts.member} · 솔로 {counts.solo}
           </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> 등록
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" disabled={naverFilling} onClick={async () => {
+            setNaverFilling(true);
+            try {
+              const { data, error } = await supabase.functions.invoke("ktrenz-fill-naver-profile", { body: { batchSize: 5 } });
+              if (error) throw error;
+              const res = typeof data === "string" ? JSON.parse(data) : data;
+              toast({ title: `네이버 프로필 채우기 완료: ${res?.filled ?? 0}건 처리` });
+              qc.invalidateQueries({ queryKey: ["admin-stars"] });
+            } catch (err) {
+              toast({ title: `실패: ${(err as Error).message}`, variant: "destructive" });
+            } finally {
+              setNaverFilling(false);
+            }
+          }}>
+            {naverFilling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Globe className="w-4 h-4 mr-1" />}
+            네이버 프로필
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> 등록
+          </Button>
+        </div>
       </div>
 
       {/* filters */}
