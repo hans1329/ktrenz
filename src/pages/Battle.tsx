@@ -1042,7 +1042,7 @@ export default function Battle() {
                       return (
                         <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                           <iframe
-                            src={`https://www.youtube.com/embed/${ytId}?rel=0&autoplay=0`}
+                            src={`https://www.youtube.com/embed/${ytId}?rel=0&autoplay=1&mute=1`}
                             className="absolute inset-0 w-full h-full border-0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -1058,7 +1058,7 @@ export default function Battle() {
                       if (tiktokId) {
                         return (
                           <iframe
-                            src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+                            src={`https://www.tiktok.com/embed/v2/${tiktokId}?autoplay=1`}
                             className="w-full border-0"
                             style={{ height: "580px" }}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
