@@ -202,8 +202,8 @@ const AdminRankings = () => {
           const platforms = ['youtube', 'buzz_multi', 'hanteo', 'apple_music_charts', 'billboard_charts', 'lastfm', 'deezer', 'social_followers'];
           const { data, error } = await supabase
             .from('ktrenz_data_snapshots')
-            .select('wiki_entry_id, platform, collected_at, metrics')
-            .not('wiki_entry_id', 'is', null)
+            .select('star_id, platform, collected_at, metrics')
+            .not('star_id', 'is', null)
             .in('platform', platforms)
             .gte('collected_at', since)
             .order('collected_at', { ascending: false })
@@ -221,30 +221,29 @@ const AdminRankings = () => {
       const collectionMap = new Map<string, CollectionStatus>();
       const metricsMap = new Map<string, SnapshotMetrics>();
       (snapshotsRes.data || []).forEach((s: any) => {
-        if (!s.wiki_entry_id) return;
-        const existing = collectionMap.get(s.wiki_entry_id) || {};
+        if (!s.star_id) return;
+        const existing = collectionMap.get(s.star_id) || {};
         const platform = s.platform as string;
         // 첫 번째(최신) 것만 사용
         if (!existing[platform as keyof CollectionStatus]) {
           existing[platform as keyof CollectionStatus] = s.collected_at;
-          collectionMap.set(s.wiki_entry_id, existing);
+          collectionMap.set(s.star_id, existing);
 
           // 메트릭스 저장
-          const m = metricsMap.get(s.wiki_entry_id) || {};
+          const m = metricsMap.get(s.star_id) || {};
           if (platform === 'hanteo') {
-            // hanteo는 여러 앨범이 올 수 있으므로 배열로
             if (!m.hanteo) m.hanteo = [];
-            if (s.metrics && s.wiki_entry_id) m.hanteo.push(s.metrics);
+            if (s.metrics && s.star_id) m.hanteo.push(s.metrics);
           } else {
             (m as any)[platform] = s.metrics;
           }
-          metricsMap.set(s.wiki_entry_id, m);
-        } else if (platform === 'hanteo' && s.wiki_entry_id) {
+          metricsMap.set(s.star_id, m);
+        } else if (platform === 'hanteo' && s.star_id) {
           // hanteo 추가 앨범
-          const m = metricsMap.get(s.wiki_entry_id) || {};
+          const m = metricsMap.get(s.star_id) || {};
           if (!m.hanteo) m.hanteo = [];
           if (s.metrics) m.hanteo.push(s.metrics);
-          metricsMap.set(s.wiki_entry_id, m);
+          metricsMap.set(s.star_id, m);
         }
       });
 
@@ -335,7 +334,7 @@ const AdminRankings = () => {
       while (true) {
         const { data, error } = await supabase
           .from('ktrenz_data_snapshots')
-          .select('platform, wiki_entry_id, metrics')
+          .select('platform, star_id, metrics')
           .gte('collected_at', since)
           .range(from, from + pageSize - 1);
         if (error) throw error;
@@ -352,7 +351,7 @@ const AdminRankings = () => {
 
       allData.forEach((s: any) => {
         const p = s.platform;
-        const wid = s.wiki_entry_id || 'unknown';
+        const wid = s.star_id || 'unknown';
         if (!seenPerPlatform[p]) seenPerPlatform[p] = new Set();
         if (!seenPerPlatform[p].has(wid)) {
           seenPerPlatform[p].add(wid);
@@ -437,9 +436,9 @@ const AdminRankings = () => {
       .limit(1);
 
     if (wikiEntryId) {
-      query = query.eq('wiki_entry_id', wikiEntryId);
+      query = query.eq('star_id', wikiEntryId);
     } else {
-      query = query.not('wiki_entry_id', 'is', null);
+      query = query.not('star_id', 'is', null);
     }
 
     const { data } = await query.maybeSingle();
@@ -581,7 +580,7 @@ const AdminRankings = () => {
       const { data, error } = await supabase
         .from('ktrenz_data_snapshots')
         .select('platform, metrics, collected_at')
-        .eq('wiki_entry_id', dataDetailWikiId)
+        .eq('star_id', dataDetailWikiId)
         .order('collected_at', { ascending: false })
         .limit(50);
       if (error) throw error;
