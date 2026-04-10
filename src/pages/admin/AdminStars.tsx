@@ -791,6 +791,7 @@ const AdminStars = () => {
                 className="h-9 text-xs font-mono"
                 placeholder="내부 위키 연결 (선택)"
               />
+            </div>
             {/* social handles */}
             <div>
               <label className="text-xs font-medium mb-1 block">📱 소셜 핸들</label>
@@ -833,7 +834,6 @@ const AdminStars = () => {
                 </div>
               </div>
             </div>
-          </div>
           </div>
 
           <DialogFooter className="gap-2">
