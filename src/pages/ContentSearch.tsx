@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import V3Header from "@/components/v3/V3Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords, Trophy, XCircle, Clock } from "lucide-react";
+import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords, Trophy, XCircle, Clock, Zap, BarChart3 } from "lucide-react";
 import SEO from "@/components/SEO";
 import SmartImage from "@/components/SmartImage";
 
@@ -29,11 +29,45 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
-  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle">("search");
+  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore">("search");
   const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
   const [collectedStarName, setCollectedStarName] = useState("");
   const [battleStarId, setBattleStarId] = useState<string | null>(null);
   const [battleStarName, setBattleStarName] = useState("");
+
+  // Pre-score data
+  const { data: prescoreData, isLoading: prescoreLoading, refetch: refetchPrescores } = useQuery({
+    queryKey: ["battle-prescores"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ktrenz_b2_prescores")
+        .select("id, star_id, news_count, pre_score, batch_id, scored_at")
+        .order("pre_score", { ascending: false });
+      if (!data || data.length === 0) return { items: [], stars: {} };
+      const starIds = [...new Set(data.map((d: any) => d.star_id))];
+      const { data: stars } = await (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, image_url, star_type")
+        .in("id", starIds);
+      const starMap: Record<string, any> = {};
+      (stars || []).forEach((s: any) => { starMap[s.id] = s; });
+      return { items: data, stars: starMap, batchId: data[0]?.batch_id, scoredAt: data[0]?.scored_at };
+    },
+    enabled: viewMode === "prescore",
+    staleTime: 30000,
+  });
+
+  // Pre-score collection mutation
+  const prescoreMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      refetchPrescores();
+    },
+  });
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
@@ -274,6 +308,12 @@ const ContentSearchPage = () => {
               <Database className="w-3.5 h-3.5" /> 수집 아티스트
               {collectedArtists && collectedArtists.length > 0 && (
                 <span className="text-[10px] opacity-60">({collectedArtists.length})</span>
+              )}
+            </TabButton>
+            <TabButton active={viewMode === "prescore"} onClick={() => { setViewMode("prescore"); clearSelection(); }}>
+              <Zap className="w-3.5 h-3.5" /> 가점수
+              {prescoreData?.items?.length > 0 && (
+                <span className="text-[10px] opacity-60">({prescoreData.items.filter((i: any) => i.news_count > 0).length})</span>
               )}
             </TabButton>
           </div>
@@ -550,6 +590,137 @@ const ContentSearchPage = () => {
               </>
             )}
           </>
+        )}
+
+        {/* === PRESCORE MODE === */}
+        {viewMode === "prescore" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  네이버 뉴스 가점수
+                </h2>
+                {prescoreData?.scoredAt && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    배치 {prescoreData.batchId} · {timeAgo(prescoreData.scoredAt)}
+                  </p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                onClick={() => prescoreMutation.mutate()}
+                disabled={prescoreMutation.isPending}
+                className="rounded-full gap-1.5"
+              >
+                {prescoreMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Zap className="w-3.5 h-3.5" />
+                )}
+                {prescoreMutation.isPending ? "수집중..." : "전체 수집"}
+              </Button>
+            </div>
+
+            {prescoreMutation.isSuccess && prescoreMutation.data && (
+              <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                <p className="text-xs font-medium text-foreground">
+                  ✅ {prescoreMutation.data.total_stars}명 스코어링 완료 · {prescoreMutation.data.scored}명 기사 발견
+                </p>
+              </div>
+            )}
+            {prescoreMutation.isError && (
+              <div className="mb-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                <p className="text-xs text-destructive">수집 실패: {String(prescoreMutation.error)}</p>
+              </div>
+            )}
+
+            {prescoreLoading && (
+              <div className="space-y-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 rounded-xl" />
+                ))}
+              </div>
+            )}
+
+            {!prescoreLoading && (!prescoreData?.items || prescoreData.items.length === 0) && (
+              <div className="text-center py-16 text-muted-foreground">
+                <Zap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">가점수 데이터가 없습니다</p>
+                <p className="text-xs mt-1">「전체 수집」버튼으로 네이버 뉴스 기사수를 수집하세요</p>
+              </div>
+            )}
+
+            {prescoreData?.items && prescoreData.items.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <p className="text-lg font-bold text-foreground">{prescoreData.items.length}</p>
+                    <p className="text-[10px] text-muted-foreground">전체</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <p className="text-lg font-bold text-foreground">{prescoreData.items.filter((i: any) => i.news_count > 0).length}</p>
+                    <p className="text-[10px] text-muted-foreground">기사 있음</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <p className="text-lg font-bold text-primary">
+                      {prescoreData.items.length > 0
+                        ? Math.round(prescoreData.items.reduce((s: number, i: any) => s + i.news_count, 0) / prescoreData.items.length)
+                        : 0}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">평균 기사수</p>
+                  </div>
+                </div>
+
+                {prescoreData.items.map((item: any, idx: number) => {
+                  const star = prescoreData.stars[item.star_id];
+                  if (!star) return null;
+                  const maxScore = prescoreData.items[0]?.pre_score || 1;
+                  const barWidth = Math.max(2, (item.pre_score / maxScore) * 100);
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-card border border-border/40 relative overflow-hidden"
+                    >
+                      <div
+                        className="absolute inset-y-0 left-0 bg-primary/5"
+                        style={{ width: `${barWidth}%` }}
+                      />
+                      <span className={cn(
+                        "text-xs font-bold w-6 text-center shrink-0 relative z-10",
+                        idx < 3 ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {idx + 1}
+                      </span>
+                      {star.image_url ? (
+                        <img src={star.image_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 relative z-10" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0 relative z-10">
+                          {(star.display_name || "?")[0]}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 relative z-10">
+                        <p className="text-sm font-medium text-foreground truncate">{star.display_name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {star.name_ko && star.name_ko !== star.display_name && `${star.name_ko} · `}
+                          {star.star_type}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 relative z-10">
+                        <p className={cn(
+                          "text-sm font-bold",
+                          item.news_count > 0 ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          {item.news_count.toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">기사</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>
