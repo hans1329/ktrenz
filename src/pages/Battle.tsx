@@ -205,68 +205,76 @@ function ArtistSection({
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
 
-  // Clone first 2 cards at end, last 2 at start for seamless looping
-  const cloneBefore = itemCount > 2 ? 2 : 1;
-  const cloneAfter = itemCount > 2 ? 2 : 1;
+  // Triple the full set so looping can preserve scroll direction without visible reversal
   const loopItems = itemCount > 1
-    ? [...runItems.slice(-cloneBefore), ...runItems, ...runItems.slice(0, cloneAfter)]
+    ? [...runItems, ...runItems, ...runItems]
     : runItems;
-  const offset = itemCount > 1 ? cloneBefore : 0;
+  const offset = itemCount > 1 ? itemCount : 0;
 
-  // Initialize scroll to first real card
+  // Initialize scroll to the first real card in the middle set
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
+
     requestAnimationFrame(() => {
-      const child = el.children[offset] as HTMLElement;
-      if (child) el.scrollLeft = child.offsetLeft;
+      const child = el.children[offset] as HTMLElement | undefined;
+      if (child) {
+        el.scrollLeft = child.offsetLeft;
+        setActiveIndex(0);
+      }
     });
   }, [itemCount, offset]);
 
-  // Track active index + handle infinite loop jump AFTER scroll settles
+  // Track active index and loop only after scroll settles
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || itemCount <= 1) return;
 
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const handleScroll = () => {
-      // Update active index immediately
+    const updateActiveIndex = () => {
       const children = Array.from(el.children) as HTMLElement[];
+      if (children.length === 0) return;
+
       const scrollLeft = el.scrollLeft;
-      let closest = 0;
+      let closest = offset;
       let minDist = Infinity;
+
       children.forEach((child, i) => {
         const dist = Math.abs(child.offsetLeft - scrollLeft);
-        if (dist < minDist) { minDist = dist; closest = i; }
+        if (dist < minDist) {
+          minDist = dist;
+          closest = i;
+        }
       });
-      const realIndex = ((closest - offset) % itemCount + itemCount) % itemCount;
-      setActiveIndex(realIndex);
 
-      // Debounce: jump to real card only after scrolling stops
+      setActiveIndex(((closest - offset) % itemCount + itemCount) % itemCount);
+    };
+
+    const settleLoop = () => {
+      const children = Array.from(el.children) as HTMLElement[];
+      const middleStart = children[offset] as HTMLElement | undefined;
+      const thirdStart = children[offset + itemCount] as HTMLElement | undefined;
+
+      if (!middleStart || !thirdStart) return;
+
+      const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
+      if (setWidth <= 0) return;
+
+      if (el.scrollLeft >= thirdStart.offsetLeft) {
+        el.scrollLeft -= setWidth;
+      } else if (el.scrollLeft < middleStart.offsetLeft) {
+        el.scrollLeft += setWidth;
+      }
+
+      updateActiveIndex();
+    };
+
+    const handleScroll = () => {
+      updateActiveIndex();
+
       if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        const curChildren = Array.from(el.children) as HTMLElement[];
-        const curScroll = el.scrollLeft;
-        let cur = 0;
-        let curMin = Infinity;
-        curChildren.forEach((child, i) => {
-          const d = Math.abs(child.offsetLeft - curScroll);
-          if (d < curMin) { curMin = d; cur = i; }
-        });
-        // If snapped to a clone-before card, jump to corresponding real card
-        if (cur < offset) {
-          const realIdx = itemCount - (offset - cur);
-          const target = curChildren[offset + realIdx] as HTMLElement;
-          if (target) el.scrollLeft = target.offsetLeft;
-        }
-        // If snapped to a clone-after card, jump to corresponding real card
-        else if (cur >= offset + itemCount) {
-          const realIdx = cur - offset - itemCount;
-          const target = curChildren[offset + realIdx] as HTMLElement;
-          if (target) el.scrollLeft = target.offsetLeft;
-        }
-      }, 120);
+      scrollTimer = setTimeout(settleLoop, 120);
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
@@ -279,8 +287,11 @@ function ArtistSection({
   const scrollToIndex = (i: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    const child = el.children[i + offset] as HTMLElement;
-    if (child) child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+
+    const child = el.children[i + offset] as HTMLElement | undefined;
+    if (child) {
+      child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+    }
   };
 
   return (
@@ -311,7 +322,7 @@ function ArtistSection({
         </button>
       </div>
 
-      {/* Horizontal card carousel (infinite loop) */}
+      {/* Horizontal card carousel */}
       <div
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
