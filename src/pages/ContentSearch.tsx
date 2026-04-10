@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database } from "lucide-react";
+import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords } from "lucide-react";
 import SEO from "@/components/SEO";
 import SmartImage from "@/components/SmartImage";
 
@@ -29,9 +29,11 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
-  const [viewMode, setViewMode] = useState<"search" | "collected">("search");
+  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle">("search");
   const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
   const [collectedStarName, setCollectedStarName] = useState("");
+  const [battleStarId, setBattleStarId] = useState<string | null>(null);
+  const [battleStarName, setBattleStarName] = useState("");
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
