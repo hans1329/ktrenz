@@ -80,10 +80,10 @@ async function getNaverNewsCount48h(
       if (allOld || data.items.length < display) break;
       start += display;
     }
-    return count;
+    return { count, capped: start > maxStart };
   } catch (e) {
     console.log(`[prescore] Error for "${query}":`, e);
-    return 0;
+    return { count: 0, capped: false };
   }
 }
 
@@ -191,11 +191,12 @@ Deno.serve(async (req) => {
               ? groupNameMap.get(star.group_star_id) || null
               : null;
             const searchQuery = buildSearchQuery(star, groupNameKo);
-            const newsCount = await getNaverNewsCount48h(naverId, naverSecret, searchQuery);
+            const result = await getNaverNewsCount48h(naverId, naverSecret, searchQuery);
             return {
               star_id: star.id,
-              news_count: newsCount,
-              pre_score: newsCount,
+              news_count: result.count,
+              pre_score: result.count,
+              is_capped: result.capped,
               batch_id: batchId,
             };
           })
