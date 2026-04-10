@@ -539,13 +539,13 @@ export default function Battle() {
       navigate("/login");
       return;
     }
-    setPickedRunId(runId);
+    setPickedRunId(prev => prev === runId ? null : runId);
     setSelectedBand(null);
   }
 
   function handleBandSelect(band: Band) {
     if (submitted || !pickedRunId) return;
-    setSelectedBand(band);
+    setSelectedBand(prev => prev === band ? null : band);
   }
 
   function handleSubmit() {
