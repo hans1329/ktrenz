@@ -1,4 +1,4 @@
-// ktrenz-battle-autobatch: prescore 결과의 선발 아티스트 대상 content-search 순차 실행
+// ktrenz-battle-autobatch: prescore 결과 기반 쿨다운+티어 선발 → content-search 순차 실행
 // DB 기반 상태머신 — 한 번 호출 시 1명씩 처리하고 다음 대상을 큐에서 가져감
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,6 +7,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const COOLDOWN_DAYS = 3;
+const TIER_CONFIG = [
+  { name: "top", count: 6, startPct: 0, endPct: 0.1 },
+  { name: "mid", count: 8, startPct: 0.1, endPct: 0.4 },
+  { name: "low", count: 6, startPct: 0.4, endPct: 1.0 },
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,21 +37,61 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body.action || "process_next";
 
-    // Action: "start" — prescore 결과에서 선발 목록을 가져와 큐에 등록
+    // Action: "start" — prescore 결과에서 쿨다운+티어 선발 후 큐에 등록
     if (action === "start") {
-      const starIds: string[] = body.star_ids || [];
-      if (!starIds.length) {
-        return new Response(JSON.stringify({ error: "No star_ids provided" }), {
+      const batchId: string = body.batch_id;
+      if (!batchId) {
+        return new Response(JSON.stringify({ error: "batch_id required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Clear existing queue
+      // 1. prescore 결과 조회
+      const { data: allPrescores } = await sb
+        .from("ktrenz_b2_prescores")
+        .select("star_id, news_count, pre_score")
+        .eq("batch_id", batchId)
+        .order("pre_score", { ascending: false });
+
+      const scoredResults = (allPrescores || []).filter((r: any) => r.news_count > 0);
+      const totalScored = scoredResults.length;
+
+      if (totalScored === 0) {
+        return new Response(JSON.stringify({ error: "No scored results for batch", batch_id: batchId }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2. 쿨다운 체크
+      const cooldownDate = new Date();
+      cooldownDate.setDate(cooldownDate.getDate() - COOLDOWN_DAYS);
+      const { data: recentRuns } = await sb
+        .from("ktrenz_b2_runs")
+        .select("star_id")
+        .gte("created_at", cooldownDate.toISOString());
+      const recentStarIds = new Set((recentRuns || []).map((r: any) => r.star_id));
+
+      // 3. 티어별 선발
+      const selectedStarIds: string[] = [];
+      for (const tier of TIER_CONFIG) {
+        const startIdx = Math.floor(totalScored * tier.startPct);
+        const endIdx = Math.floor(totalScored * tier.endPct);
+        const tierPool = scoredResults.slice(startIdx, endIdx);
+        const available = tierPool.filter((r: any) => !recentStarIds.has(r.star_id));
+        const cooldownOnly = tierPool.filter((r: any) => recentStarIds.has(r.star_id));
+        const shuffled = shuffle(available);
+        const picked = shuffled.slice(0, tier.count);
+        if (picked.length < tier.count) {
+          const remaining = tier.count - picked.length;
+          picked.push(...shuffle(cooldownOnly).slice(0, remaining));
+        }
+        selectedStarIds.push(...picked.map((r: any) => r.star_id));
+      }
+
+      // 4. Clear existing queue & insert selected
       await sb.from("ktrenz_b2_batch_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-      // Insert queue items
-      const batchId = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
-      const queueItems = starIds.map((sid, idx) => ({
+      const queueItems = selectedStarIds.map((sid, idx) => ({
         star_id: sid,
         batch_id: batchId,
         queue_order: idx,
@@ -50,7 +106,10 @@ Deno.serve(async (req) => {
         success: true,
         action: "start",
         batch_id: batchId,
-        queued: starIds.length,
+        total_scored: totalScored,
+        cooldown_excluded: recentStarIds.size,
+        queued: selectedStarIds.length,
+        selected: selectedStarIds,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
