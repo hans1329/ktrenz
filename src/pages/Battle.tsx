@@ -630,13 +630,14 @@ export default function Battle() {
 
         {/* All battle pairs rendered vertically */}
         {battlePairs.map((pair, pairIdx) => {
+          const isLocked = pairIdx >= unlockedBattleCount;
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
           const pairItems = pair.items;
           const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
           return (
-            <div key={pairIdx} className="space-y-5">
+            <div key={pairIdx} className={cn("space-y-5 relative", isLocked && "opacity-40 pointer-events-none select-none")}>
               {pairIdx > 0 && (
                 <div className="my-10 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
                   <div className="flex-1 h-px bg-primary/30" />
