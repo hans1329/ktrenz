@@ -29,11 +29,45 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
-  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle">("search");
+  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore">("search");
   const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
   const [collectedStarName, setCollectedStarName] = useState("");
   const [battleStarId, setBattleStarId] = useState<string | null>(null);
   const [battleStarName, setBattleStarName] = useState("");
+
+  // Pre-score data
+  const { data: prescoreData, isLoading: prescoreLoading, refetch: refetchPrescores } = useQuery({
+    queryKey: ["battle-prescores"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ktrenz_b2_prescores")
+        .select("id, star_id, news_count, pre_score, batch_id, scored_at")
+        .order("pre_score", { ascending: false });
+      if (!data || data.length === 0) return { items: [], stars: {} };
+      const starIds = [...new Set(data.map((d: any) => d.star_id))];
+      const { data: stars } = await (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, image_url, star_type")
+        .in("id", starIds);
+      const starMap: Record<string, any> = {};
+      (stars || []).forEach((s: any) => { starMap[s.id] = s; });
+      return { items: data, stars: starMap, batchId: data[0]?.batch_id, scoredAt: data[0]?.scored_at };
+    },
+    enabled: viewMode === "prescore",
+    staleTime: 30000,
+  });
+
+  // Pre-score collection mutation
+  const prescoreMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-prescore");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      refetchPrescores();
+    },
+  });
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
