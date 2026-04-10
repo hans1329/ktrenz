@@ -326,13 +326,13 @@ const V3ArtistDetail = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_data_snapshots")
-        .select("raw_response, collected_at")
+        .select("raw_response, collected_at" as any)
         .eq("wiki_entry_id", entry!.id)
         .eq("platform", "naver_news")
         .not("raw_response", "is", null)
         .order("collected_at", { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .maybeSingle() as any;
       if (!data?.raw_response) return null;
       const items = (data.raw_response as any)?.top_items || [];
       return { items: items.slice(0, 5), collectedAt: data.collected_at };
