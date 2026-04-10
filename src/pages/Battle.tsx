@@ -17,6 +17,9 @@ interface B2Item {
   id: string;
   source: string;
   title: string;
+  title_en: string | null;
+  title_ja: string | null;
+  title_zh: string | null;
   description: string;
   thumbnail: string | null;
   has_thumbnail: boolean;
@@ -167,6 +170,13 @@ function FlipTimer() {
   );
 }
 
+function getLocalizedTitle(item: B2Item, lang: string): string {
+  if (lang === "ja" && item.title_ja) return item.title_ja;
+  if (lang === "zh" && item.title_zh) return item.title_zh;
+  if (lang === "en" && item.title_en) return item.title_en;
+  return item.title;
+}
+
 /* ── Artist Section: name bar + horizontal card carousel ── */
 function ArtistSection({
   runItems,
@@ -189,6 +199,7 @@ function ArtistSection({
   disabled: boolean;
   index: number;
 }) {
+  const { language } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
@@ -319,7 +330,7 @@ function ArtistSection({
               {/* Content area */}
               <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
                 <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
-                  {decodeHtml(item.title)}
+                  {decodeHtml(getLocalizedTitle(item, language))}
                 </p>
               </div>
             </div>
@@ -460,7 +471,7 @@ export default function Battle() {
       for (const run of pair.runs) {
         const { data: runItems } = await supabase
           .from("ktrenz_b2_items")
-          .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+          .select("id, source, title, title_en, title_ja, title_zh, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
           .eq("run_id", run.id)
           .eq("has_thumbnail", true)
           .not("source", "eq", "naver_blog")
