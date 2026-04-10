@@ -302,6 +302,8 @@ function ArtistSection({
             </div>
           </div>
         ))}
+        {/* Spacer so last cards can scroll fully into view */}
+        <div className="flex-shrink-0 w-[20%] sm:w-40" aria-hidden="true" />
       </div>
 
       {/* Carousel indicators */}
