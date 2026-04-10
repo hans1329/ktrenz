@@ -39,7 +39,7 @@ async function getNaverNewsCount(
     // 네이버 API는 ds/de 파라미터를 공식 지원하지 않으므로
     // 최근 기사 100건을 가져와서 pubDate로 24시간 내 기사만 직접 카운트
     const now = Date.now();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const twoDaysAgo = now - 48 * 60 * 60 * 1000;
 
     const url = new URL("https://openapi.naver.com/v1/search/news.json");
     url.searchParams.set("query", query);
