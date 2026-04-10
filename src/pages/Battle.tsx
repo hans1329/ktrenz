@@ -498,7 +498,7 @@ export default function Battle() {
     const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
     const pairs: BattlePair[] = [];
-    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 5; i += 2) {
       const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
       pairs.push({ runs: pairRuns, items: {} });
     }
