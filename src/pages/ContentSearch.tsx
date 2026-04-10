@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle } from "lucide-react";
+import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database } from "lucide-react";
 import SEO from "@/components/SEO";
+import SmartImage from "@/components/SmartImage";
 
 type SourceKey = "naver_news" | "naver_blog" | "youtube" | "tiktok" | "instagram" | "reddit";
 
@@ -27,6 +28,9 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
+  const [viewMode, setViewMode] = useState<"search" | "collected">("search");
+  const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
+  const [collectedStarName, setCollectedStarName] = useState("");
 
   // Star search
   const { data: starResults, isLoading: starsLoading } = useQuery({
@@ -45,7 +49,7 @@ const ContentSearchPage = () => {
   });
 
   // Content search
-  const { data: contentData, isLoading: contentLoading, isFetching } = useQuery({
+  const { data: contentData, isLoading: contentLoading } = useQuery({
     queryKey: ["content-search", selectedStarId],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-content-search", {
@@ -55,6 +59,65 @@ const ContentSearchPage = () => {
       return data;
     },
     enabled: !!selectedStarId,
+    staleTime: 60000,
+  });
+
+  // Collected artists (stars with B2 runs)
+  const { data: collectedArtists } = useQuery({
+    queryKey: ["collected-artists"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_collected_artists_summary");
+      if (data) return data;
+      // Fallback: manual query
+      const { data: runs } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("star_id, content_score, created_at");
+      if (!runs || runs.length === 0) return [];
+      const starMap = new Map<string, { star_id: string; run_count: number; max_score: number; last_run: string }>();
+      for (const r of runs) {
+        const existing = starMap.get(r.star_id);
+        if (!existing) {
+          starMap.set(r.star_id, { star_id: r.star_id, run_count: 1, max_score: r.content_score, last_run: r.created_at });
+        } else {
+          existing.run_count++;
+          if (r.content_score > existing.max_score) existing.max_score = r.content_score;
+          if (r.created_at > existing.last_run) existing.last_run = r.created_at;
+        }
+      }
+      const starIds = Array.from(starMap.keys());
+      const { data: stars } = await (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, image_url")
+        .in("id", starIds);
+      return (stars || []).map((s: any) => ({
+        ...s,
+        ...starMap.get(s.id),
+      })).sort((a: any, b: any) => new Date(b.last_run).getTime() - new Date(a.last_run).getTime());
+    },
+    staleTime: 60000,
+  });
+
+  // Collected items for a specific star
+  const { data: collectedItems, isLoading: collectedLoading } = useQuery({
+    queryKey: ["collected-items", collectedStarId],
+    queryFn: async () => {
+      // Get runs for this star
+      const { data: runs } = await (supabase as any)
+        .from("ktrenz_b2_runs")
+        .select("id, content_score, created_at")
+        .eq("star_id", collectedStarId)
+        .order("created_at", { ascending: false });
+      if (!runs || runs.length === 0) return [];
+      const runIds = runs.map((r: any) => r.id);
+      const { data: items } = await (supabase as any)
+        .from("ktrenz_b2_items")
+        .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, published_at, metadata, run_id")
+        .in("run_id", runIds)
+        .order("engagement_score", { ascending: false })
+        .limit(100);
+      return items || [];
+    },
+    enabled: !!collectedStarId,
     staleTime: 60000,
   });
 
@@ -68,6 +131,14 @@ const ContentSearchPage = () => {
     setSelectedStarId(null);
     setSelectedStarName("");
     setSearchText("");
+    setActiveSource("all");
+    setCollectedStarId(null);
+    setCollectedStarName("");
+  }, []);
+
+  const selectCollectedStar = useCallback((star: any) => {
+    setCollectedStarId(star.id);
+    setCollectedStarName(star.name_ko || star.display_name);
     setActiveSource("all");
   }, []);
 
@@ -84,6 +155,27 @@ const ContentSearchPage = () => {
     ? ALL_SOURCES.flatMap((s) => contentData.sources[s] || []).filter((item: any) => !item.thumbnail).length
     : 0;
 
+  // Filter collected items by source
+  const filteredCollected = collectedItems
+    ? (activeSource === "all"
+      ? collectedItems
+      : activeSource === "no_image"
+      ? collectedItems.filter((item: any) => !item.thumbnail)
+      : collectedItems.filter((item: any) => item.source === activeSource)
+    )
+    : [];
+
+  const collectedSourceCounts = collectedItems
+    ? ALL_SOURCES.reduce((acc, s) => {
+        acc[s] = collectedItems.filter((item: any) => item.source === s).length;
+        return acc;
+      }, {} as Record<string, number>)
+    : {};
+
+  const collectedNoImageCount = collectedItems
+    ? collectedItems.filter((item: any) => !item.thumbnail).length
+    : 0;
+
   return (
     <div className="min-h-screen bg-background">
       <SEO title="Content Search" description="Search content across platforms" />
@@ -95,138 +187,271 @@ const ContentSearchPage = () => {
             <Search className="w-5 h-5 text-primary" />
             Content Search
           </h1>
-          <div className="relative">
-            <Input
-              placeholder="Search star name..."
-              value={searchText}
-              onChange={(e) => {
-                setSearchText(e.target.value);
-                if (selectedStarId) clearSelection();
-              }}
-              className="pr-20"
-            />
-            {selectedStarId && (
-              <Button variant="ghost" size="sm" onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 text-xs h-7">
-                Clear
-              </Button>
-            )}
+
+          {/* Mode tabs */}
+          <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4">
+            <TabButton active={viewMode === "search"} onClick={() => { setViewMode("search"); setCollectedStarId(null); }}>
+              <Search className="w-3.5 h-3.5" /> 실시간 검색
+            </TabButton>
+            <TabButton active={viewMode === "collected"} onClick={() => { setViewMode("collected"); clearSelection(); }}>
+              <Database className="w-3.5 h-3.5" /> 수집 아티스트
+              {collectedArtists && collectedArtists.length > 0 && (
+                <span className="text-[10px] opacity-60">({collectedArtists.length})</span>
+              )}
+            </TabButton>
           </div>
-          {/* Star dropdown */}
-          {!selectedStarId && starResults && starResults.length > 0 && (
-            <div className="mt-1 border border-border rounded-xl bg-card shadow-lg overflow-hidden">
-              {starResults.map((star: any) => (
-                <button
-                  key={star.id}
-                  onClick={() => selectStar(star)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
-                >
-                  {star.image_url ? (
-                    <img src={star.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
-                      {(star.display_name || "?")[0]}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{star.display_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {star.name_ko && star.name_ko !== star.display_name && <span>{star.name_ko} · </span>}
-                      {star.star_type}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
+
+          {viewMode === "search" && (
+            <>
+              <div className="relative">
+                <Input
+                  placeholder="Search star name..."
+                  value={searchText}
+                  onChange={(e) => {
+                    setSearchText(e.target.value);
+                    if (selectedStarId) clearSelection();
+                  }}
+                  className="pr-20"
+                />
+                {selectedStarId && (
+                  <Button variant="ghost" size="sm" onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 text-xs h-7">
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {/* Star dropdown */}
+              {!selectedStarId && starResults && starResults.length > 0 && (
+                <div className="mt-1 border border-border rounded-xl bg-card shadow-lg overflow-hidden">
+                  {starResults.map((star: any) => (
+                    <button
+                      key={star.id}
+                      onClick={() => selectStar(star)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      {star.image_url ? (
+                        <img src={star.image_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                          {(star.display_name || "?")[0]}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{star.display_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {star.name_ko && star.name_ko !== star.display_name && <span>{star.name_ko} · </span>}
+                          {star.star_type}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Loading */}
-        {contentLoading && (
-          <div className="space-y-3 mt-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
-            ))}
-          </div>
-        )}
-
-        {/* Results */}
-        {contentData && !contentLoading && (
+        {/* === SEARCH MODE === */}
+        {viewMode === "search" && (
           <>
-            {/* Content Score */}
-            {contentData.counts?.content_score > 0 && (
-              <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/15">
-                  <Search className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Content Score</p>
-                  <p className="text-2xl font-bold text-foreground">{contentData.counts.content_score.toLocaleString()}</p>
-                </div>
-                <div className="ml-auto text-[10px] text-muted-foreground text-right leading-relaxed">
-                  {contentData.counts.naver_news_raw > 0 && <div>News {contentData.counts.naver_news_raw}</div>}
-                  {contentData.counts.naver_blog_raw > 0 && <div>Blog {contentData.counts.naver_blog_raw}</div>}
-                  {contentData.counts.youtube_raw > 0 && <div>YT {contentData.counts.youtube_raw}</div>}
-                  {contentData.counts.tiktok_raw > 0 && <div>TT {contentData.counts.tiktok_raw}</div>}
-                  {contentData.counts.instagram_raw > 0 && <div>IG {contentData.counts.instagram_raw}</div>}
-                  {contentData.counts.reddit_raw > 0 && <div>RD {contentData.counts.reddit_raw}</div>}
-                </div>
+            {/* Loading */}
+            {contentLoading && (
+              <div className="space-y-3 mt-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
               </div>
             )}
 
-            {/* Source tabs */}
-            <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4 overflow-x-auto">
-              <TabButton active={activeSource === "all"} onClick={() => setActiveSource("all")}>
-                All ({contentData.counts?.total || 0})
-              </TabButton>
-              {ALL_SOURCES.map((s) => {
-                const cfg = SOURCE_CONFIG[s];
-                const count = contentData.counts?.[s] || 0;
-                if (count === 0) return null;
-                const Icon = cfg.icon;
-                return (
-                  <TabButton key={s} active={activeSource === s} onClick={() => setActiveSource(s)}>
-                    <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
-                    <span className="hidden sm:inline">{cfg.label}</span>
-                    <span className="text-[10px] opacity-60">({count})</span>
-                  </TabButton>
-                );
-              })}
-              {noImageCount > 0 && (
-                <TabButton active={activeSource === "no_image"} onClick={() => setActiveSource("no_image")}>
-                  <span className="text-muted-foreground">🚫</span>
-                  <span className="hidden sm:inline">No Image</span>
-                  <span className="text-[10px] opacity-60">({noImageCount})</span>
-                </TabButton>
-              )}
-            </div>
+            {/* Results */}
+            {contentData && !contentLoading && (
+              <>
+                {contentData.counts?.content_score > 0 && (
+                  <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/15">
+                      <Search className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Content Score</p>
+                      <p className="text-2xl font-bold text-foreground">{contentData.counts.content_score.toLocaleString()}</p>
+                    </div>
+                    <div className="ml-auto text-[10px] text-muted-foreground text-right leading-relaxed">
+                      {contentData.counts.naver_news_raw > 0 && <div>News {contentData.counts.naver_news_raw}</div>}
+                      {contentData.counts.naver_blog_raw > 0 && <div>Blog {contentData.counts.naver_blog_raw}</div>}
+                      {contentData.counts.youtube_raw > 0 && <div>YT {contentData.counts.youtube_raw}</div>}
+                      {contentData.counts.tiktok_raw > 0 && <div>TT {contentData.counts.tiktok_raw}</div>}
+                      {contentData.counts.instagram_raw > 0 && <div>IG {contentData.counts.instagram_raw}</div>}
+                      {contentData.counts.reddit_raw > 0 && <div>RD {contentData.counts.reddit_raw}</div>}
+                    </div>
+                  </div>
+                )}
 
-            {/* Content list */}
-            <div className="space-y-2">
-              {allItems.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">No content found</p>
+                <SourceTabs
+                  activeSource={activeSource}
+                  setActiveSource={setActiveSource}
+                  counts={contentData.counts}
+                  noImageCount={noImageCount}
+                />
+
+                <div className="space-y-2">
+                  {allItems.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">No content found</p>
+                    </div>
+                  )}
+                  {allItems.map((item: any, idx: number) => (
+                    <ContentCard key={`${item.source}-${idx}`} item={item} />
+                  ))}
                 </div>
-              )}
-              {allItems.map((item: any, idx: number) => (
-                <ContentCard key={`${item.source}-${idx}`} item={item} />
-              ))}
-            </div>
+              </>
+            )}
+
+            {!selectedStarId && !contentLoading && (
+              <div className="text-center py-16 text-muted-foreground">
+                <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Search for a star to find related content</p>
+                <p className="text-xs mt-1">Naver · YouTube · TikTok · Instagram · Reddit</p>
+              </div>
+            )}
           </>
         )}
 
-        {/* Empty state */}
-        {!selectedStarId && !contentLoading && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Search for a star to find related content</p>
-            <p className="text-xs mt-1">Naver · YouTube · TikTok · Instagram · Reddit</p>
-          </div>
+        {/* === COLLECTED MODE === */}
+        {viewMode === "collected" && (
+          <>
+            {!collectedStarId ? (
+              /* Artist list */
+              <div className="space-y-2">
+                {(!collectedArtists || collectedArtists.length === 0) && (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Database className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">수집된 아티스트가 없습니다</p>
+                  </div>
+                )}
+                {collectedArtists?.map((artist: any) => (
+                  <button
+                    key={artist.id}
+                    onClick={() => selectCollectedStar(artist)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border/40 hover:border-primary/30 transition-all text-left"
+                  >
+                    {artist.image_url ? (
+                      <img src={artist.image_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                        {(artist.display_name || "?")[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{artist.display_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {artist.name_ko && artist.name_ko !== artist.display_name && <span>{artist.name_ko} · </span>}
+                        {artist.run_count}회 수집 · 스코어 {artist.max_score}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{timeAgo(artist.last_run)}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* Collected items for selected star */
+              <>
+                <button
+                  onClick={() => { setCollectedStarId(null); setCollectedStarName(""); setActiveSource("all"); }}
+                  className="flex items-center gap-2 text-sm text-primary font-medium mb-4 hover:underline"
+                >
+                  ← {collectedStarName} 콘텐츠
+                </button>
+
+                {collectedLoading && (
+                  <div className="space-y-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-20 rounded-xl" />
+                    ))}
+                  </div>
+                )}
+
+                {collectedItems && !collectedLoading && (
+                  <>
+                    {/* Source filter tabs */}
+                    <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4 overflow-x-auto">
+                      <TabButton active={activeSource === "all"} onClick={() => setActiveSource("all")}>
+                        전체 ({collectedItems.length})
+                      </TabButton>
+                      {ALL_SOURCES.map((s) => {
+                        const count = collectedSourceCounts[s] || 0;
+                        if (count === 0) return null;
+                        const cfg = SOURCE_CONFIG[s];
+                        const Icon = cfg.icon;
+                        return (
+                          <TabButton key={s} active={activeSource === s} onClick={() => setActiveSource(s)}>
+                            <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
+                            <span className="text-[10px] opacity-60">({count})</span>
+                          </TabButton>
+                        );
+                      })}
+                      {collectedNoImageCount > 0 && (
+                        <TabButton active={activeSource === "no_image"} onClick={() => setActiveSource("no_image")}>
+                          🚫 <span className="text-[10px] opacity-60">({collectedNoImageCount})</span>
+                        </TabButton>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {filteredCollected.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">콘텐츠 없음</p>
+                        </div>
+                      )}
+                      {filteredCollected.map((item: any, idx: number) => (
+                        <ContentCard key={`${item.id}-${idx}`} item={item} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </>
         )}
       </main>
     </div>
   );
 };
+
+function SourceTabs({ activeSource, setActiveSource, counts, noImageCount }: {
+  activeSource: string;
+  setActiveSource: (s: any) => void;
+  counts: any;
+  noImageCount: number;
+}) {
+  return (
+    <div className="flex gap-1 p-1 bg-muted rounded-xl mb-4 overflow-x-auto">
+      <TabButton active={activeSource === "all"} onClick={() => setActiveSource("all")}>
+        All ({counts?.total || 0})
+      </TabButton>
+      {ALL_SOURCES.map((s) => {
+        const cfg = SOURCE_CONFIG[s];
+        const count = counts?.[s] || 0;
+        if (count === 0) return null;
+        const Icon = cfg.icon;
+        return (
+          <TabButton key={s} active={activeSource === s} onClick={() => setActiveSource(s)}>
+            <Icon className={cn("w-3.5 h-3.5", cfg.color)} />
+            <span className="hidden sm:inline">{cfg.label}</span>
+            <span className="text-[10px] opacity-60">({count})</span>
+          </TabButton>
+        );
+      })}
+      {noImageCount > 0 && (
+        <TabButton active={activeSource === "no_image"} onClick={() => setActiveSource("no_image")}>
+          <span className="text-muted-foreground">🚫</span>
+          <span className="hidden sm:inline">No Image</span>
+          <span className="text-[10px] opacity-60">({noImageCount})</span>
+        </TabButton>
+      )}
+    </div>
+  );
+}
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -249,7 +474,6 @@ function ContentCard({ item }: { item: any }) {
 
   if (!cfg) return null;
 
-  // Generate a deterministic gradient from source + title
   const GRADIENTS: Record<string, string> = {
     naver_news: "from-green-600/90 to-emerald-800/90",
     naver_blog: "from-emerald-500/90 to-teal-700/90",
@@ -268,7 +492,6 @@ function ContentCard({ item }: { item: any }) {
       rel="noopener noreferrer"
       className="flex gap-3 p-3 rounded-xl bg-card border border-border/40 hover:border-border transition-colors group"
     >
-      {/* Thumbnail or stylized title card */}
       {hasThumbnail ? (
         <img
           src={item.thumbnail}
@@ -286,16 +509,13 @@ function ContentCard({ item }: { item: any }) {
             GRADIENTS[item.source] || "from-muted to-muted-foreground/20"
           )}
         >
-          {/* Decorative pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full border-2 border-white/40" />
             <div className="absolute -bottom-3 -left-3 w-16 h-16 rounded-full border border-white/20" />
           </div>
-          {/* Title excerpt */}
           <p className="text-[8px] leading-[10px] font-semibold text-white text-center line-clamp-3 relative z-10 break-all">
             {(item.title || "").replace(/<[^>]*>/g, "").slice(0, 50)}
           </p>
-          {/* Source icon watermark */}
           <Icon className="w-3 h-3 text-white/50 mt-auto relative z-10" />
         </div>
       )}
@@ -303,9 +523,9 @@ function ContentCard({ item }: { item: any }) {
         <div className="flex items-center gap-1.5 mb-1">
           <Icon className={cn("w-3 h-3 shrink-0", cfg.color)} />
           <span className="text-[10px] text-muted-foreground font-medium">{cfg.label}</span>
-          {item.date && (
+          {(item.date || item.published_at) && (
             <span className="text-[10px] text-muted-foreground">
-              · {timeAgo(item.date)}
+              · {timeAgo(item.date || item.published_at)}
             </span>
           )}
         </div>
@@ -315,7 +535,6 @@ function ContentCard({ item }: { item: any }) {
         {item.description && (
           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.description}</p>
         )}
-        {/* Metadata */}
         <div className="flex items-center gap-2 mt-1">
           {item.metadata?.channelTitle && (
             <span className="text-[10px] text-muted-foreground">{item.metadata.channelTitle}</span>
@@ -335,6 +554,9 @@ function ContentCard({ item }: { item: any }) {
           {item.metadata?.subreddit && (
             <span className="text-[10px] text-muted-foreground">r/{item.metadata.subreddit}</span>
           )}
+          {item.engagement_score > 0 && (
+            <span className="text-[10px] text-muted-foreground">🔥 {item.engagement_score}</span>
+          )}
         </div>
       </div>
       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
@@ -343,6 +565,7 @@ function ContentCard({ item }: { item: any }) {
 }
 
 function timeAgo(dateStr: string) {
+  if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3600000);
   if (h < 1) return "Just now";
