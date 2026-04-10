@@ -723,10 +723,20 @@ export default function Battle() {
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-3">
-          <Zap className="w-8 h-8 text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-48 h-2 rounded-full overflow-hidden bg-muted">
+            <div
+              className="h-full rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]"
+              style={{
+                background: "linear-gradient(90deg, #ff6b6b, #ffa94d, #ffd43b, #69db7c, #4dabf7, #9775fa, #ff6b6b)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 1.5s ease-in-out infinite",
+              }}
+            />
+          </div>
           <p className="text-muted-foreground text-sm">{t("loading")}</p>
         </div>
+        <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
       </div>
     );
   }
