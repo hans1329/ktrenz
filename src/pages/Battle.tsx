@@ -991,44 +991,6 @@ export default function Battle() {
           </div>
         )}
 
-        {battleFilter !== "myBets" && (
-        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
-          {predictions.length > 0 && (
-            <div className="pb-4">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border text-sm font-semibold text-foreground"
-              >
-                <span className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  {t("historyTab")} ({predictions.length})
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`} />
-              </button>
-
-              {showHistory && (
-                <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                  {predictions.map((pred, i) => (
-                    <div key={i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="ml-2 shrink-0">
-                        {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        )}
       </div>
 
       {/* Detail Drawer */}
