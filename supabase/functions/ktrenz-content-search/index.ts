@@ -395,7 +395,6 @@ Deno.serve(async (req) => {
             const res = await fetchWithTimeout(item.url, {
               headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
             }, 8000);
-            }, 8000);
             if (res.ok) {
               const html = await fetchTextWithCharset(res);
               // Full title from og:title or <title>
