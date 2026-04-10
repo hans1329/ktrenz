@@ -991,6 +991,7 @@ export default function Battle() {
           </div>
         )}
 
+        {battleFilter !== "myBets" && (
         <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
           {predictions.length > 0 && (
             <div className="pb-4">
