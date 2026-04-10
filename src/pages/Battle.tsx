@@ -636,6 +636,8 @@ export default function Battle() {
         });
         if (Object.keys(restoredStates).length > 0) {
           setPairStates(prev => ({ ...prev, ...restoredStates }));
+          // Auto-collapse restored submitted battles
+          setCollapsedPairs(new Set(Object.keys(restoredStates).map(Number)));
         }
 
         const restoredPredictions: Prediction[] = existingPreds.map(p => {
