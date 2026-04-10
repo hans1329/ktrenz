@@ -728,7 +728,6 @@ export default function Battle() {
     );
   }
 
-  const [showTicketInfo, setShowTicketInfo] = useState(false);
 
   return (
     <div className="min-h-screen bg-muted/30">
