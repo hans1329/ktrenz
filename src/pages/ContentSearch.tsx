@@ -109,10 +109,10 @@ const ContentSearchPage = () => {
 
   // Start batch collection
   const startBatchMutation = useMutation({
-    mutationFn: async (starIds: string[]) => {
-      // Start the queue
+    mutationFn: async (batchId: string) => {
+      // Start the queue with batch_id (cooldown + tier selection happens server-side)
       const { data: startResult, error: startErr } = await supabase.functions.invoke("ktrenz-battle-autobatch", {
-        body: { action: "start", star_ids: starIds },
+        body: { action: "start", batch_id: batchId },
       });
       if (startErr) throw startErr;
 
@@ -708,8 +708,8 @@ const ContentSearchPage = () => {
                         className="rounded-full gap-1 h-7 text-[10px]"
                         disabled={startBatchMutation.isPending}
                         onClick={() => {
-                          const ids = prescoreMutation.data.selected.map((s: any) => s.star_id);
-                          startBatchMutation.mutate(ids);
+                          const bId = prescoreData?.batchId || prescoreMutation.data?.batch_id;
+                          if (bId) startBatchMutation.mutate(bId);
                         }}
                       >
                         {startBatchMutation.isPending ? (
