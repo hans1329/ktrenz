@@ -348,7 +348,8 @@ async function resolveGroupNames(stars: any[], supabaseUrl: string, dbHeaders: R
       { headers: dbHeaders }
     );
     const groups = await gResp.json();
-    for (const g of groups || []) map.set(g.id, g.name_ko || g.display_name);
+    // display_name(영문) 우선 사용 — "에이치오티" 같은 한글 음차보다 "H.O.T."가 네이버 검색에 효과적
+    for (const g of groups || []) map.set(g.id, g.display_name || g.name_ko);
   }
   return map;
 }
