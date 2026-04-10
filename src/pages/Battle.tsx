@@ -406,10 +406,14 @@ interface Prediction {
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t: globalT, language } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
   const { translateIfNeeded } = useFieldTranslation();
+
+  // Determine unlocked battle count based on user tier
+  const userLevel = profile?.current_level ?? 1;
+  const unlockedBattleCount = userLevel >= 16 ? 10 : userLevel >= 6 ? 5 : 3;
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
