@@ -10,9 +10,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const BATCH_SIZE = 10;      // 동시 API 호출 수
-const TIMEOUT_MS = 8000;
+const BATCH_SIZE = 3;       // 동시 API 호출 수 (네이버 rate limit 방지)
+const TIMEOUT_MS = 10000;
 const CHUNK_SIZE = 100;     // 한 호출당 처리할 스타 수
+const RETRY_DELAY_MS = 300; // 429 재시도 대기
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
