@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     // Get all active stars with group info
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_category, image_url, star_type, group_star_id")
+      .select("id, display_name, name_ko, star_category, image_url, star_type, group_star_id, search_qualifier")
       .eq("is_active", true)
       .order("display_name");
 
