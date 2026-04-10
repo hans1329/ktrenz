@@ -221,30 +221,29 @@ const AdminRankings = () => {
       const collectionMap = new Map<string, CollectionStatus>();
       const metricsMap = new Map<string, SnapshotMetrics>();
       (snapshotsRes.data || []).forEach((s: any) => {
-        if (!s.wiki_entry_id) return;
-        const existing = collectionMap.get(s.wiki_entry_id) || {};
+        if (!s.star_id) return;
+        const existing = collectionMap.get(s.star_id) || {};
         const platform = s.platform as string;
         // 첫 번째(최신) 것만 사용
         if (!existing[platform as keyof CollectionStatus]) {
           existing[platform as keyof CollectionStatus] = s.collected_at;
-          collectionMap.set(s.wiki_entry_id, existing);
+          collectionMap.set(s.star_id, existing);
 
           // 메트릭스 저장
-          const m = metricsMap.get(s.wiki_entry_id) || {};
+          const m = metricsMap.get(s.star_id) || {};
           if (platform === 'hanteo') {
-            // hanteo는 여러 앨범이 올 수 있으므로 배열로
             if (!m.hanteo) m.hanteo = [];
-            if (s.metrics && s.wiki_entry_id) m.hanteo.push(s.metrics);
+            if (s.metrics && s.star_id) m.hanteo.push(s.metrics);
           } else {
             (m as any)[platform] = s.metrics;
           }
-          metricsMap.set(s.wiki_entry_id, m);
-        } else if (platform === 'hanteo' && s.wiki_entry_id) {
+          metricsMap.set(s.star_id, m);
+        } else if (platform === 'hanteo' && s.star_id) {
           // hanteo 추가 앨범
-          const m = metricsMap.get(s.wiki_entry_id) || {};
+          const m = metricsMap.get(s.star_id) || {};
           if (!m.hanteo) m.hanteo = [];
           if (s.metrics) m.hanteo.push(s.metrics);
-          metricsMap.set(s.wiki_entry_id, m);
+          metricsMap.set(s.star_id, m);
         }
       });
 
@@ -352,7 +351,7 @@ const AdminRankings = () => {
 
       allData.forEach((s: any) => {
         const p = s.platform;
-        const wid = s.wiki_entry_id || 'unknown';
+        const wid = s.star_id || 'unknown';
         if (!seenPerPlatform[p]) seenPerPlatform[p] = new Set();
         if (!seenPerPlatform[p].has(wid)) {
           seenPerPlatform[p].add(wid);
