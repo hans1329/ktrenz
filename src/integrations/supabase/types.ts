@@ -2262,7 +2262,6 @@ export type Database = {
           trending_score: number | null
           unique_users: number | null
           updated_at: string | null
-          wiki_entry_id: string
         }
         Insert: {
           id?: string
@@ -2274,7 +2273,6 @@ export type Database = {
           trending_score?: number | null
           unique_users?: number | null
           updated_at?: string | null
-          wiki_entry_id: string
         }
         Update: {
           id?: string
@@ -2286,17 +2284,8 @@ export type Database = {
           trending_score?: number | null
           unique_users?: number | null
           updated_at?: string | null
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_agent_intent_summaries_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_agent_intents: {
         Row: {
@@ -2311,7 +2300,6 @@ export type Database = {
           sub_topic: string | null
           tools_used: string[] | null
           user_id: string
-          wiki_entry_id: string | null
         }
         Insert: {
           agent_slot_id?: string | null
@@ -2325,7 +2313,6 @@ export type Database = {
           sub_topic?: string | null
           tools_used?: string[] | null
           user_id: string
-          wiki_entry_id?: string | null
         }
         Update: {
           agent_slot_id?: string | null
@@ -2339,7 +2326,6 @@ export type Database = {
           sub_topic?: string | null
           tools_used?: string[] | null
           user_id?: string
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -2347,13 +2333,6 @@ export type Database = {
             columns: ["agent_slot_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_agent_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_agent_intents_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -2370,7 +2349,6 @@ export type Database = {
           query_text: string
           recency_filter: string | null
           topic_type: string
-          wiki_entry_id: string | null
         }
         Insert: {
           citations?: string[] | null
@@ -2383,7 +2361,6 @@ export type Database = {
           query_text: string
           recency_filter?: string | null
           topic_type?: string
-          wiki_entry_id?: string | null
         }
         Update: {
           citations?: string[] | null
@@ -2396,17 +2373,8 @@ export type Database = {
           query_text?: string
           recency_filter?: string | null
           topic_type?: string
-          wiki_entry_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_agent_knowledge_archive_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_agent_knowledge_cache: {
         Row: {
@@ -2422,7 +2390,6 @@ export type Database = {
           query_text: string
           recency_filter: string | null
           topic_type: string
-          wiki_entry_id: string | null
         }
         Insert: {
           citations?: string[] | null
@@ -2437,7 +2404,6 @@ export type Database = {
           query_text: string
           recency_filter?: string | null
           topic_type?: string
-          wiki_entry_id?: string | null
         }
         Update: {
           citations?: string[] | null
@@ -2452,17 +2418,8 @@ export type Database = {
           query_text?: string
           recency_filter?: string | null
           topic_type?: string
-          wiki_entry_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_agent_knowledge_cache_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_agent_profiles: {
         Row: {
@@ -2530,7 +2487,6 @@ export type Database = {
           slot_index: number
           updated_at: string
           user_id: string
-          wiki_entry_id: string | null
         }
         Insert: {
           artist_name?: string | null
@@ -2541,7 +2497,6 @@ export type Database = {
           slot_index?: number
           updated_at?: string
           user_id: string
-          wiki_entry_id?: string | null
         }
         Update: {
           artist_name?: string | null
@@ -2552,17 +2507,8 @@ export type Database = {
           slot_index?: number
           updated_at?: string
           user_id?: string
-          wiki_entry_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_agent_slots_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_artist_events: {
         Row: {
@@ -2577,7 +2523,6 @@ export type Database = {
           source_url: string | null
           updated_at: string
           verified: boolean
-          wiki_entry_id: string
         }
         Insert: {
           created_at?: string
@@ -2591,7 +2536,6 @@ export type Database = {
           source_url?: string | null
           updated_at?: string
           verified?: boolean
-          wiki_entry_id: string
         }
         Update: {
           created_at?: string
@@ -2605,17 +2549,8 @@ export type Database = {
           source_url?: string | null
           updated_at?: string
           verified?: boolean
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_artist_events_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_attention_signals: {
         Row: {
@@ -2629,7 +2564,6 @@ export type Database = {
           signal_date: string
           treemap_clicks: number
           unique_viewers: number
-          wiki_entry_id: string
         }
         Insert: {
           avg_dwell_sections?: number | null
@@ -2642,7 +2576,6 @@ export type Database = {
           signal_date: string
           treemap_clicks?: number
           unique_viewers?: number
-          wiki_entry_id: string
         }
         Update: {
           avg_dwell_sections?: number | null
@@ -2655,17 +2588,8 @@ export type Database = {
           signal_date?: string
           treemap_clicks?: number
           unique_viewers?: number
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_attention_signals_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_b2_batch_queue: {
         Row: {
@@ -3029,7 +2953,6 @@ export type Database = {
           stddev_30d: number | null
           stddev_7d: number | null
           trend_direction: string | null
-          wiki_entry_id: string
         }
         Insert: {
           avg_30d?: number | null
@@ -3043,7 +2966,6 @@ export type Database = {
           stddev_30d?: number | null
           stddev_7d?: number | null
           trend_direction?: string | null
-          wiki_entry_id: string
         }
         Update: {
           avg_30d?: number | null
@@ -3057,7 +2979,6 @@ export type Database = {
           stddev_30d?: number | null
           stddev_7d?: number | null
           trend_direction?: string | null
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -3093,7 +3014,6 @@ export type Database = {
           platform: string
           records_collected: number | null
           status: string
-          wiki_entry_id: string | null
         }
         Insert: {
           collected_at?: string
@@ -3102,7 +3022,6 @@ export type Database = {
           platform: string
           records_collected?: number | null
           status?: string
-          wiki_entry_id?: string | null
         }
         Update: {
           collected_at?: string
@@ -3111,17 +3030,8 @@ export type Database = {
           platform?: string
           records_collected?: number | null
           status?: string
-          wiki_entry_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_collection_log_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_daily_missions: {
         Row: {
@@ -3132,7 +3042,6 @@ export type Database = {
           mission_key: string
           points_awarded: number
           user_id: string
-          wiki_entry_id: string
         }
         Insert: {
           completed_at?: string
@@ -3142,7 +3051,6 @@ export type Database = {
           mission_key: string
           points_awarded?: number
           user_id: string
-          wiki_entry_id: string
         }
         Update: {
           completed_at?: string
@@ -3152,7 +3060,6 @@ export type Database = {
           mission_key?: string
           points_awarded?: number
           user_id?: string
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -3176,7 +3083,6 @@ export type Database = {
           suppressed_note: string | null
           title: string
           updated_at: string
-          wiki_entry_id: string
         }
         Insert: {
           actual_value?: string | null
@@ -3197,7 +3103,6 @@ export type Database = {
           suppressed_note?: string | null
           title: string
           updated_at?: string
-          wiki_entry_id: string
         }
         Update: {
           actual_value?: string | null
@@ -3218,7 +3123,6 @@ export type Database = {
           suppressed_note?: string | null
           title?: string
           updated_at?: string
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -3229,7 +3133,6 @@ export type Database = {
           module: string
           run_date: string
           user_id: string
-          wiki_entry_id: string
         }
         Insert: {
           created_at?: string
@@ -3237,7 +3140,6 @@ export type Database = {
           module: string
           run_date?: string
           user_id: string
-          wiki_entry_id: string
         }
         Update: {
           created_at?: string
@@ -3245,7 +3147,6 @@ export type Database = {
           module?: string
           run_date?: string
           user_id?: string
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -3259,7 +3160,6 @@ export type Database = {
           platform: string
           raw_response: Json | null
           star_id: string | null
-          wiki_entry_id: string | null
         }
         Insert: {
           collected_at?: string
@@ -3270,7 +3170,6 @@ export type Database = {
           platform: string
           raw_response?: Json | null
           star_id?: string | null
-          wiki_entry_id?: string | null
         }
         Update: {
           collected_at?: string
@@ -3281,7 +3180,6 @@ export type Database = {
           platform?: string
           raw_response?: Json | null
           star_id?: string | null
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -3296,13 +3194,6 @@ export type Database = {
             columns: ["star_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_data_snapshots_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -3356,7 +3247,6 @@ export type Database = {
           video_id: string
           video_title: string
           view_count: number | null
-          wiki_entry_id: string
         }
         Insert: {
           category?: string | null
@@ -3370,7 +3260,6 @@ export type Database = {
           video_id: string
           video_title: string
           view_count?: number | null
-          wiki_entry_id: string
         }
         Update: {
           category?: string | null
@@ -3384,17 +3273,8 @@ export type Database = {
           video_id?: string
           video_title?: string
           view_count?: number | null
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_external_video_matches_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_fan_agent_messages: {
         Row: {
@@ -3445,7 +3325,6 @@ export type Database = {
           updated_at: string
           user_id: string
           weighted_score: number
-          wiki_entry_id: string
         }
         Insert: {
           click_count?: number
@@ -3454,7 +3333,6 @@ export type Database = {
           updated_at?: string
           user_id: string
           weighted_score?: number
-          wiki_entry_id: string
         }
         Update: {
           click_count?: number
@@ -3463,17 +3341,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weighted_score?: number
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_fan_contributions_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_fandom_signals: {
         Row: {
@@ -3487,7 +3356,6 @@ export type Database = {
           signal_date: string
           total_queries: number
           unique_users: number
-          wiki_entry_id: string
         }
         Insert: {
           avg_session_depth?: number | null
@@ -3500,7 +3368,6 @@ export type Database = {
           signal_date: string
           total_queries?: number
           unique_users?: number
-          wiki_entry_id: string
         }
         Update: {
           avg_session_depth?: number | null
@@ -3513,17 +3380,8 @@ export type Database = {
           signal_date?: string
           total_queries?: number
           unique_users?: number
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_fandom_signals_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_fes_contributions: {
         Row: {
@@ -3540,7 +3398,6 @@ export type Database = {
           snapshot_at: string
           social_contrib: number | null
           social_z: number | null
-          wiki_entry_id: string
           youtube_contrib: number | null
           youtube_z: number | null
         }
@@ -3558,7 +3415,6 @@ export type Database = {
           snapshot_at?: string
           social_contrib?: number | null
           social_z?: number | null
-          wiki_entry_id: string
           youtube_contrib?: number | null
           youtube_z?: number | null
         }
@@ -3576,7 +3432,6 @@ export type Database = {
           snapshot_at?: string
           social_contrib?: number | null
           social_z?: number | null
-          wiki_entry_id?: string
           youtube_contrib?: number | null
           youtube_z?: number | null
         }
@@ -3597,7 +3452,6 @@ export type Database = {
           rank_change: number | null
           source: string
           spike_direction: string | null
-          wiki_entry_id: string
           window_hours: number
         }
         Insert: {
@@ -3614,7 +3468,6 @@ export type Database = {
           rank_change?: number | null
           source: string
           spike_direction?: string | null
-          wiki_entry_id: string
           window_hours?: number
         }
         Update: {
@@ -3631,18 +3484,9 @@ export type Database = {
           rank_change?: number | null
           source?: string
           spike_direction?: string | null
-          wiki_entry_id?: string
           window_hours?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_geo_change_signals_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_geo_fan_data: {
         Row: {
@@ -3654,7 +3498,6 @@ export type Database = {
           listeners: number | null
           rank_position: number | null
           source: string
-          wiki_entry_id: string
         }
         Insert: {
           collected_at?: string
@@ -3665,7 +3508,6 @@ export type Database = {
           listeners?: number | null
           rank_position?: number | null
           source?: string
-          wiki_entry_id: string
         }
         Update: {
           collected_at?: string
@@ -3676,17 +3518,8 @@ export type Database = {
           listeners?: number | null
           rank_position?: number | null
           source?: string
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_geo_fan_data_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_guard_logs: {
         Row: {
@@ -3701,7 +3534,6 @@ export type Database = {
           previous_value: Json | null
           resolved: boolean
           snapshot_id: string | null
-          wiki_entry_id: string | null
         }
         Insert: {
           action: string
@@ -3715,7 +3547,6 @@ export type Database = {
           previous_value?: Json | null
           resolved?: boolean
           snapshot_id?: string | null
-          wiki_entry_id?: string | null
         }
         Update: {
           action?: string
@@ -3729,17 +3560,8 @@ export type Database = {
           previous_value?: Json | null
           resolved?: boolean
           snapshot_id?: string | null
-          wiki_entry_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_guard_logs_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_keyword_boosts: {
         Row: {
@@ -4087,7 +3909,6 @@ export type Database = {
           event_type: string
           id: string
           notified: boolean
-          wiki_entry_id: string
         }
         Insert: {
           created_at?: string
@@ -4095,7 +3916,6 @@ export type Database = {
           event_type: string
           id?: string
           notified?: boolean
-          wiki_entry_id: string
         }
         Update: {
           created_at?: string
@@ -4103,7 +3923,6 @@ export type Database = {
           event_type?: string
           id?: string
           notified?: boolean
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -4351,7 +4170,6 @@ export type Database = {
           prediction_type: string
           reasoning: string | null
           verified_at: string | null
-          wiki_entry_id: string
         }
         Insert: {
           accuracy_score?: number | null
@@ -4365,7 +4183,6 @@ export type Database = {
           prediction_type: string
           reasoning?: string | null
           verified_at?: string | null
-          wiki_entry_id: string
         }
         Update: {
           accuracy_score?: number | null
@@ -4379,7 +4196,6 @@ export type Database = {
           prediction_type?: string
           reasoning?: string | null
           verified_at?: string | null
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -4428,7 +4244,6 @@ export type Database = {
           source_headlines: Json | null
           star_id: string | null
           status: string
-          wiki_entry_id: string | null
         }
         Insert: {
           category?: string
@@ -4444,7 +4259,6 @@ export type Database = {
           source_headlines?: Json | null
           star_id?: string | null
           status?: string
-          wiki_entry_id?: string | null
         }
         Update: {
           category?: string
@@ -4460,7 +4274,6 @@ export type Database = {
           source_headlines?: Json | null
           star_id?: string | null
           status?: string
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -4468,13 +4281,6 @@ export type Database = {
             columns: ["star_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_schedule_predictions_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -4492,7 +4298,6 @@ export type Database = {
           star_id: string | null
           title: string
           updated_at: string | null
-          wiki_entry_id: string | null
         }
         Insert: {
           artist_name: string
@@ -4506,7 +4311,6 @@ export type Database = {
           star_id?: string | null
           title: string
           updated_at?: string | null
-          wiki_entry_id?: string | null
         }
         Update: {
           artist_name?: string
@@ -4520,7 +4324,6 @@ export type Database = {
           star_id?: string | null
           title?: string
           updated_at?: string | null
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -4528,13 +4331,6 @@ export type Database = {
             columns: ["star_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_schedules_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -4612,7 +4408,6 @@ export type Database = {
           platform: string
           star_id: string
           top_posts: Json | null
-          wiki_entry_id: string | null
         }
         Insert: {
           collected_at?: string
@@ -4623,7 +4418,6 @@ export type Database = {
           platform?: string
           star_id: string
           top_posts?: Json | null
-          wiki_entry_id?: string | null
         }
         Update: {
           collected_at?: string
@@ -4634,7 +4428,6 @@ export type Database = {
           platform?: string
           star_id?: string
           top_posts?: Json | null
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -4667,7 +4460,6 @@ export type Database = {
           star_category: string
           star_type: string
           updated_at: string | null
-          wiki_entry_id: string | null
         }
         Insert: {
           agency?: string | null
@@ -4689,7 +4481,6 @@ export type Database = {
           star_category?: string
           star_type: string
           updated_at?: string | null
-          wiki_entry_id?: string | null
         }
         Update: {
           agency?: string | null
@@ -4711,7 +4502,6 @@ export type Database = {
           star_category?: string
           star_type?: string
           updated_at?: string | null
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -4719,13 +4509,6 @@ export type Database = {
             columns: ["group_star_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_stars_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: true
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -4738,7 +4521,6 @@ export type Database = {
           guide_data: Json
           id: string
           user_id: string
-          wiki_entry_id: string
         }
         Insert: {
           artist_name: string
@@ -4747,7 +4529,6 @@ export type Database = {
           guide_data?: Json
           id?: string
           user_id: string
-          wiki_entry_id: string
         }
         Update: {
           artist_name?: string
@@ -4756,17 +4537,8 @@ export type Database = {
           guide_data?: Json
           id?: string
           user_id?: string
-          wiki_entry_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ktrenz_streaming_guides_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ktrenz_trend_ai_insights: {
         Row: {
@@ -4977,7 +4749,6 @@ export type Database = {
           trigger_id: string | null
           velocity: number | null
           weighted_delta: number | null
-          wiki_entry_id: string | null
           youtube_total_comments: number | null
           youtube_total_views: number | null
           youtube_video_count: number | null
@@ -5010,7 +4781,6 @@ export type Database = {
           trigger_id?: string | null
           velocity?: number | null
           weighted_delta?: number | null
-          wiki_entry_id?: string | null
           youtube_total_comments?: number | null
           youtube_total_views?: number | null
           youtube_video_count?: number | null
@@ -5043,7 +4813,6 @@ export type Database = {
           trigger_id?: string | null
           velocity?: number | null
           weighted_delta?: number | null
-          wiki_entry_id?: string | null
           youtube_total_comments?: number | null
           youtube_total_views?: number | null
           youtube_video_count?: number | null
@@ -5111,7 +4880,6 @@ export type Database = {
           trend_score_details: Json | null
           trigger_source: string
           trigger_type: string
-          wiki_entry_id: string | null
         }
         Insert: {
           artist_name: string
@@ -5158,7 +4926,6 @@ export type Database = {
           trend_score_details?: Json | null
           trigger_source?: string
           trigger_type?: string
-          wiki_entry_id?: string | null
         }
         Update: {
           artist_name?: string
@@ -5205,7 +4972,6 @@ export type Database = {
           trend_score_details?: Json | null
           trigger_source?: string
           trigger_type?: string
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -5341,7 +5107,6 @@ export type Database = {
           event_type: string
           id: string
           updated_at: string
-          wiki_entry_id: string
         }
         Insert: {
           avg_peak_day_offset?: number | null
@@ -5354,7 +5119,6 @@ export type Database = {
           event_type: string
           id?: string
           updated_at?: string
-          wiki_entry_id: string
         }
         Update: {
           avg_peak_day_offset?: number | null
@@ -5367,7 +5131,6 @@ export type Database = {
           event_type?: string
           id?: string
           updated_at?: string
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -5388,7 +5151,6 @@ export type Database = {
           time_window: string
           trough_day: string | null
           velocity_trend: string | null
-          wiki_entry_id: string
         }
         Insert: {
           avg_intensity?: number | null
@@ -5406,7 +5168,6 @@ export type Database = {
           time_window: string
           trough_day?: string | null
           velocity_trend?: string | null
-          wiki_entry_id: string
         }
         Update: {
           avg_intensity?: number | null
@@ -5424,7 +5185,6 @@ export type Database = {
           time_window?: string
           trough_day?: string | null
           velocity_trend?: string | null
-          wiki_entry_id?: string
         }
         Relationships: []
       }
@@ -5435,7 +5195,6 @@ export type Database = {
           id: string
           star_id: string | null
           user_id: string
-          wiki_entry_id: string | null
         }
         Insert: {
           artist_name: string
@@ -5443,7 +5202,6 @@ export type Database = {
           id?: string
           star_id?: string | null
           user_id: string
-          wiki_entry_id?: string | null
         }
         Update: {
           artist_name?: string
@@ -5451,7 +5209,6 @@ export type Database = {
           id?: string
           star_id?: string | null
           user_id?: string
-          wiki_entry_id?: string | null
         }
         Relationships: [
           {
@@ -5459,13 +5216,6 @@ export type Database = {
             columns: ["star_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_stars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ktrenz_watched_artists_wiki_entry_id_fkey"
-            columns: ["wiki_entry_id"]
-            isOneToOne: false
-            referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },
         ]
