@@ -727,16 +727,19 @@ export default function Battle() {
     );
   }
 
+  const [showTicketInfo, setShowTicketInfo] = useState(false);
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header rightSlot={
-          <div className="flex items-center gap-1.5">
+          <button onClick={() => setShowTicketInfo(true)} className="flex items-center gap-1.5 active:opacity-60 transition-opacity">
             <Ticket className="w-5 h-5 text-primary" />
             <span className="text-base font-extrabold text-primary">{remainingTickets}</span>
-          </div>
+          </button>
         } />
       </div>
+      <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} />
 
       <div className="pt-16 pb-24 space-y-5">
         {/* Title + Flip Timer */}
