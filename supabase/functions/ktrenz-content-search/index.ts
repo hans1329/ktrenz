@@ -701,6 +701,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Also fix http:// thumbnails in the real-time response sources
+    const fixHttpThumbs = async (items: any[]): Promise<any[]> => {
+      return Promise.all(items.map(async (item: any) => {
+        if (item.thumbnail?.startsWith("http://")) {
+          const cached = await validateThumbnail(item.thumbnail);
+          return { ...item, thumbnail: cached };
+        }
+        return item;
+      }));
+    };
+    const [fixedNews, fixedBlog, fixedReddit] = await Promise.all([
+      fixHttpThumbs(naverNews),
+      fixHttpThumbs(naverBlogEnriched),
+      fixHttpThumbs(redditEnriched),
+    ]);
+
     const results = {
       star: {
         id: star.id,
@@ -709,12 +725,12 @@ Deno.serve(async (req) => {
         star_type: star.star_type,
       },
       sources: {
-        naver_news: naverNews,
-        naver_blog: naverBlogEnriched,
+        naver_news: fixedNews,
+        naver_blog: fixedBlog,
         youtube,
         tiktok,
         instagram,
-        reddit: redditEnriched,
+        reddit: fixedReddit,
       },
       counts: {
         ...countsObj,
