@@ -444,13 +444,64 @@ const AdminStars = () => {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" disabled={naverFilling} onClick={runNaverFillLoop}>
             {naverFilling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Globe className="w-4 h-4 mr-1" />}
-            {naverProgress ? `프로필 ${naverProgress}` : "네이버 프로필"}
+            {naverStats ? `프로필 ${naverStats.progress}` : "네이버 프로필"}
           </Button>
+          {naverFilling && (
+            <Button size="sm" variant="ghost" onClick={() => { stopNaverRef.current = true; }}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" /> 등록
           </Button>
         </div>
       </div>
+
+      {/* naver profile fill monitor */}
+      {naverStats && (
+        <Card className="p-4 space-y-3 border-primary/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              네이버 프로필 채우기
+              {naverFilling && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              {!naverFilling && <Badge variant="outline" className="text-[10px]">완료</Badge>}
+            </p>
+            {!naverFilling && (
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setNaverStats(null)}>
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          <Progress value={naverStats.totalCandidates > 0 ? (naverStats.currentOffset / naverStats.totalCandidates) * 100 : 0} className="h-2" />
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <p className="text-lg font-bold">{naverStats.progress}</p>
+              <p className="text-[10px] text-muted-foreground">진행</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-primary">{naverStats.qualifierUpdated}</p>
+              <p className="text-[10px] text-muted-foreground">분류 업데이트</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-primary">{naverStats.igUpdated}</p>
+              <p className="text-[10px] text-muted-foreground">IG 업데이트</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-destructive">{naverStats.errors}</p>
+              <p className="text-[10px] text-muted-foreground">에러</p>
+            </div>
+          </div>
+          {naverStats.recentResults.length > 0 && (
+            <div className="bg-muted/50 rounded-md p-2 max-h-32 overflow-y-auto">
+              {naverStats.recentResults.map((r, i) => (
+                <p key={i} className="text-[11px] font-mono leading-relaxed">{r}</p>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground text-right">{naverStats.elapsedSec}초 경과</p>
+        </Card>
+      )}
 
       {/* filters */}
       <div className="flex gap-2">
