@@ -96,8 +96,17 @@ Deno.serve(async (req) => {
 
       const results: any[] = [];
       for (const star of stars) {
+        const searchName = star.name_ko || star.display_name;
         const searchQuery = buildSearchQuery(star, groupNameMap);
-        const profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
+        let profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
+
+        // 폴백: 그룹명+이름으로 못 찾으면 이름만으로 재시도
+        if (!profileData.profession && !profileData.instagram && !profileData.youtube && searchQuery !== searchName) {
+          console.log(`[naver-profile] Fallback: retrying with name only "${searchName}"`);
+          await new Promise((r) => setTimeout(r, 1000));
+          profileData = await scrapeNaverProfile(searchName, firecrawlKey);
+        }
+
         const qualifier = profileData.profession ? mapProfession(profileData.profession) : null;
 
         const socialUpdates = buildSocialUpdates(star.social_handles || {}, profileData);
@@ -225,7 +234,14 @@ Deno.serve(async (req) => {
       try {
         const searchName = star.name_ko || star.display_name;
         const searchQuery = buildSearchQuery(star, groupNameMap);
-        const profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
+        let profileData = await scrapeNaverProfile(searchQuery, firecrawlKey);
+
+        // 폴백: 그룹명+이름으로 못 찾으면 이름만으로 재시도
+        if (!profileData.profession && !profileData.instagram && !profileData.youtube && searchQuery !== searchName) {
+          console.log(`[naver-profile] Fallback: retrying with name only "${searchName}"`);
+          await new Promise((r) => setTimeout(r, 1000));
+          profileData = await scrapeNaverProfile(searchName, firecrawlKey);
+        }
 
         const updates: Record<string, any> = {};
         const updateNotes: string[] = [];
