@@ -77,7 +77,7 @@ function buildSearchQuery(
     case "solo":
       return `${name} ${qualifier}`;
     case "group":
-      return name;
+      return `${name} ${qualifier}`;
     default:
       return `${name} ${qualifier}`;
   }
@@ -179,7 +179,10 @@ Deno.serve(async (req) => {
       // Save chunk results
       for (let i = 0; i < chunkResults.length; i += 500) {
         const c = chunkResults.slice(i, i + 500);
-        await sb.from("ktrenz_b2_prescores").insert(c);
+        await sb.from("ktrenz_b2_prescores").upsert(c, {
+          onConflict: "star_id,batch_id",
+          ignoreDuplicates: true,
+        });
       }
     }
 
