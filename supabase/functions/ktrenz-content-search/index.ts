@@ -387,7 +387,7 @@ Deno.serve(async (req) => {
       return items.length > limit ? [...enriched, ...items.slice(limit)] : enriched;
     };
 
-    // Enrich naver news: og:image + body text + full title scraping
+    // Enrich naver news: og:image + body text + full title scraping (charset-aware)
     const enrichNaverNews = async (items: any[], limit = 10) => {
       const toEnrich = items.slice(0, limit);
       const enriched = await Promise.all(
@@ -398,22 +398,21 @@ Deno.serve(async (req) => {
               headers: { "User-Agent": "Mozilla/5.0 (compatible; KtrenzBot/1.0)" },
             }, 5000);
             if (res.ok) {
-              const html = await res.text();
+              const html = await fetchTextWithCharset(res);
               // Full title from og:title or <title>
               const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
                 || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
               if (ogTitleMatch?.[1]) {
-                const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").trim();
-                if (fullTitle.length > updated.title.length) {
+                const fullTitle = ogTitleMatch[1].replace(/<[^>]*>/g, "").replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+                if (fullTitle.length > updated.title.length && !isGarbled(fullTitle)) {
                   updated.title = fullTitle;
                 }
               } else {
                 const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
                 if (titleTagMatch?.[1]) {
-                  const rawTitle = titleTagMatch[1].replace(/<[^>]*>/g, "").trim();
-                  // Remove common suffixes like " - 매체명" or " | 매체명"
+                  const rawTitle = titleTagMatch[1].replace(/<[^>]*>/g, "").replace(/&#0?39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").trim();
                   const cleanTitle = rawTitle.replace(/\s*[-|]\s*[^-|]+$/, "").trim();
-                  if (cleanTitle.length > updated.title.length) {
+                  if (cleanTitle.length > updated.title.length && !isGarbled(cleanTitle)) {
                     updated.title = cleanTitle;
                   }
                 }
@@ -425,8 +424,8 @@ Deno.serve(async (req) => {
                 || html.match(/class=["'][^"']*article[_-]?body[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)
                 || html.match(/class=["'][^"']*news[_-]?content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
               if (articleMatch?.[1]) {
-                const bodyText = articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/\s+/g, " ").trim();
-                if (bodyText.length > (updated.description || "").length) {
+                const bodyText = articleMatch[1].replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/&#\d+;/g, " ").replace(/\s+/g, " ").trim();
+                if (bodyText.length > (updated.description || "").length && !isGarbled(bodyText)) {
                   updated.description = bodyText.substring(0, 500);
                 }
               }
