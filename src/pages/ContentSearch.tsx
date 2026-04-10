@@ -310,6 +310,12 @@ const ContentSearchPage = () => {
                 <span className="text-[10px] opacity-60">({collectedArtists.length})</span>
               )}
             </TabButton>
+            <TabButton active={viewMode === "prescore"} onClick={() => { setViewMode("prescore"); clearSelection(); }}>
+              <Zap className="w-3.5 h-3.5" /> 가점수
+              {prescoreData?.items?.length > 0 && (
+                <span className="text-[10px] opacity-60">({prescoreData.items.filter((i: any) => i.news_count > 0).length})</span>
+              )}
+            </TabButton>
           </div>
 
           {viewMode === "search" && (
