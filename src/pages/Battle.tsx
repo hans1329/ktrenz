@@ -690,7 +690,7 @@ export default function Battle() {
               {pairIdx > 0 && (
                 <div className="my-10 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
                   <div className="flex-1 h-px bg-primary/30" />
-                  <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? " ✓ Joined" : ""}</span>
+                  <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1", getPairState(pairIdx).submitted ? "bg-green-500 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}</span>
                   <div className="flex-1 h-px bg-primary/30" />
                 </div>
               )}
@@ -801,7 +801,7 @@ export default function Battle() {
                           <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
                         </div>
                         <Badge variant="outline" className="text-sm px-3 py-1">
-                          {BANDS.find((b) => b.key === pairState.selectedBand)?.label} +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K
+                          {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} +{BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()} K
                         </Badge>
                       </div>
                     </div>
