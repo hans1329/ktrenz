@@ -102,11 +102,11 @@ function buildSearchQuery(
       return `${nameKo || nameEn} ${qualifier}`;
     case "solo":
       // 네이버 API는 | 를 OR 연산자로 사용
-      if (nameKo && nameKo !== nameEn) return `"${nameKo}" | "${nameEn}"`;
+      if (nameKo && nameKo !== nameEn) return `"${nameKo}" ${qualifier} | "${nameEn}"`;
       return `${nameKo || nameEn} ${qualifier}`;
     case "group":
       // 그룹은 한글명 | 영문명으로 검색 (예: "방탄소년단" | "BTS")
-      if (nameKo && nameKo !== nameEn) return `"${nameKo}" | "${nameEn}"`;
+      if (nameKo && nameKo !== nameEn) return `"${nameKo}" ${qualifier} | "${nameEn}"`;
       return `${nameKo || nameEn} ${qualifier}`;
     default:
       return `${nameKo || nameEn} ${qualifier}`;
