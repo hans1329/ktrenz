@@ -999,6 +999,8 @@ export default function Battle() {
                   )
                 )}
               </div>
+              </>
+              )}
             </div>
           );
         })}
