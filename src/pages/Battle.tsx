@@ -633,9 +633,9 @@ export default function Battle() {
             <div key={pairIdx} className="space-y-5">
               {pairIdx > 0 && (
                 <div className="my-4 flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">Battle {pairIdx + 1}</span>
-                  <div className="flex-1 h-px bg-border" />
+                  <div className="flex-1 h-px bg-primary/30" />
+                  <span className="text-xs font-bold text-primary/50 uppercase tracking-widest">Battle {pairIdx + 1}</span>
+                  <div className="flex-1 h-px bg-primary/30" />
                 </div>
               )}
 
