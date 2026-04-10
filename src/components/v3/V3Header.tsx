@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, X, Loader2, Zap } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import T2AdminControls from "@/components/t2/T2AdminControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,9 +235,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
               <div className="flex items-center gap-2 shrink-0">
                 <T2AdminControls />
                 {rightSlot}
-                <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
-                  <Search className="w-5 h-5 text-foreground/80" />
-                </button>
+                <SpotifyGoalBar />
               </div>
             </>
           )}
