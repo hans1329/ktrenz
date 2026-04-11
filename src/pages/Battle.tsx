@@ -293,17 +293,17 @@ function ArtistSection({
     ? [...runItems, ...runItems, ...runItems]
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
-  const insightOffset = 1; // insight card is always the first child
 
-  // Initialize scroll — start at insight card (position 0)
+  // Initialize scroll — start at first content card
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
-      el.scrollLeft = 0;
-      setActiveIndex(-1); // -1 = insight card
+      const firstMiddle = el.children[offset] as HTMLElement | undefined;
+      if (firstMiddle) el.scrollLeft = firstMiddle.offsetLeft;
+      setActiveIndex(0);
     });
-  }, [itemCount]);
+  }, [itemCount, offset]);
 
   // Track active index and loop only after scroll settles
   useEffect(() => {
@@ -317,11 +317,10 @@ function ArtistSection({
       if (children.length === 0) return;
 
       const scrollLeft = el.scrollLeft;
-      let closest = offset + insightOffset;
+      let closest = offset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
-        if (i < insightOffset) return; // skip insight card
         const dist = Math.abs(child.offsetLeft - scrollLeft);
         if (dist < minDist) {
           minDist = dist;
@@ -329,25 +328,23 @@ function ArtistSection({
         }
       });
 
-      setActiveIndex(((closest - offset - insightOffset) % itemCount + itemCount) % itemCount);
+      setActiveIndex(((closest - offset) % itemCount + itemCount) % itemCount);
     };
 
     const settleLoop = () => {
       const children = Array.from(el.children) as HTMLElement[];
-      const insightCard = children[0] as HTMLElement | undefined;
-      const middleStart = children[offset + insightOffset] as HTMLElement | undefined;
-      const thirdStart = children[offset + itemCount + insightOffset] as HTMLElement | undefined;
+      const middleStart = children[offset] as HTMLElement | undefined;
+      const thirdStart = children[offset + itemCount] as HTMLElement | undefined;
 
       if (!middleStart || !thirdStart) return;
 
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
 
-      // Don't loop if user is near or at the insight card area
-      if (insightCard && el.scrollLeft < middleStart.offsetLeft) return;
-
       if (el.scrollLeft >= thirdStart.offsetLeft) {
         el.scrollLeft -= setWidth;
+      } else if (el.scrollLeft < middleStart.offsetLeft) {
+        el.scrollLeft += setWidth;
       }
 
       updateActiveIndex();
@@ -371,7 +368,7 @@ function ArtistSection({
     const el = scrollRef.current;
     if (!el) return;
 
-    const child = el.children[i + offset + insightOffset] as HTMLElement | undefined;
+    const child = el.children[i + offset] as HTMLElement | undefined;
     if (child) {
       child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
     }
@@ -382,7 +379,7 @@ function ArtistSection({
       {/* Pick bar — constrained width */}
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
         <button
-          onClick={onPick}
+          onClick={onInsightOpen}
           disabled={disabled}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm ${
             isPicked ? "bg-white border-primary/30 shadow-primary/10" : "bg-white border-purple-300/50 hover:border-purple-400/60"
@@ -410,29 +407,6 @@ function ArtistSection({
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
-        {/* Insight Report Card — first position */}
-        <div
-          className="snap-start flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
-          onClick={onInsightOpen}
-        >
-          <div className="rounded-xl overflow-hidden border border-primary/20 h-full">
-            <div className="relative aspect-video bg-gradient-to-br from-violet-500/20 via-pink-500/15 to-amber-400/20 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-10 h-10 rounded-full bg-white/60 backdrop-blur flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <span className="text-xs font-semibold text-foreground">Trend Report</span>
-                <span className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString(language === "ko" ? "ko-KR" : language === "ja" ? "ja-JP" : language === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric" })} · {starName}</span>
-              </div>
-            </div>
-            <div className="p-3 min-h-[40px] flex items-center bg-card">
-              <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
-                {starName}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-loop-${loopIdx}`}
