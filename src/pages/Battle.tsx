@@ -1423,7 +1423,7 @@ export default function Battle() {
           if (battleFilter === "myBets") return !s.submitted;
           return false;
         }) && (
-          <div className="text-center py-12 text-muted-foreground text-sm">
+          <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
             {battleFilter === "settled"
               ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
               : battleFilter === "myBets"
