@@ -131,6 +131,22 @@ Deno.serve(async (req) => {
             .update({ status: "settled", settled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
             .eq("id", yesterdayBattle.id);
         }
+        // Phase 3.5: 키워드 추출 (정산 후 1회)
+        const { count: kwCount } = await sb
+          .from("ktrenz_discover_keywords")
+          .select("*", { count: "exact", head: true })
+          .eq("score_date", today);
+
+        if ((kwCount || 0) === 0) {
+          const kwResult = await callFunction(supabaseUrl, serviceKey, "ktrenz-discover-extract", {
+            batch_id: yesterdayBatchId,
+            score_date: today,
+          });
+          log.push(`Phase 3.5: Keyword extract: extracted=${kwResult.extracted}, upserted=${kwResult.upserted}`);
+        } else {
+          log.push(`Phase 3.5: Keywords already extracted for ${today} (${kwCount})`);
+        }
+
         return respond(log);
       }
     }
