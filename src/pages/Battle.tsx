@@ -626,7 +626,7 @@ interface Prediction {
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, kPoints } = useAuth();
   const { t: globalT, language } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
   const { translateIfNeeded } = useFieldTranslation();
@@ -650,6 +650,7 @@ export default function Battle() {
   const [insightDrawer, setInsightDrawer] = useState<{ open: boolean; runId: string; starId: string; starName: string } | null>(null);
   const [insightData, setInsightData] = useState<Record<string, { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string }>>({}); // keyed by `runId-starId`
   const [insightLoading, setInsightLoading] = useState(false);
+  const [showAllUsedModal, setShowAllUsedModal] = useState(false);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -897,6 +898,12 @@ export default function Battle() {
         if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
         else console.log("[Battle] ticket used:", ticketResult);
         await loadTickets();
+        // Check if all tickets used → show celebration
+        const { data: updatedTicket } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
+        const parsed = typeof updatedTicket === "string" ? JSON.parse(updatedTicket) : updatedTicket;
+        if (parsed && parsed.remaining === 0) {
+          setTimeout(() => setShowAllUsedModal(true), 600);
+        }
         const { error: predError } = await supabase.from("b2_predictions").insert({
           user_id: user.id,
           picked_run_id: capturedPickedRunId,
