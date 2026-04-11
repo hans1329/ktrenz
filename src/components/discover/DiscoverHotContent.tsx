@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Flame, ExternalLink } from "lucide-react";
+import { ExternalLink, Newspaper } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import SmartImage from "@/components/SmartImage";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -17,17 +17,12 @@ interface HotItem {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  naver_news: "Naver News",
+  naver_news: "News",
+  naver_blog: "Blog",
   youtube: "YouTube",
   tiktok: "TikTok",
   instagram: "Instagram",
-};
-
-const SOURCE_COLORS: Record<string, string> = {
-  naver_news: "bg-emerald-500/10 text-emerald-400",
-  youtube: "bg-red-500/10 text-red-400",
-  tiktok: "bg-pink-500/10 text-pink-400",
-  instagram: "bg-purple-500/10 text-purple-400",
+  reddit: "Reddit",
 };
 
 const DiscoverHotContent = () => {
@@ -36,7 +31,6 @@ const DiscoverHotContent = () => {
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["discover-hot-content"],
     queryFn: async () => {
-      // Get recent items with thumbnails
       const { data: rawItems } = await supabase
         .from("ktrenz_b2_items")
         .select("id, title, title_en, title_ko, title_ja, title_zh, thumbnail, url, source, engagement_score, star_id")
@@ -47,11 +41,9 @@ const DiscoverHotContent = () => {
 
       if (!rawItems?.length) return [];
 
-      // Deduplicate by star_id — pick best per star
       const bestByUrl = new Map<string, any>();
       for (const item of rawItems) {
-        const key = item.url;
-        if (!bestByUrl.has(key)) bestByUrl.set(key, item);
+        if (!bestByUrl.has(item.url)) bestByUrl.set(item.url, item);
       }
       const dedupItems = [...bestByUrl.values()].slice(0, 8);
 
@@ -86,8 +78,8 @@ const DiscoverHotContent = () => {
 
   if (isLoading) {
     return (
-      <section className="px-3 mt-5 mb-4">
-        <Skeleton className="h-48 rounded-2xl" />
+      <section className="px-3 mt-4 mb-4">
+        <Skeleton className="h-40 rounded-xl" />
       </section>
     );
   }
@@ -95,13 +87,11 @@ const DiscoverHotContent = () => {
   if (items.length === 0) return null;
 
   return (
-    <section className="px-3 mt-5 mb-4">
+    <section className="px-3 mt-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center">
-          <Flame className="w-4 h-4 text-red-400" />
-        </div>
-        <h2 className="text-[15px] font-bold text-foreground">Hot Content</h2>
-        <span className="text-[10px] text-muted-foreground ml-auto">From battle collection</span>
+        <Newspaper className="w-4 h-4 text-foreground/60" />
+        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Hot Content</h2>
+        <span className="text-[10px] text-muted-foreground ml-auto">Recent</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -111,45 +101,37 @@ const DiscoverHotContent = () => {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden hover:border-primary/30 transition-colors"
+            className="group rounded-xl border border-border/30 bg-card/60 overflow-hidden hover:bg-card/80 transition-colors"
           >
-            {/* Thumbnail */}
             {item.thumbnail && (
-              <div className="aspect-video w-full overflow-hidden bg-muted/30 relative">
+              <div className="aspect-video w-full overflow-hidden bg-muted/20 relative">
                 <SmartImage
                   src={item.thumbnail}
                   alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${SOURCE_COLORS[item.source] || "bg-muted/50 text-muted-foreground"}`}>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-background/80 text-foreground/70 backdrop-blur-sm">
                     {SOURCE_LABELS[item.source] || item.source}
                   </span>
                 </div>
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ExternalLink className="w-3.5 h-3.5 text-white drop-shadow-lg" />
+                  <ExternalLink className="w-3 h-3 text-foreground/60" />
                 </div>
               </div>
             )}
 
-            {/* Info */}
             <div className="p-3">
-              <p className="text-[12px] font-semibold text-foreground line-clamp-2 leading-tight mb-2">
+              <p className="text-[12px] font-medium text-foreground/80 line-clamp-2 leading-tight mb-1.5">
                 {item.title}
               </p>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full overflow-hidden bg-muted/50 shrink-0">
+                <div className="w-3.5 h-3.5 rounded-full overflow-hidden bg-muted/30 shrink-0">
                   {item.star_image && (
                     <SmartImage src={item.star_image} alt="" className="w-full h-full object-cover" />
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground truncate">{item.star_name}</span>
-                {item.engagement_score && (
-                  <>
-                    <span className="text-[10px] text-muted-foreground/40">·</span>
-                    <span className="text-[10px] text-primary font-bold">Score {item.engagement_score}</span>
-                  </>
-                )}
+                <span className="text-[10px] text-muted-foreground/60 truncate">{item.star_name}</span>
               </div>
             </div>
           </a>
