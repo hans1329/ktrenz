@@ -321,10 +321,11 @@ function ArtistSection({
       if (children.length === 0) return;
 
       const scrollLeft = el.scrollLeft;
-      let closest = offset;
+      let closest = offset + insightOffset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
+        if (i < insightOffset) return; // skip insight card
         const dist = Math.abs(child.offsetLeft - scrollLeft);
         if (dist < minDist) {
           minDist = dist;
@@ -332,7 +333,7 @@ function ArtistSection({
         }
       });
 
-      setActiveIndex(((closest - offset) % itemCount + itemCount) % itemCount);
+      setActiveIndex(((closest - offset - insightOffset) % itemCount + itemCount) % itemCount);
     };
 
     const settleLoop = () => {
