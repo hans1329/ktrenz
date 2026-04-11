@@ -293,17 +293,17 @@ function ArtistSection({
     ? [...runItems, ...runItems, ...runItems]
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
-  const insightOffset = 1; // insight card is always the first child
 
-  // Initialize scroll — start at insight card (position 0)
+  // Initialize scroll — start at first content card
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
-      el.scrollLeft = 0;
-      setActiveIndex(-1); // -1 = insight card
+      const firstMiddle = el.children[offset] as HTMLElement | undefined;
+      if (firstMiddle) el.scrollLeft = firstMiddle.offsetLeft;
+      setActiveIndex(0);
     });
-  }, [itemCount]);
+  }, [itemCount, offset]);
 
   // Track active index and loop only after scroll settles
   useEffect(() => {
