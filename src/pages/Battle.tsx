@@ -1473,7 +1473,7 @@ export default function Battle() {
                                 toast({ title: submittedLabel });
                               }}
                             >
-                              <Flame className="w-4 h-4 mr-1" /> {pickLabel}
+                              {pickLabel}
                             </Button>
                           </div>
                         )}
