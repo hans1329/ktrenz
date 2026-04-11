@@ -1394,46 +1394,92 @@ export default function Battle() {
                     </div>
                   )}
 
-                  {/* Trend Bet Box */}
+                  {/* Trend Bet Box — full betting with 3 bands */}
                   {(() => {
                     const pairIdx = battlePairs.findIndex(p => p.runs.some(r => r.id === insightDrawer?.runId));
                     const pair = battlePairs[pairIdx];
                     const pairState = pairIdx >= 0 ? getPairState(pairIdx) : null;
                     const currentRun = pair?.runs.find(r => r.id === insightDrawer?.runId);
                     if (!pair || !currentRun) return null;
-                    const isAlreadyPicked = pairState?.submitted;
+                    const isAlreadySubmitted = pairState?.submitted;
                     const isPicked = pairState?.pickedRunId === currentRun.id;
+                    const isPickedInDrawer = pairState?.pickedRunId === currentRun.id;
+
+                    const betTitle = language === "ko" ? `${insightDrawer?.starName}의 트렌드가 내일 더 오를까?`
+                      : language === "ja" ? `${insightDrawer?.starName}のトレンドは明日上がる？`
+                      : language === "zh" ? `${insightDrawer?.starName}的趋势明天会上涨吗？`
+                      : `Will ${insightDrawer?.starName}'s trend rise tomorrow?`;
+
+                    const pickLabel = language === "ko" ? "이 아티스트에 베팅" : language === "ja" ? "このアーティストに賭ける" : language === "zh" ? "押注这位艺人" : "Bet on this artist";
+                    const submittedLabel = language === "ko" ? "예측 완료!" : language === "ja" ? "予測完了！" : language === "zh" ? "预测完成！" : "Prediction submitted!";
+                    const alreadyLabel = language === "ko" ? "이미 예측함" : language === "ja" ? "予測済み" : language === "zh" ? "已预测" : "Already predicted";
+
                     return (
                       <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="w-4 h-4 text-primary" />
-                          <p className="text-sm font-bold text-foreground">
-                            {insightDrawer?.starName}'s trend will rise tomorrow?
-                          </p>
+                          <p className="text-sm font-bold text-foreground">{betTitle}</p>
                         </div>
-                        {isAlreadyPicked ? (
+
+                        {isAlreadySubmitted ? (
                           <div className="flex items-center gap-2 py-1">
                             <Badge variant="secondary" className="text-xs">
-                              {isPicked ? "✅ You bet on this!" : "Already predicted"}
+                              {isPicked ? `✅ ${submittedLabel}` : alreadyLabel}
                             </Badge>
+                            {isPicked && pairState?.selectedBand && (
+                              <Badge variant="outline" className="text-xs">
+                                {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} {BANDS.find(b => b.key === pairState.selectedBand)?.range}
+                              </Badge>
+                            )}
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            className="w-full"
-                            onClick={() => {
-                              if (!user) {
-                                toast({ title: "Please log in", variant: "destructive" });
-                                navigate("/login");
-                                return;
-                              }
-                              handlePick(pairIdx, currentRun.id);
-                              setInsightDrawer(null);
-                              // Scroll to the pair for band selection
-                            }}
-                          >
-                            <Flame className="w-4 h-4 mr-1" /> Bet on {insightDrawer?.starName}
-                          </Button>
+                          <div className="space-y-3">
+                            {/* Band selection */}
+                            <div className="grid grid-cols-3 gap-2">
+                              {BANDS.map((band) => {
+                                const drawerBand = isPickedInDrawer ? pairState?.selectedBand : null;
+                                const isSelected = drawerBand === band.key;
+                                const BandIcon = band.icon;
+                                const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                                return (
+                                  <button
+                                    key={band.key}
+                                    onClick={() => {
+                                      if (!user) { toast({ title: "Please log in", variant: "destructive" }); navigate("/login"); return; }
+                                      // First pick this run if not picked
+                                      if (pairState?.pickedRunId !== currentRun.id) {
+                                        handlePick(pairIdx, currentRun.id);
+                                      }
+                                      handleBandSelect(pairIdx, band.key);
+                                    }}
+                                    className={cn(
+                                      "flex flex-col items-center py-2.5 px-1 rounded-xl border transition-all",
+                                      isSelected ? "border-primary bg-primary/10 shadow-sm" : "border-border bg-background hover:border-primary/40"
+                                    )}
+                                  >
+                                    <BandIcon className={`w-5 h-5 mb-1 ${band.iconColor}`} />
+                                    <span className="text-[10px] font-medium">{bandLabel}</span>
+                                    <span className="text-sm font-extrabold mt-0.5">{band.range}</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground">+{band.reward.toLocaleString()} K</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Submit */}
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              disabled={!isPickedInDrawer || !pairState?.selectedBand}
+                              onClick={() => {
+                                handleSubmit(pairIdx);
+                                setInsightDrawer(null);
+                                toast({ title: submittedLabel });
+                              }}
+                            >
+                              <Flame className="w-4 h-4 mr-1" /> {pickLabel}
+                            </Button>
+                          </div>
                         )}
                       </div>
                     );
