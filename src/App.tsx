@@ -68,6 +68,7 @@ import About from "./pages/About";
 import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
 import Battle from "./pages/Battle";
+import TrendDiscovery from "./pages/TrendDiscovery";
 
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -88,6 +89,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Battle />} />
+                <Route path="/discover" element={<TrendDiscovery />} />
                 <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                 <Route path="/fes-engine" element={<FesEngine />} />
                 <Route path="/agent" element={<FanAgent />} />
