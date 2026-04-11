@@ -988,6 +988,14 @@ export default function Battle() {
     // Auto-collapse submitted battle in live tab
     setCollapsedPairs(prev => new Set(prev).add(pairIdx));
 
+    // Show confirm modal
+    const bandInfo = BANDS.find(b => b.key === state.selectedBand);
+    setConfirmModal({
+      starName: prediction.pickedStarName,
+      band: state.selectedBand,
+      reward: bandInfo?.reward || 100,
+    });
+
     const capturedPickedRunId = state.pickedRunId;
     const capturedSelectedBand = state.selectedBand;
 
