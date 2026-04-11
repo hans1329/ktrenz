@@ -379,7 +379,7 @@ function ArtistSection({
       {/* Pick bar — constrained width */}
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
         <button
-          onClick={onPick}
+          onClick={onInsightOpen}
           disabled={disabled}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm ${
             isPicked ? "bg-white border-primary/30 shadow-primary/10" : "bg-white border-purple-300/50 hover:border-purple-400/60"
