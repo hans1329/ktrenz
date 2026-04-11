@@ -77,7 +77,7 @@ const DiscoverUserRankings = () => {
     return (
       <section className="px-3 mt-4">
         <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-base font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
         </div>
         <div className="rounded-xl border border-border/30 bg-card/60 p-6 text-center text-[13px] text-muted-foreground">
           {t("noPredictions")}
@@ -95,7 +95,7 @@ const DiscoverUserRankings = () => {
   return (
     <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
+        <h2 className="text-lg font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
