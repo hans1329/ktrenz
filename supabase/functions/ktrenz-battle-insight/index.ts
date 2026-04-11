@@ -84,11 +84,14 @@ ${topTitles}
 Requirements:
 - Write a catchy 1-line headline (max 30 chars)
 - Write 2-3 bullet points highlighting the most interesting trends, patterns, or notable content themes
+- IMPORTANT: Focus on lifestyle trends — what they're eating, what they're wearing, where they went, what they did. This is more interesting than just content counts.
+- If the content titles hint at fashion brands, restaurants, locations, activities, extract and highlight those specifically.
+- Add a "lifestyle" section with up to 3 short items about food/fashion/places if detectable from content (can be empty array if nothing found)
 - Keep it concise, fun, and insightful — like a daily briefing for fans
 - Use emojis sparingly for visual appeal
 - ${langInstruction}
 
-Return JSON: { "headline": "...", "bullets": ["...", "..."], "vibe": "hot|rising|steady" }`;
+Return JSON: { "headline": "...", "bullets": ["...", "..."], "lifestyle": [{"category": "fashion|food|place|activity", "text": "..."}], "vibe": "hot|rising|steady" }`;
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
@@ -127,11 +130,11 @@ Return JSON: { "headline": "...", "bullets": ["...", "..."], "vibe": "hot|rising
 
     const aiData = await aiResp.json();
     const content = aiData.choices?.[0]?.message?.content || "{}";
-    let parsed: { headline?: string; bullets?: string[]; vibe?: string };
+    let parsed: { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string };
     try {
       parsed = JSON.parse(content);
     } catch {
-      parsed = { headline: "Trend Update", bullets: [content], vibe: "steady" };
+      parsed = { headline: "Trend Update", bullets: [content], lifestyle: [], vibe: "steady" };
     }
 
     const insightText = [parsed.headline || "", ...(parsed.bullets || [])].join("\n");
