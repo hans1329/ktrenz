@@ -2672,6 +2672,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_b2_insights: {
+        Row: {
+          created_at: string
+          id: string
+          insight_data: Json | null
+          insight_text: string
+          run_id: string
+          star_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insight_data?: Json | null
+          insight_text: string
+          run_id: string
+          star_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insight_data?: Json | null
+          insight_text?: string
+          run_id?: string
+          star_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_b2_items: {
         Row: {
           card_status: string
