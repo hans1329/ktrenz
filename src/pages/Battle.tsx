@@ -343,13 +343,11 @@ function ArtistSection({
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
 
-      // Don't loop if user is viewing the insight card
-      if (insightCard && el.scrollLeft <= insightCard.offsetLeft + insightCard.offsetWidth) return;
+      // Don't loop if user is near or at the insight card area
+      if (insightCard && el.scrollLeft < middleStart.offsetLeft) return;
 
       if (el.scrollLeft >= thirdStart.offsetLeft) {
         el.scrollLeft -= setWidth;
-      } else if (el.scrollLeft < middleStart.offsetLeft) {
-        el.scrollLeft += setWidth;
       }
 
       updateActiveIndex();
