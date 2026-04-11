@@ -71,9 +71,8 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
   if (!open || results.length === 0) return null;
   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
 
-  const wins = results.filter(r => r.status === "won");
-  const losses = results.filter(r => r.status === "lost");
   const totalReward = results.reduce((sum, r) => sum + (r.reward_amount || 0), 0);
+  const wins = results.filter(r => r.status === "won");
 
   const title = lang === "ko" ? "배틀 결과 발표! 🏆"
     : lang === "ja" ? "バトル結果発表！🏆"
@@ -88,8 +87,6 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
 
   const rewardText = lang === "ko" ? "획득 보상" : lang === "ja" ? "獲得報酬" : lang === "zh" ? "获得奖励" : "Earned";
   const closeLabel = lang === "ko" ? "확인" : lang === "ja" ? "確認" : lang === "zh" ? "确认" : "Got it";
-  const winHeader = lang === "ko" ? "적중 ✅" : lang === "ja" ? "的中 ✅" : lang === "zh" ? "命中 ✅" : "Correct ✅";
-  const loseHeader = lang === "ko" ? "미적중 ❌" : lang === "ja" ? "不的中 ❌" : lang === "zh" ? "未命中 ❌" : "Missed ❌";
 
   const winLabel = lang === "ko" ? "적중" : lang === "ja" ? "的中" : lang === "zh" ? "命中" : "Correct";
   const loseLabel = lang === "ko" ? "미적중" : lang === "ja" ? "不的中" : lang === "zh" ? "未命中" : "Missed";
