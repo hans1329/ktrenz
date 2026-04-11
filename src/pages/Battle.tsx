@@ -1369,9 +1369,16 @@ export default function Battle() {
                       <div className="grid gap-2">
                         {data.lifestyle.map((item, i) => {
                           const icon = item.category === "fashion" ? "👗" : item.category === "food" ? "🍽️" : item.category === "place" ? "📍" : "🎬";
+                          const catLabel = item.category === "fashion" ? (language === "ko" ? "패션" : language === "ja" ? "ファッション" : language === "zh" ? "时尚" : "Fashion")
+                            : item.category === "food" ? (language === "ko" ? "음식" : language === "ja" ? "グルメ" : language === "zh" ? "美食" : "Food")
+                            : item.category === "place" ? (language === "ko" ? "장소" : language === "ja" ? "スポット" : language === "zh" ? "地点" : "Place")
+                            : (language === "ko" ? "활동" : language === "ja" ? "アクティビティ" : language === "zh" ? "活动" : "Activity");
                           return (
                             <div key={i} className="rounded-lg bg-muted p-3 space-y-1">
-                              <span className="text-base block">{icon}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-base">{icon}</span>
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase">{catLabel}</span>
+                              </div>
                               <p className="text-sm text-foreground leading-snug">{item.text}</p>
                             </div>
                           );
