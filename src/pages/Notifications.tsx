@@ -24,7 +24,7 @@ interface WatchedArtistScore {
 const Notifications = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
   }, []);
