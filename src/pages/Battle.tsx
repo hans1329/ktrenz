@@ -254,6 +254,101 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
   );
 }
 
+/* ── Prediction Confirm Modal (shown after each submission) ── */
+function PredictionConfirmModal({ open, onClose, language, starName, band, reward, kPoints }: {
+  open: boolean; onClose: () => void; language: string; starName: string; band: Band; reward: number; kPoints: number;
+}) {
+  if (!open) return null;
+  const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
+
+  const bandInfo = BANDS.find(b => b.key === band);
+  const BandIcon = bandInfo?.icon || Sprout;
+  const bandLabel = band === "steady" ? { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" }
+    : band === "rising" ? { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" }
+    : { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" };
+
+  const title = lang === "ko" ? "예측이 등록되었어요! ✅"
+    : lang === "ja" ? "予測が登録されました！✅"
+    : lang === "zh" ? "预测已提交！✅"
+    : "Prediction submitted! ✅";
+
+  const artistLabel = lang === "ko" ? "선택 아티스트" : lang === "ja" ? "選択アーティスト" : lang === "zh" ? "选择的艺人" : "Your pick";
+  const growthLabel = lang === "ko" ? "예측 성장대" : lang === "ja" ? "予測成長帯" : lang === "zh" ? "预测增长带" : "Growth band";
+  const rewardLabel = lang === "ko" ? "적중 시 보상" : lang === "ja" ? "的中時の報酬" : lang === "zh" ? "命中奖励" : "Reward if correct";
+  const settlementLabel = lang === "ko" ? "매일 결과 발표" : lang === "ja" ? "毎日結果発表" : lang === "zh" ? "每日结果公布" : "Daily results at";
+  const spotifyLabel = lang === "ko" ? "Spotify Premium까지" : lang === "ja" ? "Spotify Premiumまで" : lang === "zh" ? "距Spotify Premium" : "Until Spotify Premium";
+  const closeLabel = lang === "ko" ? "확인" : lang === "ja" ? "確認" : lang === "zh" ? "确认" : "Got it";
+
+  const spotifyRemaining = Math.max(SPOTIFY_GOAL - kPoints, 0);
+  const spotifyPct = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="mx-4 w-full max-w-sm rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-5 text-center">
+          <div className="w-14 h-14 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+            <Trophy className="w-7 h-7 text-primary" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">{title}</h2>
+        </div>
+
+        <div className="p-5 space-y-2.5">
+          {/* Artist */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <span className="text-xs text-muted-foreground">{artistLabel}</span>
+            <span className="text-sm font-bold text-foreground">{starName}</span>
+          </div>
+
+          {/* Growth Band */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <span className="text-xs text-muted-foreground">{growthLabel}</span>
+            <div className="flex items-center gap-1.5">
+              <BandIcon className={cn("w-4 h-4", bandInfo?.iconColor)} />
+              <span className="text-sm font-bold text-foreground">{bandLabel[lang]} {bandInfo?.range}</span>
+            </div>
+          </div>
+
+          {/* Reward */}
+          <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/[0.03] p-3">
+            <span className="text-xs text-muted-foreground">{rewardLabel}</span>
+            <span className="text-sm font-bold text-primary">+{reward.toLocaleString()} 💎</span>
+          </div>
+
+          {/* Settlement */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{settlementLabel}</span>
+            </div>
+            <span className="text-sm font-bold text-foreground">15:00 GMT</span>
+          </div>
+
+          {/* Spotify */}
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-muted-foreground">{spotifyLabel}</span>
+              </div>
+              <span className="text-xs font-bold text-foreground">
+                {spotifyRemaining > 0 ? `${spotifyRemaining.toLocaleString()} 💎` : "🎉"}
+              </span>
+            </div>
+            <Progress value={spotifyPct} className="h-1.5" />
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>{kPoints.toLocaleString()} 💎</span>
+              <span>Spotify Premium ({SPOTIFY_GOAL.toLocaleString()} 💎)</span>
+            </div>
+          </div>
+
+          <Button onClick={onClose} className="w-full mt-2" size="sm">{closeLabel}</Button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
 function decodeHtml(str: string) {
   const basic = str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'").replace(/&middot;/g, '·').replace(/&hellip;/g, '…').replace(/&ndash;/g, '–').replace(/&mdash;/g, '—').replace(/&lsquo;/g, '\u2018').replace(/&rsquo;/g, '\u2019').replace(/&ldquo;/g, '\u201C').replace(/&rdquo;/g, '\u201D').replace(/&nbsp;/g, ' ');
   return basic.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
