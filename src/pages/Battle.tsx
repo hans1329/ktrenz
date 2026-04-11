@@ -1370,8 +1370,8 @@ export default function Battle() {
                         {data.lifestyle.map((item, i) => {
                           const icon = item.category === "fashion" ? "👗" : item.category === "food" ? "🍽️" : item.category === "place" ? "📍" : "🎬";
                           return (
-                            <div key={i} className="flex items-start gap-2.5 rounded-lg bg-muted p-3">
-                              <span className="text-base">{icon}</span>
+                            <div key={i} className="rounded-lg bg-muted p-3 space-y-1">
+                              <span className="text-base block">{icon}</span>
                               <p className="text-sm text-foreground leading-snug">{item.text}</p>
                             </div>
                           );
