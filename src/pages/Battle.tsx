@@ -110,7 +110,7 @@ interface B2Run {
   content_score: number;
   counts: any;
   created_at: string;
-  star?: { display_name: string; name_ko: string };
+  star?: { display_name: string; name_ko: string; image_url?: string | null };
 }
 
 type Band = "steady" | "rising" | "surge";
@@ -257,6 +257,7 @@ function getLocalizedTitle(item: B2Item, lang: string): string {
 function ArtistSection({
   runItems,
   starName,
+  starImage,
   contentScore,
   scoreLabel,
   isPicked,
@@ -267,6 +268,7 @@ function ArtistSection({
 }: {
   runItems: B2Item[];
   starName: string;
+  starImage: string | null;
   contentScore: number;
   scoreLabel: string;
   isPicked: boolean;
@@ -412,7 +414,15 @@ function ArtistSection({
               {/* Square image */}
               <div className="relative aspect-video bg-muted">
                 {item.thumbnail ? (
-                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                  <SmartImage
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                    fallbackSrc={starImage}
+                    fallbackClassName="w-full h-full object-contain p-4 opacity-40"
+                  />
+                ) : starImage ? (
+                  <SmartImage src={starImage} alt="" className="w-full h-full object-contain p-4 opacity-40" />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
                 )}
@@ -569,7 +579,7 @@ export default function Battle() {
     const starIds = bestRuns.map((r) => r.star_id);
     const { data: starsData } = await supabase
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko")
+      .select("id, display_name, name_ko, image_url")
       .in("id", starIds);
 
     const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
@@ -913,6 +923,7 @@ export default function Battle() {
                       <ArtistSection
                         runItems={pairItems[run.id] || []}
                         starName={run.star?.display_name || "Unknown"}
+                        starImage={run.star?.image_url || null}
                         contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
                         scoreLabel={t("contentScore")}
                         isPicked={pairState.pickedRunId === run.id}

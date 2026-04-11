@@ -6,6 +6,8 @@ interface SmartImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src
   className?: string;
   loading?: "lazy" | "eager";
   fallback?: ReactNode;
+  fallbackSrc?: string | null;
+  fallbackClassName?: string;
 }
 
 export default function SmartImage({
@@ -14,6 +16,8 @@ export default function SmartImage({
   className,
   loading = "lazy",
   fallback = null,
+  fallbackSrc,
+  fallbackClassName,
   ...imgProps
 }: SmartImageProps) {
   if (!src) return <>{fallback}</>;
@@ -27,8 +31,13 @@ export default function SmartImage({
       decoding="async"
       onError={(e) => {
         const target = e.currentTarget;
-        target.style.display = "none";
-        if (target.nextElementSibling) target.nextElementSibling.removeAttribute("hidden");
+        if (fallbackSrc && target.src !== fallbackSrc) {
+          target.src = fallbackSrc;
+          if (fallbackClassName) target.className = fallbackClassName;
+        } else {
+          target.style.display = "none";
+          if (target.nextElementSibling) target.nextElementSibling.removeAttribute("hidden");
+        }
       }}
       {...imgProps}
     />
