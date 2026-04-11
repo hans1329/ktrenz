@@ -1015,6 +1015,8 @@ export default function Battle() {
     }
 
     setBattlePairs(validPairs);
+    battleCache.data = validPairs;
+    battleCache.ts = Date.now();
 
     // Restore submitted state from existing predictions in DB
     const { data: { user: currentUser } } = await supabase.auth.getUser();
