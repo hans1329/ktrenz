@@ -941,6 +941,13 @@ export default function Battle() {
   }
 
   async function loadBattleData(skipTranslation = false) {
+    // Use cached data if fresh
+    if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
+      setBattlePairs(battleCache.data);
+      setLoading(false);
+      return;
+    }
+
     const { data: runsData } = await (supabase
       .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
