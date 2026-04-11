@@ -564,6 +564,42 @@ export default function Battle() {
     return count * 0.2;
   }
 
+  async function openInsightDrawer(runId: string, starId: string, starName: string) {
+    const key = `${runId}-${starId}`;
+    setInsightDrawer({ open: true, runId, starId, starName });
+
+    if (insightData[key]) return;
+
+    setInsightLoading(true);
+    try {
+      const { data: cached } = await supabase
+        .from("ktrenz_b2_insights")
+        .select("insight_data")
+        .eq("run_id", runId)
+        .eq("star_id", starId)
+        .maybeSingle();
+
+      if (cached?.insight_data) {
+        setInsightData(prev => ({ ...prev, [key]: cached.insight_data as any }));
+        setInsightLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-insight", {
+        body: { run_id: runId, star_id: starId, star_name: starName, language },
+      });
+      if (error) throw error;
+      if (data?.insight_data) {
+        setInsightData(prev => ({ ...prev, [key]: data.insight_data }));
+      }
+    } catch (e) {
+      console.error("Insight generation failed:", e);
+      toast({ title: "Analysis unavailable", description: "Please try again later.", variant: "destructive" });
+    } finally {
+      setInsightLoading(false);
+    }
+  }
+
   function toggleHot(pairIdx: number, itemId: string) {
     const state = getPairState(pairIdx);
     const next = new Set(state.hotVotes);
