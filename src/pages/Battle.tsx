@@ -1436,7 +1436,7 @@ export default function Battle() {
 
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto mx-auto max-w-lg focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto max-w-lg left-1/2 -translate-x-1/2 focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
           {drawerItem && (() => {
             const drawerPair = battlePairs[drawerPairIndex];
             const drawerRuns = drawerPair?.runs || [];
