@@ -221,7 +221,6 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
                   {tierBattles[currentTier]}🎫 → {tierBattles[nextTier]}🎫
                 </span>
               </div>
-              </div>
             </div>
           )}
           <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
