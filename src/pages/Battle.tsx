@@ -414,7 +414,7 @@ function ArtistSection({
           {isSubmitted && isPicked && (
             <span className="flex items-center gap-1 text-xs font-bold text-primary">
               <Trophy className="w-3.5 h-3.5" />
-              Predicted
+              {lt("battle.predicted")}
             </span>
           )}
         </button>
