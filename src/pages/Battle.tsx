@@ -486,9 +486,9 @@ const PHASE_LABELS: Record<TimerPhase, Record<string, string>> = {
 };
 
 const PHASE_COLORS: Record<TimerPhase, string> = {
-  closing: "text-primary",
-  results: "text-amber-500",
-  opening: "text-emerald-500",
+  closing: "text-muted-foreground/60",
+  results: "text-muted-foreground/60",
+  opening: "text-muted-foreground/60",
 };
 
 function FlipTimer() {
@@ -774,6 +774,12 @@ interface Prediction {
   created_at: string;
 }
 
+/* ── Simple in-memory cache ── */
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const battleCache: { data: BattlePair[] | null; ts: number; ticketInfo: any; ticketTs: number } = {
+  data: null, ts: 0, ticketInfo: null, ticketTs: 0,
+};
+
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
@@ -870,13 +876,21 @@ export default function Battle() {
     updatePairState(pairIdx, { hotVotes: next });
   }
 
-  // Load ticket info
+  // Load ticket info (cached)
   const loadTickets = useCallback(async () => {
+    if (battleCache.ticketInfo && Date.now() - battleCache.ticketTs < CACHE_TTL) {
+      setTicketInfo(battleCache.ticketInfo);
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed) setTicketInfo(parsed);
+      if (parsed) {
+        battleCache.ticketInfo = parsed;
+        battleCache.ticketTs = Date.now();
+        setTicketInfo(parsed);
+      }
     }
   }, []);
 
@@ -927,6 +941,13 @@ export default function Battle() {
   }
 
   async function loadBattleData(skipTranslation = false) {
+    // Use cached data if fresh
+    if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
+      setBattlePairs(battleCache.data);
+      setLoading(false);
+      return;
+    }
+
     const { data: runsData } = await (supabase
       .from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at")
@@ -994,6 +1015,8 @@ export default function Battle() {
     }
 
     setBattlePairs(validPairs);
+    battleCache.data = validPairs;
+    battleCache.ts = Date.now();
 
     // Restore submitted state from existing predictions in DB
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -1103,6 +1126,7 @@ export default function Battle() {
         const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
         if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
         else console.log("[Battle] ticket used:", ticketResult);
+        battleCache.ticketTs = 0; // invalidate cache
         await loadTickets();
         // Check if all tickets used → show celebration
         const { data: updatedTicket } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
