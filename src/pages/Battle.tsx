@@ -1126,6 +1126,7 @@ export default function Battle() {
         const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
         if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
         else console.log("[Battle] ticket used:", ticketResult);
+        battleCache.ticketTs = 0; // invalidate cache
         await loadTickets();
         // Check if all tickets used → show celebration
         const { data: updatedTicket } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
