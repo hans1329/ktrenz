@@ -427,7 +427,7 @@ const T2MyArtists = () => {
         <SEO title="My Artists' Keywords – Kinterest" description="Track trends from your favorite K-Pop artists." path="/t2/my" />
         <V3Header />
         <div className="pt-14 pb-24">{content}</div>
-        <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+        <V3TabBar activeTab="battle" onTabChange={() => {}} />
       </>
     );
   }
@@ -436,7 +436,7 @@ const T2MyArtists = () => {
     <>
       <SEO title="My Artists' Keywords – Kinterest" description="Track trends from your favorite K-Pop artists." path="/t2/my" />
       <div className="min-h-screen flex flex-col">
-        <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
+        <V3DesktopHeader activeTab="battle" onTabChange={() => {}} />
         <main className="flex-1">
           <div className="max-w-[90%] mx-auto">{content}</div>
         </main>
