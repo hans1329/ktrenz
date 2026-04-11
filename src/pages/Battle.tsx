@@ -293,6 +293,7 @@ function ArtistSection({
     ? [...runItems, ...runItems, ...runItems]
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
+  const insightOffset = 1; // insight card is always the first child
 
   // Initialize scroll to the first real card in the middle set
   useEffect(() => {
