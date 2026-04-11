@@ -284,7 +284,47 @@ function ArtistSection({
   const { language } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [insight, setInsight] = useState<{ headline?: string; bullets?: string[]; vibe?: string } | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightRequested, setInsightRequested] = useState(false);
   const itemCount = runItems.length;
+
+  // Load cached insight on mount
+  useEffect(() => {
+    if (!runId || !starId) return;
+    supabase
+      .from("ktrenz_b2_insights")
+      .select("insight_data")
+      .eq("run_id", runId)
+      .eq("star_id", starId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.insight_data) {
+          setInsight(data.insight_data as any);
+          setInsightRequested(true);
+        }
+      });
+  }, [runId, starId]);
+
+  const generateInsight = async () => {
+    setInsightLoading(true);
+    setInsightRequested(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-insight", {
+        body: { run_id: runId, star_id: starId, star_name: starName, language },
+      });
+      if (error) throw error;
+      if (data?.insight_data) {
+        setInsight(data.insight_data);
+      }
+    } catch (e) {
+      console.error("Insight generation failed:", e);
+      toast({ title: "Analysis unavailable", description: "Please try again later.", variant: "destructive" });
+      setInsightRequested(false);
+    } finally {
+      setInsightLoading(false);
+    }
+  };
 
   // Triple the full set so looping can preserve scroll direction without visible reversal
   const loopItems = itemCount > 1
