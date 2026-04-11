@@ -4,7 +4,7 @@ import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Lock, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -265,6 +265,7 @@ function ArtistSection({
   isPicked,
   onPick,
   onCardTap,
+  onInsightOpen,
   disabled,
   index,
 }: {
@@ -278,53 +279,14 @@ function ArtistSection({
   isPicked: boolean;
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
+  onInsightOpen: () => void;
   disabled: boolean;
   index: number;
 }) {
   const { language } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [insight, setInsight] = useState<{ headline?: string; bullets?: string[]; vibe?: string } | null>(null);
-  const [insightLoading, setInsightLoading] = useState(false);
-  const [insightRequested, setInsightRequested] = useState(false);
   const itemCount = runItems.length;
-
-  // Load cached insight on mount
-  useEffect(() => {
-    if (!runId || !starId) return;
-    supabase
-      .from("ktrenz_b2_insights")
-      .select("insight_data")
-      .eq("run_id", runId)
-      .eq("star_id", starId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.insight_data) {
-          setInsight(data.insight_data as any);
-          setInsightRequested(true);
-        }
-      });
-  }, [runId, starId]);
-
-  const generateInsight = async () => {
-    setInsightLoading(true);
-    setInsightRequested(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("ktrenz-battle-insight", {
-        body: { run_id: runId, star_id: starId, star_name: starName, language },
-      });
-      if (error) throw error;
-      if (data?.insight_data) {
-        setInsight(data.insight_data);
-      }
-    } catch (e) {
-      console.error("Insight generation failed:", e);
-      toast({ title: "Analysis unavailable", description: "Please try again later.", variant: "destructive" });
-      setInsightRequested(false);
-    } finally {
-      setInsightLoading(false);
-    }
-  };
 
   // Triple the full set so looping can preserve scroll direction without visible reversal
   const loopItems = itemCount > 1
@@ -448,42 +410,24 @@ function ArtistSection({
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
-        {/* AI Insight Card — first position */}
-        <div className="snap-start flex-shrink-0 w-[85%] sm:w-80 lg:w-96">
+        {/* Insight Report Card — first position */}
+        <div
+          className="snap-start flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
+          onClick={onInsightOpen}
+        >
           <div className="rounded-xl overflow-hidden bg-card border border-primary/20 h-full">
             <div className="relative aspect-video bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 flex items-center justify-center">
-              {insightLoading ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                  <span className="text-[10px] text-muted-foreground">Analyzing trends...</span>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-primary" />
                 </div>
-              ) : insight ? (
-                <div className="px-4 py-3 w-full h-full flex flex-col justify-center">
-                  <p className="text-sm font-bold text-foreground leading-tight mb-2">{insight.headline}</p>
-                  <div className="space-y-1">
-                    {insight.bullets?.slice(0, 3).map((b, i) => (
-                      <p key={i} className="text-[10px] text-muted-foreground leading-snug line-clamp-2">• {b}</p>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={generateInsight}
-                  className="flex flex-col items-center gap-2 group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-[11px] font-medium text-primary">AI Trend Brief</span>
-                </button>
-              )}
-              <div className="absolute top-1.5 right-1.5">
-                <Sparkles className="w-4 h-4 text-primary/60 drop-shadow-md" />
+                <span className="text-xs font-semibold text-foreground">Trend Report</span>
+                <span className="text-[10px] text-muted-foreground">Tap to view</span>
               </div>
             </div>
             <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
-              <p className="text-xs font-medium text-primary leading-snug line-clamp-1">
-                {insight ? `📊 ${starName} Trend Brief` : `✨ Tap to analyze ${starName}'s trends`}
+              <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
+                📊 {starName}
               </p>
             </div>
           </div>
@@ -596,6 +540,9 @@ export default function Battle() {
   const [showTicketInfo, setShowTicketInfo] = useState(false);
   const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
   const [collapsedPairs, setCollapsedPairs] = useState<Set<number>>(new Set());
+  const [insightDrawer, setInsightDrawer] = useState<{ open: boolean; runId: string; starId: string; starName: string } | null>(null);
+  const [insightData, setInsightData] = useState<Record<string, { headline?: string; bullets?: string[]; vibe?: string }>>({}); // keyed by `runId-starId`
+  const [insightLoading, setInsightLoading] = useState(false);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -615,6 +562,42 @@ export default function Battle() {
     const hv = getPairState(pairIdx).hotVotes;
     const count = runItems.filter((i) => hv.has(i.id)).length;
     return count * 0.2;
+  }
+
+  async function openInsightDrawer(runId: string, starId: string, starName: string) {
+    const key = `${runId}-${starId}`;
+    setInsightDrawer({ open: true, runId, starId, starName });
+
+    if (insightData[key]) return;
+
+    setInsightLoading(true);
+    try {
+      const { data: cached } = await supabase
+        .from("ktrenz_b2_insights")
+        .select("insight_data")
+        .eq("run_id", runId)
+        .eq("star_id", starId)
+        .maybeSingle();
+
+      if (cached?.insight_data) {
+        setInsightData(prev => ({ ...prev, [key]: cached.insight_data as any }));
+        setInsightLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("ktrenz-battle-insight", {
+        body: { run_id: runId, star_id: starId, star_name: starName, language },
+      });
+      if (error) throw error;
+      if (data?.insight_data) {
+        setInsightData(prev => ({ ...prev, [key]: data.insight_data }));
+      }
+    } catch (e) {
+      console.error("Insight generation failed:", e);
+      toast({ title: "Analysis unavailable", description: "Please try again later.", variant: "destructive" });
+    } finally {
+      setInsightLoading(false);
+    }
   }
 
   function toggleHot(pairIdx: number, itemId: string) {
@@ -1016,6 +999,7 @@ export default function Battle() {
                         isPicked={pairState.pickedRunId === run.id}
                         onPick={() => handlePick(pairIdx, run.id)}
                         onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
+                        onInsightOpen={() => openInsightDrawer(run.id, run.star_id, run.star?.display_name || "Unknown")}
                         disabled={pairState.submitted}
                         index={idx}
                       />
@@ -1336,6 +1320,65 @@ export default function Battle() {
           })()}
         </SheetContent>
       </Sheet>
+
+      {/* Insight Report Drawer */}
+      <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto mx-2 mb-0">
+          <SheetHeader>
+            <SheetTitle className="text-base font-bold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              {insightDrawer?.starName} Trend Report
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-4 space-y-4">
+            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <p className="text-sm text-muted-foreground">Generating trend analysis...</p>
+              </div>
+            ) : (() => {
+              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
+              const data = insightData[key];
+              if (!data) return <p className="text-sm text-muted-foreground text-center py-8">No data available</p>;
+              return (
+                <div className="space-y-4">
+                  {data.headline && (
+                    <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                      <p className="text-lg font-bold text-foreground">{data.headline}</p>
+                    </div>
+                  )}
+                  {data.bullets && data.bullets.length > 0 && (
+                    <div className="space-y-3">
+                      {data.bullets.map((bullet, i) => (
+                        <div key={i} className="flex gap-3 items-start">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">{i + 1}</span>
+                          </div>
+                          <p className="text-sm text-foreground leading-relaxed">{bullet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {data.vibe && (
+                    <div className="flex items-center gap-2 pt-2">
+                      <span className="text-xs text-muted-foreground">Trend Vibe:</span>
+                      <Badge variant="secondary" className={cn(
+                        "text-xs",
+                        data.vibe === "hot" && "bg-red-500/10 text-red-600",
+                        data.vibe === "rising" && "bg-orange-500/10 text-orange-600",
+                        data.vibe === "steady" && "bg-emerald-500/10 text-emerald-600",
+                      )}>
+                        {data.vibe === "hot" ? "🔥 Hot" : data.vibe === "rising" ? "📈 Rising" : "✅ Steady"}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <V3TabBar activeTab="battle" onTabChange={() => {}} />
     </div>
   );
