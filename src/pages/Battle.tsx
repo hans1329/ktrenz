@@ -445,16 +445,62 @@ function FlipGroup({ value }: { value: string }) {
   );
 }
 
+type TimerPhase = "closing" | "results" | "opening";
+
+function getTimerPhase(): { phase: TimerPhase; targetUtc: Date } {
+  const now = new Date();
+  const utcH = now.getUTCHours();
+  const utcM = now.getUTCMinutes();
+  const utcTotal = utcH * 60 + utcM;
+
+  // UTC 15:00 = KST 00:00 betting deadline
+  // UTC 00:30 = KST 09:30 settlement / results
+  // UTC 03:00 = KST 12:00 new battle open
+
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  if (utcTotal < 30) {
+    // Before 00:30 UTC → results phase, count to 00:30
+    const target = new Date(today); target.setUTCHours(0, 30, 0, 0);
+    return { phase: "results", targetUtc: target };
+  }
+  if (utcTotal < 180) {
+    // 00:30–03:00 UTC → opening phase, count to 03:00
+    const target = new Date(today); target.setUTCHours(3, 0, 0, 0);
+    return { phase: "opening", targetUtc: target };
+  }
+  if (utcTotal < 900) {
+    // 03:00–15:00 UTC → closing phase, count to 15:00
+    const target = new Date(today); target.setUTCHours(15, 0, 0, 0);
+    return { phase: "closing", targetUtc: target };
+  }
+  // 15:00+ UTC → results phase, count to tomorrow 00:30
+  const target = new Date(today); target.setUTCDate(target.getUTCDate() + 1); target.setUTCHours(0, 30, 0, 0);
+  return { phase: "results", targetUtc: target };
+}
+
+const PHASE_LABELS: Record<TimerPhase, Record<string, string>> = {
+  closing: { en: "Betting Closes", ko: "제출 마감", ja: "締切まで", zh: "投票截止" },
+  results: { en: "Results In", ko: "결과 발표", ja: "結果発表", zh: "结果公布" },
+  opening: { en: "Battle Opens", ko: "배틀 오픈", ja: "バトル開始", zh: "战斗开始" },
+};
+
+const PHASE_COLORS: Record<TimerPhase, string> = {
+  closing: "text-primary",
+  results: "text-amber-500",
+  opening: "text-emerald-500",
+};
+
 function FlipTimer() {
+  const { language } = useLanguage();
   const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
+  const [phase, setPhase] = useState<TimerPhase>("closing");
 
   useEffect(() => {
     function calc() {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
+      const { phase: p, targetUtc } = getTimerPhase();
+      setPhase(p);
+      const diff = Math.max(0, Math.floor((targetUtc.getTime() - Date.now()) / 1000));
       setTime({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
     }
     calc();
@@ -463,14 +509,20 @@ function FlipTimer() {
   }, []);
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
 
   return (
-    <div className="flex items-center justify-center gap-2.5 sm:gap-4">
-      <FlipGroup value={pad(time.h)} />
-      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
-      <FlipGroup value={pad(time.m)} />
-      <span className="text-2xl font-bold text-muted-foreground/60">:</span>
-      <FlipGroup value={pad(time.s)} />
+    <div className="flex flex-col items-center gap-1.5">
+      <span className={cn("text-[11px] font-bold tracking-wider uppercase", PHASE_COLORS[phase])}>
+        {PHASE_LABELS[phase][lang]}
+      </span>
+      <div className="flex items-center justify-center gap-2.5 sm:gap-4">
+        <FlipGroup value={pad(time.h)} />
+        <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+        <FlipGroup value={pad(time.m)} />
+        <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+        <FlipGroup value={pad(time.s)} />
+      </div>
     </div>
   );
 }
