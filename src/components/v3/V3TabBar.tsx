@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Flame, Bot, Power, Activity, Bell, User, Users } from "lucide-react";
+import { Flame, Bot, Power, Activity, Bell, User, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -10,7 +10,7 @@ import { useAgentSlots } from "@/hooks/useAgentSlots";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type V3Tab = "battle" | "agent" | "activity" | "settings";
+export type V3Tab = "battle" | "discover" | "agent" | "activity" | "settings";
 
 interface V3TabBarProps {
   activeTab: V3Tab;
@@ -114,7 +114,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   const tabs = [
     { id: "battle" as const, labelKey: "nav.battle", icon: Flame },
-    { id: "artistView" as const, labelKey: "nav.artistView", icon: Users },
+    { id: "discover" as const, labelKey: "nav.discover", icon: Compass },
     { id: "profile" as const, labelKey: "nav.profile", icon: User, isCenter: true },
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
     { id: "notifications" as const, labelKey: "nav.notifications", icon: Bell },
@@ -149,7 +149,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => (tab.id === "battle" ? navigate("/") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : tab.id === "artistView" ? navigate("/?view=artist") : onTabChange(tab.id as V3Tab))}
+              <button key={tab.id} onClick={() => (tab.id === "battle" ? navigate("/") : tab.id === "discover" ? navigate("/discover") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : onTabChange(tab.id as V3Tab))}
                 className={cn("flex-1 relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
