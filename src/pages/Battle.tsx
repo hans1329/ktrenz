@@ -110,7 +110,7 @@ interface B2Run {
   content_score: number;
   counts: any;
   created_at: string;
-  star?: { display_name: string; name_ko: string };
+  star?: { display_name: string; name_ko: string; image_url?: string | null };
 }
 
 type Band = "steady" | "rising" | "surge";
