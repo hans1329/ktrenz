@@ -26,10 +26,11 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const DiscoverHotContent = () => {
-  const { language } = useLanguage();
+  const { language, t: globalT } = useLanguage();
+  const t = (key: string) => globalT(`discover.${key}`);
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ["discover-hot-content"],
+    queryKey: ["discover-hot-content", language],
     queryFn: async () => {
       const { data: rawItems } = await supabase
         .from("ktrenz_b2_items")
@@ -89,8 +90,8 @@ const DiscoverHotContent = () => {
   return (
     <section className="px-3 mt-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Hot Content</h2>
-        <span className="text-[10px] text-muted-foreground ml-auto">Recent</span>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("hotContent")}</h2>
+        <span className="text-[10px] text-muted-foreground ml-auto">{t("recent")}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
