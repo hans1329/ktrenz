@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.ktrenz-trend-postprocess]
 verify_jwt = false
+
+[functions.ktrenz-auto-report]
+verify_jwt = false
