@@ -109,6 +109,7 @@ const DiscoverHotContent = () => {
                   src={item.thumbnail}
                   alt={item.title}
                   className="w-full h-full object-cover"
+                  fallbackSrc={item.star_image || undefined}
                 />
                 <div className="absolute top-2 left-2">
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-background/80 text-foreground/70 backdrop-blur-sm">
