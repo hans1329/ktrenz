@@ -1,0 +1,1 @@
+UPDATE public.b2_predictions SET seen_at = settled_at WHERE status IN ('won','lost') AND seen_at IS NULL AND settled_at IS NOT NULL;
