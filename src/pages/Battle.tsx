@@ -163,7 +163,7 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
     : lang === "zh" ? "今天的票已全部使用！🎉"
     : "All tickets used today! 🎉";
 
-  const settlementLabel = lang === "ko" ? "결과 발표" : lang === "ja" ? "結果発表" : lang === "zh" ? "结果公布" : "Results at";
+  const settlementLabel = lang === "ko" ? "매일 결과 발표" : lang === "ja" ? "毎日結果発表" : lang === "zh" ? "每日结果公布" : "Daily results at";
   const nextTierLabel = lang === "ko" ? "다음 등급" : lang === "ja" ? "次のランク" : lang === "zh" ? "下一等级" : "Next tier";
   const battlesLabel = lang === "ko" ? "일일 배틀 참여" : lang === "ja" ? "日次バトル参加" : lang === "zh" ? "每日战斗参与" : "Daily battles";
   const spotifyLabel = lang === "ko" ? "Spotify Premium까지" : lang === "ja" ? "Spotify Premiumまで" : lang === "zh" ? "距Spotify Premium" : "Until Spotify Premium";
