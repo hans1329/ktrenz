@@ -486,9 +486,9 @@ const PHASE_LABELS: Record<TimerPhase, Record<string, string>> = {
 };
 
 const PHASE_COLORS: Record<TimerPhase, string> = {
-  closing: "text-primary",
-  results: "text-amber-500",
-  opening: "text-emerald-500",
+  closing: "text-muted-foreground/60",
+  results: "text-muted-foreground/60",
+  opening: "text-muted-foreground/60",
 };
 
 function FlipTimer() {
