@@ -1525,6 +1525,14 @@ export default function Battle() {
       </Sheet>
 
       <V3TabBar activeTab="battle" onTabChange={() => {}} />
+      <AllTicketsUsedModal
+        open={showAllUsedModal}
+        onClose={() => setShowAllUsedModal(false)}
+        language={language}
+        userLevel={userLevel}
+        kPoints={kPoints}
+        totalTickets={totalTickets}
+      />
     </div>
   );
 }
