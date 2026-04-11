@@ -1320,6 +1320,65 @@ export default function Battle() {
           })()}
         </SheetContent>
       </Sheet>
+
+      {/* Insight Report Drawer */}
+      <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto mx-2 mb-0">
+          <SheetHeader>
+            <SheetTitle className="text-base font-bold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              {insightDrawer?.starName} Trend Report
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-4 space-y-4">
+            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <p className="text-sm text-muted-foreground">Generating trend analysis...</p>
+              </div>
+            ) : (() => {
+              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
+              const data = insightData[key];
+              if (!data) return <p className="text-sm text-muted-foreground text-center py-8">No data available</p>;
+              return (
+                <div className="space-y-4">
+                  {data.headline && (
+                    <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                      <p className="text-lg font-bold text-foreground">{data.headline}</p>
+                    </div>
+                  )}
+                  {data.bullets && data.bullets.length > 0 && (
+                    <div className="space-y-3">
+                      {data.bullets.map((bullet, i) => (
+                        <div key={i} className="flex gap-3 items-start">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-primary">{i + 1}</span>
+                          </div>
+                          <p className="text-sm text-foreground leading-relaxed">{bullet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {data.vibe && (
+                    <div className="flex items-center gap-2 pt-2">
+                      <span className="text-xs text-muted-foreground">Trend Vibe:</span>
+                      <Badge variant="secondary" className={cn(
+                        "text-xs",
+                        data.vibe === "hot" && "bg-red-500/10 text-red-600",
+                        data.vibe === "rising" && "bg-orange-500/10 text-orange-600",
+                        data.vibe === "steady" && "bg-emerald-500/10 text-emerald-600",
+                      )}>
+                        {data.vibe === "hot" ? "🔥 Hot" : data.vibe === "rising" ? "📈 Rising" : "✅ Steady"}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <V3TabBar activeTab="battle" onTabChange={() => {}} />
     </div>
   );
