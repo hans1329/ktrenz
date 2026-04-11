@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { Trophy, TrendingUp, TrendingDown, Minus, Sprout, Flame, Rocket, Ticket } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Minus, Sprout, Flame, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,17 +24,55 @@ interface SettlementResultsModalProps {
   language: string;
 }
 
-const BAND_META: Record<Band, { icon: typeof Sprout; iconColor: string; label: Record<string, string> }> = {
-  steady: { icon: Sprout, iconColor: "text-emerald-500", label: { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" } },
-  rising: { icon: Flame, iconColor: "text-orange-500", label: { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" } },
-  surge: { icon: Rocket, iconColor: "text-red-500", label: { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" } },
+const BAND_META: Record<Band, { icon: typeof Sprout; iconColor: string; label: Record<string, string>; threshold: number }> = {
+  steady: { icon: Sprout, iconColor: "text-emerald-500", label: { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" }, threshold: 15 },
+  rising: { icon: Flame, iconColor: "text-orange-500", label: { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" }, threshold: 30 },
+  surge: { icon: Rocket, iconColor: "text-red-500", label: { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" }, threshold: 80 },
 };
+
+function getResultReason(result: SettledPrediction, lang: string): string {
+  const pg = result.picked_growth ?? 0;
+  const og = result.opponent_growth ?? 0;
+  const band = BAND_META[result.band];
+  const threshold = band.threshold;
+  const bandName = band.label[lang] || band.label.en;
+
+  if (result.status === "won") {
+    if (lang === "ko") return `${result.picked_star_name} +${pg}%로 상대 +${og}%를 넘고, ${bandName}(${threshold}%+) 달성!`;
+    if (lang === "ja") return `${result.picked_star_name} +${pg}%で相手 +${og}%を上回り、${bandName}(${threshold}%+)達成！`;
+    if (lang === "zh") return `${result.picked_star_name} +${pg}%超过对手 +${og}%，达到${bandName}(${threshold}%+)！`;
+    return `${result.picked_star_name} grew +${pg}% vs +${og}%, hitting ${bandName} (${threshold}%+)!`;
+  }
+
+  // Lost reasons
+  const pickedWonVs = pg > og;
+  const bandMatched = pg >= threshold;
+
+  if (!pickedWonVs && !bandMatched) {
+    if (lang === "ko") return `성장률 +${pg}%로 상대 +${og}%보다 낮고, ${bandName}(${threshold}%+) 미달`;
+    if (lang === "ja") return `成長率 +${pg}%で相手 +${og}%より低く、${bandName}(${threshold}%+)未達`;
+    if (lang === "zh") return `增长率 +${pg}%低于对手 +${og}%，未达${bandName}(${threshold}%+)`;
+    return `Grew +${pg}% vs opponent's +${og}%, missed ${bandName} (${threshold}%+)`;
+  }
+  if (!pickedWonVs) {
+    if (lang === "ko") return `${bandName} 달성했으나, 상대 +${og}%가 더 높음`;
+    if (lang === "ja") return `${bandName}達成も、相手 +${og}%が上回った`;
+    if (lang === "zh") return `达到${bandName}，但对手 +${og}%更高`;
+    return `Hit ${bandName}, but opponent grew more (+${og}%)`;
+  }
+  // pickedWonVs but !bandMatched
+  if (lang === "ko") return `상대보다 높지만 +${pg}%로 ${bandName}(${threshold}%+) 미달`;
+  if (lang === "ja") return `相手より高いが +${pg}%で${bandName}(${threshold}%+)未達`;
+  if (lang === "zh") return `超过对手但 +${pg}%未达${bandName}(${threshold}%+)`;
+  return `Outgrew opponent, but +${pg}% missed ${bandName} threshold (${threshold}%+)`;
+}
 
 const SettlementResultsModal = ({ open, onClose, results, language }: SettlementResultsModalProps) => {
   if (!open || results.length === 0) return null;
   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
 
-  const wonCount = results.filter(r => r.status === "won").length;
+  const wins = results.filter(r => r.status === "won");
+  const losses = results.filter(r => r.status === "lost");
   const totalReward = results.reduce((sum, r) => sum + (r.reward_amount || 0), 0);
 
   const title = lang === "ko" ? "배틀 결과 발표! 🏆"
@@ -43,14 +81,60 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
     : "Battle Results! 🏆";
 
   const summaryText = lang === "ko"
-    ? `${results.length}건 중 ${wonCount}건 적중`
-    : lang === "ja" ? `${results.length}件中${wonCount}件的中`
-    : lang === "zh" ? `${results.length}场中${wonCount}场命中`
-    : `${wonCount} of ${results.length} correct`;
+    ? `${results.length}건 중 ${wins.length}건 적중`
+    : lang === "ja" ? `${results.length}件中${wins.length}件的中`
+    : lang === "zh" ? `${results.length}场中${wins.length}场命中`
+    : `${wins.length} of ${results.length} correct`;
 
   const rewardText = lang === "ko" ? "획득 보상" : lang === "ja" ? "獲得報酬" : lang === "zh" ? "获得奖励" : "Earned";
   const closeLabel = lang === "ko" ? "확인" : lang === "ja" ? "確認" : lang === "zh" ? "确认" : "Got it";
-  const growthLabel = lang === "ko" ? "성장률" : lang === "ja" ? "成長率" : lang === "zh" ? "增长率" : "Growth";
+  const winHeader = lang === "ko" ? "적중 ✅" : lang === "ja" ? "的中 ✅" : lang === "zh" ? "命中 ✅" : "Correct ✅";
+  const loseHeader = lang === "ko" ? "미적중 ❌" : lang === "ja" ? "不的中 ❌" : lang === "zh" ? "未命中 ❌" : "Missed ❌";
+
+  const renderResult = (result: SettledPrediction) => {
+    const band = BAND_META[result.band];
+    const BandIcon = band?.icon || Sprout;
+    const won = result.status === "won";
+    const reason = getResultReason(result, lang);
+
+    return (
+      <div
+        key={result.id}
+        className={cn(
+          "rounded-xl border p-3 space-y-1.5",
+          won ? "border-emerald-500/30 bg-emerald-500/[0.03]" : "border-red-500/15 bg-red-500/[0.02]"
+        )}
+      >
+        {/* Artists + Growth */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-primary truncate">{result.picked_star_name}</span>
+            <GrowthBadge value={result.picked_growth} />
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-muted-foreground truncate">{result.opponent_star_name}</span>
+            <GrowthBadge value={result.opponent_growth} />
+          </div>
+        </div>
+
+        {/* Reason */}
+        <p className="text-[11px] text-muted-foreground leading-snug">{reason}</p>
+
+        {/* Band + Reward */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <BandIcon className={cn("w-3.5 h-3.5", band?.iconColor)} />
+            <span className="text-[11px] text-muted-foreground">
+              {band?.label[lang] || band?.label.en}
+            </span>
+          </div>
+          {won && result.reward_amount > 0 && (
+            <span className="text-xs font-bold text-primary">+{result.reward_amount} 💎</span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -71,71 +155,21 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
         </div>
 
         {/* Results list */}
-        <div className="p-4 space-y-2 overflow-y-auto flex-1">
-          {results.map((result) => {
-            const band = BAND_META[result.band];
-            const BandIcon = band?.icon || Sprout;
-            const won = result.status === "won";
-
-            return (
-              <div
-                key={result.id}
-                className={cn(
-                  "rounded-xl border p-3 space-y-2",
-                  won
-                    ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                    : "border-border bg-muted/30"
-                )}
-              >
-                {/* Status + Artists */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={cn(
-                      "text-xs font-bold px-2 py-0.5 rounded-full",
-                      won ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/10 text-red-500"
-                    )}>
-                      {won ? "✅ WIN" : "❌ LOSE"}
-                    </span>
-                    <span className="text-xs font-bold text-primary truncate">{result.picked_star_name}</span>
-                    <span className="text-[10px] text-muted-foreground">vs</span>
-                    <span className="text-xs text-muted-foreground truncate">{result.opponent_star_name}</span>
-                  </div>
-                </div>
-
-                {/* Growth comparison */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{result.picked_star_name}</span>
-                      <GrowthBadge value={result.picked_growth} />
-                    </div>
-                    <GrowthBar value={result.picked_growth} isWinner={won} />
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-medium shrink-0">vs</div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{result.opponent_star_name}</span>
-                      <GrowthBadge value={result.opponent_growth} />
-                    </div>
-                    <GrowthBar value={result.opponent_growth} isWinner={!won} />
-                  </div>
-                </div>
-
-                {/* Band + Reward */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <BandIcon className={cn("w-3.5 h-3.5", band?.iconColor)} />
-                    <span className="text-[11px] text-muted-foreground">
-                      {band?.label[lang] || band?.label.en}
-                    </span>
-                  </div>
-                  {won && result.reward_amount > 0 && (
-                    <span className="text-xs font-bold text-primary">+{result.reward_amount} 💎</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          {/* Wins */}
+          {wins.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-foreground">{winHeader}</p>
+              {wins.map(renderResult)}
+            </div>
+          )}
+          {/* Losses */}
+          {losses.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-foreground">{loseHeader}</p>
+              {losses.map(renderResult)}
+            </div>
+          )}
         </div>
 
         {/* Close */}
@@ -159,18 +193,6 @@ function GrowthBadge({ value }: { value: number | null }) {
       {positive ? <TrendingUp className="w-3 h-3" /> : value < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
       {positive ? "+" : ""}{value}%
     </span>
-  );
-}
-
-function GrowthBar({ value, isWinner }: { value: number | null; isWinner: boolean }) {
-  const pct = Math.min(Math.max(value ?? 0, 0), 100);
-  return (
-    <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-      <div
-        className={cn("h-full rounded-full transition-all duration-500", isWinner ? "bg-emerald-500" : "bg-muted-foreground/30")}
-        style={{ width: `${Math.max(pct, 3)}%` }}
-      />
-    </div>
   );
 }
 
