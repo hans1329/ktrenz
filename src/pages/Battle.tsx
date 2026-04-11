@@ -1257,7 +1257,7 @@ export default function Battle() {
                   return (
                     <div key={i} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs font-bold text-foreground truncate">{pred.pickedStarName}</span>
+                        <span className="text-xs font-bold text-primary truncate">{pred.pickedStarName}</span>
                         <span className="text-[10px] text-muted-foreground">vs</span>
                         <span className="text-xs text-muted-foreground truncate">{pred.opponentStarName}</span>
                       </div>
