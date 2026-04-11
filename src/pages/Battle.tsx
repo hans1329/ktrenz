@@ -1753,6 +1753,22 @@ export default function Battle() {
           kPoints={kPoints}
         />
       )}
+      <SettlementResultsModal
+        open={showSettlementModal}
+        onClose={async () => {
+          setShowSettlementModal(false);
+          // Mark all as seen
+          const ids = settlementResults.map(r => r.id);
+          if (ids.length > 0 && user) {
+            await supabase
+              .from("b2_predictions")
+              .update({ seen_at: new Date().toISOString() } as any)
+              .in("id", ids);
+          }
+        }}
+        results={settlementResults}
+        language={language}
+      />
     </div>
   );
 }
