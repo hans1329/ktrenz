@@ -130,6 +130,37 @@ const Notifications = () => {
     enabled: !!user?.id,
   });
 
+  // Fetch recent battle results
+  const { data: battleResults } = useQuery({
+    queryKey: ["notifications-battle-results", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data: preds } = await supabase
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, picked_growth, opponent_growth, settled_at")
+        .eq("user_id", user.id)
+        .in("status", ["won", "lost"])
+        .order("settled_at", { ascending: false })
+        .limit(20);
+      if (!preds || preds.length === 0) return [];
+      const runIds = [...new Set(preds.flatMap(p => [p.picked_run_id, p.opponent_run_id]))];
+      const { data: runs } = await (supabase.from("ktrenz_b2_runs") as any).select("id, star_id").in("id", runIds);
+      const starIds = [...new Set((runs || []).map((r: any) => r.star_id))];
+      const { data: stars } = await (supabase.from("ktrenz_stars") as any).select("id, display_name").in("id", starIds);
+      const runToStar = new Map<string, string>();
+      (runs || []).forEach((r: any) => {
+        const star = (stars || []).find((s: any) => s.id === r.star_id);
+        if (star) runToStar.set(r.id, star.display_name);
+      });
+      return preds.map(p => ({
+        ...p,
+        picked_star_name: runToStar.get(p.picked_run_id) || "Unknown",
+        opponent_star_name: runToStar.get(p.opponent_run_id) || "Unknown",
+      }));
+    },
+    enabled: !!user?.id,
+  });
+
   const isLoading = authLoading || watchedLoading || scoresLoading;
 
   if (authLoading) {
