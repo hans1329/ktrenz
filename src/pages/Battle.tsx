@@ -278,6 +278,7 @@ function ArtistSection({
   contentScore,
   scoreLabel,
   isPicked,
+  isSubmitted,
   onPick,
   onCardTap,
   onInsightOpen,
@@ -292,6 +293,7 @@ function ArtistSection({
   contentScore: number;
   scoreLabel: string;
   isPicked: boolean;
+  isSubmitted: boolean;
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
   onInsightOpen: () => void;
@@ -396,15 +398,25 @@ function ArtistSection({
         <button
           onClick={onInsightOpen}
           disabled={disabled}
-          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm bg-white ${
-            isPicked ? "border-primary/30 shadow-primary/10" : "border-purple-300/50 hover:border-purple-400/60"
-          } ${disabled ? "opacity-60" : ""}`}
+          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
+            isSubmitted && isPicked
+              ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
+              : isPicked
+                ? "border border-primary/30 shadow-primary/10"
+                : "border border-purple-300/50 hover:border-purple-400/60"
+          } ${disabled && !isSubmitted ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
             <span className={`text-sm sm:text-base font-extrabold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
              <span className="text-xs sm:text-sm text-muted-foreground">Trend by</span>
              <span className={`text-sm sm:text-base font-bold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
           </div>
+          {isSubmitted && isPicked && (
+            <span className="flex items-center gap-1 text-xs font-bold text-primary">
+              <Trophy className="w-3.5 h-3.5" />
+              Predicted
+            </span>
+          )}
         </button>
       </div>
 
@@ -977,6 +989,7 @@ export default function Battle() {
                         contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
                         scoreLabel={t("contentScore")}
                         isPicked={pairState.pickedRunId === run.id}
+                        isSubmitted={pairState.submitted}
                         onPick={() => handlePick(pairIdx, run.id)}
                         onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
                         onInsightOpen={() => openInsightDrawer(run.id, run.star_id, run.star?.display_name || "Unknown")}
@@ -988,51 +1001,6 @@ export default function Battle() {
                 ))}
               </div>
 
-              {/* Submitted Result only */}
-              <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
-                {pairState.submitted && battleFilter !== "myBets" && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-primary" />
-                        {t("predictionSubmitted")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {language === "ko" ? "다음 콘텐츠 스캔 후 결과가 정산됩니다." : language === "ja" ? "次回のコンテンツスキャン後に結果が確定します。" : language === "zh" ? "结果将在下次内容扫描后结算。" : "Results will be settled after the next content scan."}
-                        <br />
-                        {(() => {
-                          const now = new Date();
-                          const tomorrow = new Date(now);
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          tomorrow.setHours(0, 0, 0, 0);
-                          const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
-                          const h = Math.floor(diff / 3600);
-                          const m = Math.floor((diff % 3600) / 60);
-                          const hLabel = language === "ko" ? "시간" : language === "ja" ? "時間" : language === "zh" ? "小时" : "h";
-                          const mLabel = language === "ko" ? "분" : language === "ja" ? "分" : language === "zh" ? "분钟" : "m";
-                          const timeStr = h > 0 ? `${h}${hLabel} ${m}${mLabel}` : `${m}${mLabel}`;
-                          return language === "ko" ? `약 ${timeStr} 후 확인하세요.` : language === "ja" ? `約${timeStr}後にご確認ください。` : language === "zh" ? `请约${timeStr}后查看。` : `Check back in ~${timeStr}.`;
-                        })()}
-                      </p>
-                      <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border min-h-[72px]">
-                        <div>
-                          <p className="text-base font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{t("scoreLabel")}: {pickedRun?.content_score}</p>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {t(pairState.selectedBand === "steady" ? "bandSteady" : pairState.selectedBand === "rising" ? "bandRising" : "bandSurge")} {language === "ko" ? "오름 예측" : language === "ja" ? "上昇予測" : language === "zh" ? "上涨预测" : "rise predicted"}
-                          </p>
-                          <p className="text-sm font-bold text-foreground flex items-center justify-end gap-1">
-                            {language === "ko" ? "보상" : language === "ja" ? "報酬" : language === "zh" ? "奖励" : "Reward"} {BANDS.find((b) => b.key === pairState.selectedBand)?.reward.toLocaleString()}
-                            💎
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
               </>
               )}
             </div>
