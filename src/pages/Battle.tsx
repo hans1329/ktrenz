@@ -438,7 +438,7 @@ function ArtistSection({
                   <SmartImage
                     src={item.thumbnail}
                     alt={item.title}
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-[center_20%]"
                     fallbackSrc={starImage}
                     fallbackClassName="w-full h-full object-contain p-4 opacity-40"
                   />
