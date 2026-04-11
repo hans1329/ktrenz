@@ -265,6 +265,7 @@ function ArtistSection({
   isPicked,
   onPick,
   onCardTap,
+  onInsightOpen,
   disabled,
   index,
 }: {
@@ -278,6 +279,7 @@ function ArtistSection({
   isPicked: boolean;
   onPick: () => void;
   onCardTap: (item: B2Item) => void;
+  onInsightOpen: () => void;
   disabled: boolean;
   index: number;
 }) {
