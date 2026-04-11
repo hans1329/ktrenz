@@ -1638,7 +1638,7 @@ export default function Battle() {
 
       {/* Insight Report Drawer */}
       <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
-        <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] overflow-y-auto mx-2 mb-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] overflow-y-auto max-w-lg left-1/2 -translate-x-1/2" onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetHeader>
             <SheetTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
