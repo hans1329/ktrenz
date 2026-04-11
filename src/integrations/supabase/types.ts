@@ -3249,6 +3249,48 @@ export type Database = {
           },
         ]
       }
+      ktrenz_discover_keywords: {
+        Row: {
+          batch_id: string
+          category: string
+          created_at: string
+          id: string
+          keyword: string
+          keyword_en: string | null
+          mention_count: number
+          metadata: Json | null
+          score_date: string
+          star_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          category?: string
+          created_at?: string
+          id?: string
+          keyword: string
+          keyword_en?: string | null
+          mention_count?: number
+          metadata?: Json | null
+          score_date?: string
+          star_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          keyword?: string
+          keyword_en?: string | null
+          mention_count?: number
+          metadata?: Json | null
+          score_date?: string
+          star_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ktrenz_engine_runs: {
         Row: {
           completed_at: string | null
