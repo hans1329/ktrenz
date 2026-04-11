@@ -334,6 +334,7 @@ function ArtistSection({
 
     const settleLoop = () => {
       const children = Array.from(el.children) as HTMLElement[];
+      const insightCard = children[0] as HTMLElement | undefined;
       const middleStart = children[offset + insightOffset] as HTMLElement | undefined;
       const thirdStart = children[offset + itemCount + insightOffset] as HTMLElement | undefined;
 
@@ -341,6 +342,9 @@ function ArtistSection({
 
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
+
+      // Don't loop if user is viewing the insight card
+      if (insightCard && el.scrollLeft <= insightCard.offsetLeft + insightCard.offsetWidth) return;
 
       if (el.scrollLeft >= thirdStart.offsetLeft) {
         el.scrollLeft -= setWidth;
