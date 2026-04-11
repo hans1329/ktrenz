@@ -21,7 +21,8 @@ const translations: Record<string, Record<Language, string>> = {
   "common.current": { en: "CURRENT", ko: "현재", ja: "現在", zh: "当前" },
 
   // ── Navigation / Tabs ──
-  "nav.trendz": { en: "K-Trenz", ko: "K·트렌즈", ja: "K·トレンズ", zh: "K·趋势" },
+ "nav.trendz": { en: "K-Trenz", ko: "K·트렌즈", ja: "K·トレンズ", zh: "K·趋势" },
+ "nav.battle": { en: "Battle", ko: "배틀", ja: "バトル", zh: "对战" },
   "nav.agent": { en: "Agent", ko: "에이전트", ja: "エージェント", zh: "助手" },
   "nav.notifications": { en: "Alerts", ko: "알림", ja: "通知", zh: "通知" },
   "nav.activity": { en: "Activity", ko: "활동", ja: "アクティビティ", zh: "活动" },
