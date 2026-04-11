@@ -1615,7 +1615,6 @@ export default function Battle() {
                               onClick={() => {
                                 handleSubmit(pairIdx);
                                 setInsightDrawer(null);
-                                toast({ title: submittedLabel });
                               }}
                             >
                               {pickLabel}
