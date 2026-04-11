@@ -2597,8 +2597,10 @@ export type Database = {
           created_at: string
           finished_at: string | null
           id: string
+          pair_index: number | null
           queue_order: number
           result: Json | null
+          side: string | null
           star_id: string
           started_at: string | null
           status: string
@@ -2608,8 +2610,10 @@ export type Database = {
           created_at?: string
           finished_at?: string | null
           id?: string
+          pair_index?: number | null
           queue_order?: number
           result?: Json | null
+          side?: string | null
           star_id: string
           started_at?: string | null
           status?: string
@@ -2619,11 +2623,52 @@ export type Database = {
           created_at?: string
           finished_at?: string | null
           id?: string
+          pair_index?: number | null
           queue_order?: number
           result?: Json | null
+          side?: string | null
           star_id?: string
           started_at?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      ktrenz_b2_battles: {
+        Row: {
+          batch_id: string
+          battle_date: string
+          betting_closes_at: string | null
+          betting_opens_at: string | null
+          created_at: string
+          id: string
+          settled_at: string | null
+          status: string
+          total_pairs: number | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          battle_date: string
+          betting_closes_at?: string | null
+          betting_opens_at?: string | null
+          created_at?: string
+          id?: string
+          settled_at?: string | null
+          status?: string
+          total_pairs?: number | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          battle_date?: string
+          betting_closes_at?: string | null
+          betting_opens_at?: string | null
+          created_at?: string
+          id?: string
+          settled_at?: string | null
+          status?: string
+          total_pairs?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2730,24 +2775,30 @@ export type Database = {
       }
       ktrenz_b2_runs: {
         Row: {
+          batch_id: string | null
           content_score: number
           counts: Json
           created_at: string
           id: string
+          search_round: number | null
           star_id: string
         }
         Insert: {
+          batch_id?: string | null
           content_score?: number
           counts?: Json
           created_at?: string
           id?: string
+          search_round?: number | null
           star_id: string
         }
         Update: {
+          batch_id?: string | null
           content_score?: number
           counts?: Json
           created_at?: string
           id?: string
+          search_round?: number | null
           star_id?: string
         }
         Relationships: []
