@@ -1454,9 +1454,10 @@ export default function Battle() {
                                       isSelected ? "border-primary bg-primary/10 shadow-sm" : "border-border bg-background hover:border-primary/40"
                                     )}
                                   >
+                                    <span className="text-base">{band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}</span>
                                     <span className="text-[10px] font-medium">{bandLabel}</span>
                                     <span className="text-sm font-extrabold mt-0.5">{band.range}</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground">+{band.reward.toLocaleString()} K</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground">+{band.reward.toLocaleString()} 💎</span>
                                   </button>
                                 );
                               })}
