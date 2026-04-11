@@ -86,8 +86,7 @@ const DiscoverLeaderboard = () => {
   return (
     <section className="px-3 pt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("trendLeaderboard")}</h2>
-        <span className="text-[10px] text-muted-foreground ml-auto">7d</span>
+        <h2 className="text-lg font-semibold text-foreground tracking-tight">{t("trendLeaderboard")}</h2>
       </div>
 
       <div className="rounded-xl border border-border/30 bg-card/60 overflow-hidden">
