@@ -1410,16 +1410,13 @@ export default function Battle() {
                       : language === "zh" ? `${insightDrawer?.starName}的趋势明天会上涨吗？`
                       : `Will ${insightDrawer?.starName}'s trend rise tomorrow?`;
 
-                    const pickLabel = language === "ko" ? "이 아티스트에 베팅" : language === "ja" ? "このアーティストに賭ける" : language === "zh" ? "押注这位艺人" : "Bet on this artist";
+                    const pickLabel = t("predictGrowth");
                     const submittedLabel = language === "ko" ? "예측 완료!" : language === "ja" ? "予測完了！" : language === "zh" ? "预测完成！" : "Prediction submitted!";
                     const alreadyLabel = language === "ko" ? "이미 예측함" : language === "ja" ? "予測済み" : language === "zh" ? "已预测" : "Already predicted";
 
                     return (
-                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-primary" />
-                          <p className="text-sm font-bold text-foreground">{betTitle}</p>
-                        </div>
+                      <div className="rounded-xl border border-border bg-background p-4 space-y-3">
+                        <p className="text-sm font-bold text-foreground">{betTitle}</p>
 
                         {isAlreadySubmitted ? (
                           <div className="flex items-center gap-2 py-1">
