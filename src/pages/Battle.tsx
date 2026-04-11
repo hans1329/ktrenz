@@ -963,6 +963,7 @@ export default function Battle() {
                         isPicked={pairState.pickedRunId === run.id}
                         onPick={() => handlePick(pairIdx, run.id)}
                         onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
+                        onInsightOpen={() => openInsightDrawer(run.id, run.star_id, run.star?.display_name || "Unknown")}
                         disabled={pairState.submitted}
                         index={idx}
                       />
