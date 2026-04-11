@@ -217,8 +217,8 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
                   <Ticket className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs text-muted-foreground">{battlesLabel}</span>
                 </div>
-                <span className="text-xs font-bold text-foreground">
-                  {tierBattles[currentTier]}🎫 → {tierBattles[nextTier]}🎫
+                <span className="text-xs font-bold text-foreground flex items-center gap-1">
+                  {tierBattles[currentTier]}<Ticket className="w-3 h-3 text-muted-foreground" /> → {tierBattles[nextTier]}<Ticket className="w-3 h-3 text-primary" />
                 </span>
               </div>
             </div>
