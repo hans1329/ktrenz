@@ -284,7 +284,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const sb = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // Fetch star info
     const { data: star, error: starErr } = await sb
@@ -739,6 +740,61 @@ Deno.serve(async (req) => {
         const batch = b2Items.slice(i, i + BATCH);
         const { error: itemErr } = await sb.from("ktrenz_b2_items").insert(batch);
         if (itemErr) console.error(`[B2] items batch ${i} error:`, itemErr.message);
+      }
+
+      // ── Cache Instagram/TikTok thumbnails to Supabase Storage ──
+      // These CDN URLs expire, so we download and store them immediately
+      const SOCIAL_SOURCES = new Set(["instagram", "tiktok"]);
+      const socialItems = b2Items.filter(
+        (item: any) => SOCIAL_SOURCES.has(item.source) && item.thumbnail && !item.thumbnail.includes(supabaseUrl)
+      );
+
+      if (socialItems.length > 0) {
+        console.log(`[B2] Caching ${socialItems.length} social thumbnails (instagram/tiktok)`);
+        const BUCKET = "trend-images";
+        const FOLDER = "b2-cache";
+
+        const cachePromises = socialItems.map(async (item: any) => {
+          try {
+            const res = await fetch(item.thumbnail, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "image/*",
+                "Referer": item.source === "instagram" ? "https://www.instagram.com/" : "https://www.tiktok.com/",
+              },
+            });
+            if (!res.ok) { console.warn(`[B2-cache] fetch failed ${res.status}: ${item.thumbnail.slice(0, 80)}`); return; }
+            const ct = res.headers.get("content-type") || "image/jpeg";
+            if (!ct.startsWith("image/")) return;
+            const data = new Uint8Array(await res.arrayBuffer());
+            if (data.length < 500) return;
+
+            const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(item.thumbnail))))
+              .slice(0, 8).map(b => b.toString(16).padStart(2, "0")).join("");
+            const ext = ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
+            const path = `${FOLDER}/${hash}.${ext}`;
+
+            const { error: upErr } = await sb.storage.from(BUCKET).upload(path, data, {
+              contentType: ct, upsert: true,
+            });
+            if (upErr) { console.warn(`[B2-cache] upload error: ${upErr.message}`); return; }
+
+            const cachedUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
+            // Update the item's thumbnail in DB
+            await sb.from("ktrenz_b2_items")
+              .update({ thumbnail: cachedUrl })
+              .eq("run_id", item.run_id)
+              .eq("url", item.url);
+
+            console.log(`[B2-cache] ✓ ${item.source}: ${cachedUrl}`);
+          } catch (e: any) {
+            console.warn(`[B2-cache] error: ${e.message}`);
+          }
+        });
+
+        // Run in parallel but don't block the response
+        await Promise.allSettled(cachePromises);
+        console.log(`[B2] Social thumbnail caching complete`);
       }
     }
 
