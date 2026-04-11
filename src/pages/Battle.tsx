@@ -829,7 +829,51 @@ export default function Battle() {
     }
   }, []);
 
-  useEffect(() => { loadBattleData(); loadTickets(); }, [loadTickets]);
+  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); }, [loadTickets]);
+
+  // Load unseen settlement results on mount
+  async function loadUnseenSettlements() {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) return;
+    const { data: unseen } = await supabase
+      .from("b2_predictions")
+      .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, picked_growth, opponent_growth, settled_at")
+      .eq("user_id", u.id)
+      .in("status", ["won", "lost"])
+      .is("seen_at", null)
+      .order("settled_at", { ascending: false })
+      .limit(20);
+    if (!unseen || unseen.length === 0) return;
+
+    // Resolve star names from run IDs
+    const runIds = [...new Set(unseen.flatMap(p => [p.picked_run_id, p.opponent_run_id]))];
+    const { data: runs } = await (supabase.from("ktrenz_b2_runs") as any)
+      .select("id, star_id")
+      .in("id", runIds);
+    const starIds = [...new Set((runs || []).map((r: any) => r.star_id))];
+    const { data: stars } = await (supabase.from("ktrenz_stars") as any)
+      .select("id, display_name")
+      .in("id", starIds);
+    const runToStar = new Map<string, string>();
+    (runs || []).forEach((r: any) => {
+      const star = (stars || []).find((s: any) => s.id === r.star_id);
+      if (star) runToStar.set(r.id, star.display_name);
+    });
+
+    const mapped: SettledPrediction[] = unseen.map(p => ({
+      id: p.id,
+      picked_star_name: runToStar.get(p.picked_run_id) || "Unknown",
+      opponent_star_name: runToStar.get(p.opponent_run_id) || "Unknown",
+      band: p.band as Band,
+      status: p.status as "won" | "lost",
+      reward_amount: p.reward_amount || 0,
+      picked_growth: p.picked_growth,
+      opponent_growth: p.opponent_growth,
+      settled_at: p.settled_at,
+    }));
+    setSettlementResults(mapped);
+    setTimeout(() => setShowSettlementModal(true), 500);
+  }
 
   async function loadBattleData(skipTranslation = false) {
     const { data: runsData } = await (supabase
