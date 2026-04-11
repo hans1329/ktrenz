@@ -795,6 +795,132 @@ export default function Battle() {
     });
   }
 
+const SPOTIFY_GOAL = 9000;
+
+/* ── All Tickets Used Celebration Modal ── */
+function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, totalTickets }: {
+  open: boolean; onClose: () => void; language: string; userLevel: number; kPoints: number; totalTickets: number;
+}) {
+  if (!open) return null;
+  const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
+
+  const currentTier = userLevel >= 31 ? 3 : userLevel >= 16 ? 2 : userLevel >= 6 ? 1 : 0;
+  const tierNames = [
+    { en: "Beginner", ko: "초보", ja: "初心者", zh: "新手" },
+    { en: "Explorer", ko: "탐색가", ja: "探索者", zh: "探索者" },
+    { en: "Analyst", ko: "분석가", ja: "分析家", zh: "分析师" },
+    { en: "Expert", ko: "전문가", ja: "専門家", zh: "专家" },
+  ];
+  const tierBattles = [3, 5, 7, 10];
+  const nextTier = currentTier < 3 ? currentTier + 1 : null;
+
+  const spotifyRemaining = Math.max(SPOTIFY_GOAL - kPoints, 0);
+  const spotifyPct = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+
+  const title = lang === "ko" ? "오늘의 티켓을 모두 사용했어요! 🎉"
+    : lang === "ja" ? "今日のチケットを全て使いました！🎉"
+    : lang === "zh" ? "今天的票已全部使用！🎉"
+    : "All tickets used today! 🎉";
+
+  const settlementLabel = lang === "ko" ? "결과 발표" : lang === "ja" ? "結果発表" : lang === "zh" ? "结果公布" : "Results at";
+  const nextTierLabel = lang === "ko" ? "다음 등급" : lang === "ja" ? "次のランク" : lang === "zh" ? "下一等级" : "Next tier";
+  const battlesLabel = lang === "ko" ? "일일 배틀 참여" : lang === "ja" ? "日次バトル参加" : lang === "zh" ? "每日战斗参与" : "Daily battles";
+  const spotifyLabel = lang === "ko" ? "Spotify Premium까지" : lang === "ja" ? "Spotify Premiumまで" : lang === "zh" ? "距Spotify Premium" : "Until Spotify Premium";
+  const closeLabel = lang === "ko" ? "확인" : lang === "ja" ? "確認" : lang === "zh" ? "确认" : "Got it";
+  const currentLabel = lang === "ko" ? "현재 등급" : lang === "ja" ? "現在のランク" : lang === "zh" ? "当前等级" : "Current tier";
+  const comeBackLabel = lang === "ko" ? "내일 다시 도전하세요!" : lang === "ja" ? "明日また挑戦！" : lang === "zh" ? "明天再来挑战！" : "Come back tomorrow!";
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="mx-4 w-full max-w-sm rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-6 text-center relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <Sparkles key={i} className="absolute text-primary/20 animate-pulse" style={{
+                width: 16, height: 16,
+                top: `${15 + Math.random() * 70}%`,
+                left: `${10 + Math.random() * 80}%`,
+                animationDelay: `${i * 0.3}s`,
+              }} />
+            ))}
+          </div>
+          <div className="relative">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+              <Trophy className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">{title}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{comeBackLabel}</p>
+          </div>
+        </div>
+
+        {/* Info cards */}
+        <div className="p-5 space-y-3">
+          {/* Current tier */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground">{currentLabel}</span>
+            </div>
+            <span className="text-sm font-bold text-foreground">
+              {tierNames[currentTier][lang]} <span className="text-muted-foreground font-normal">(Lv.{userLevel})</span>
+            </span>
+          </div>
+
+          {/* Next tier */}
+          {nextTier !== null && (
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">{nextTierLabel}</span>
+                </div>
+                <span className="text-sm font-bold text-primary">{tierNames[nextTier][lang]}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{battlesLabel}</span>
+                <span className="text-xs font-bold text-foreground">
+                  {tierBattles[currentTier]}🎫 → {tierBattles[nextTier]}🎫
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Settlement time */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">{settlementLabel}</span>
+            </div>
+            <span className="text-sm font-bold text-foreground">15:00 GMT</span>
+          </div>
+
+          {/* Spotify goal */}
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-muted-foreground">{spotifyLabel}</span>
+              </div>
+              <span className="text-xs font-bold text-foreground">
+                {spotifyRemaining > 0 ? `${spotifyRemaining.toLocaleString()} 💎` : "🎉"}
+              </span>
+            </div>
+            <Progress value={spotifyPct} className="h-1.5" />
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>{kPoints.toLocaleString()} 💎</span>
+              <span>Spotify Premium ({SPOTIFY_GOAL.toLocaleString()} 💎)</span>
+            </div>
+          </div>
+
+          <Button onClick={onClose} className="w-full mt-2" size="sm">{closeLabel}</Button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 
   if (loading) {
     return (
