@@ -448,6 +448,47 @@ function ArtistSection({
         ref={scrollRef}
         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 sm:max-w-[80%] sm:mx-auto pl-4 sm:pl-0"
       >
+        {/* AI Insight Card — first position */}
+        <div className="snap-start flex-shrink-0 w-[85%] sm:w-80 lg:w-96">
+          <div className="rounded-xl overflow-hidden bg-card border border-primary/20 h-full">
+            <div className="relative aspect-video bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 flex items-center justify-center">
+              {insightLoading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  <span className="text-[10px] text-muted-foreground">Analyzing trends...</span>
+                </div>
+              ) : insight ? (
+                <div className="px-4 py-3 w-full h-full flex flex-col justify-center">
+                  <p className="text-sm font-bold text-foreground leading-tight mb-2">{insight.headline}</p>
+                  <div className="space-y-1">
+                    {insight.bullets?.slice(0, 3).map((b, i) => (
+                      <p key={i} className="text-[10px] text-muted-foreground leading-snug line-clamp-2">• {b}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={generateInsight}
+                  className="flex flex-col items-center gap-2 group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-[11px] font-medium text-primary">AI Trend Brief</span>
+                </button>
+              )}
+              <div className="absolute top-1.5 right-1.5">
+                <Sparkles className="w-4 h-4 text-primary/60 drop-shadow-md" />
+              </div>
+            </div>
+            <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
+              <p className="text-xs font-medium text-primary leading-snug line-clamp-1">
+                {insight ? `📊 ${starName} Trend Brief` : `✨ Tap to analyze ${starName}'s trends`}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-loop-${loopIdx}`}
