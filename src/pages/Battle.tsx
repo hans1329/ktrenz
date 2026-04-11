@@ -417,12 +417,12 @@ function ArtistSection({
         >
           <div className="rounded-xl overflow-hidden border border-primary/20 h-full">
             <div className="relative aspect-video bg-gradient-to-br from-violet-500/20 via-pink-500/15 to-amber-400/20 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString(language === "ko" ? "ko-KR" : language === "ja" ? "ja-JP" : language === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric" })} · {starName}</span>
                 <div className="w-10 h-10 rounded-full bg-white/60 backdrop-blur flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <span className="text-xs font-semibold text-foreground">Trend Report</span>
-                <span className="text-[10px] text-muted-foreground">Tap to view</span>
               </div>
             </div>
             <div className="p-3 min-h-[40px] flex items-center bg-card">
