@@ -297,6 +297,80 @@ const Notifications = () => {
           )}
         </section>
 
+        {/* Battle Results Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-primary" />
+            {language === "ko" ? "배틀 결과" : "Battle Results"}
+          </h2>
+          {(!battleResults || battleResults.length === 0) ? (
+            <div className="rounded-xl bg-card border border-border/50 p-6 text-center">
+              <Trophy className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {language === "ko" ? "아직 정산된 배틀이 없습니다" : "No settled battles yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {battleResults.map((r: any) => {
+                const won = r.status === "won";
+                const bandIcon = r.band === "steady" ? Sprout : r.band === "rising" ? Flame : Rocket;
+                const BandIcon = bandIcon;
+                const bandColor = r.band === "steady" ? "text-emerald-500" : r.band === "rising" ? "text-orange-500" : "text-red-500";
+                const bandLabel = r.band === "steady" ? (language === "ko" ? "안정" : "Steady")
+                  : r.band === "rising" ? (language === "ko" ? "상승" : "Rising")
+                  : (language === "ko" ? "급등" : "Surge");
+                return (
+                  <div
+                    key={r.id}
+                    className={cn(
+                      "rounded-xl border p-3 space-y-1.5",
+                      won ? "border-emerald-500/20 bg-emerald-500/[0.02]" : "border-border bg-card/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={cn(
+                          "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                          won ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/10 text-red-500"
+                        )}>
+                          {won ? "✅ WIN" : "❌ LOSE"}
+                        </span>
+                        <span className="text-xs font-bold text-primary truncate">{r.picked_star_name}</span>
+                        <span className="text-[10px] text-muted-foreground">vs</span>
+                        <span className="text-xs text-muted-foreground truncate">{r.opponent_star_name}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-[11px]">
+                        <span className={cn("font-bold", (r.picked_growth ?? 0) > 0 ? "text-emerald-500" : "text-red-500")}>
+                          {r.picked_growth !== null ? `${r.picked_growth > 0 ? "+" : ""}${r.picked_growth}%` : "–"}
+                        </span>
+                        <span className="text-muted-foreground">vs</span>
+                        <span className={cn("font-bold", (r.opponent_growth ?? 0) > 0 ? "text-emerald-500" : "text-red-500")}>
+                          {r.opponent_growth !== null ? `${r.opponent_growth > 0 ? "+" : ""}${r.opponent_growth}%` : "–"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <BandIcon className={cn("w-3 h-3", bandColor)} />
+                          <span className="text-[10px] text-muted-foreground">{bandLabel}</span>
+                        </div>
+                        {won && r.reward_amount > 0 && (
+                          <span className="text-xs font-bold text-primary">+{r.reward_amount} 💎</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(r.settled_at).toLocaleDateString(language === "ko" ? "ko-KR" : "en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* Watched Artists Section */}
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
