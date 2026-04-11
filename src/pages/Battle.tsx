@@ -410,7 +410,7 @@ function ArtistSection({
           >
             <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
               {/* Square image */}
-              <div className="relative aspect-square bg-muted">
+              <div className="relative aspect-video bg-muted">
                 {item.thumbnail ? (
                   <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
