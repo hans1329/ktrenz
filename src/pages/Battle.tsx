@@ -300,7 +300,7 @@ function ArtistSection({
   disabled: boolean;
   index: number;
 }) {
-  const { language } = useLanguage();
+  const { language, t: lt } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const itemCount = runItems.length;
