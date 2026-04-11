@@ -1325,7 +1325,7 @@ export default function Battle() {
 
       {/* Insight Report Drawer */}
       <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto mx-2 mb-0">
+        <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] overflow-y-auto mx-2 mb-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetHeader>
             <SheetTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
@@ -1345,7 +1345,7 @@ export default function Battle() {
               return (
                 <div className="space-y-4">
                   {data.headline && (
-                    <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                    <div className="rounded-xl bg-muted border border-border p-4">
                       <p className="text-lg font-bold text-foreground">{data.headline}</p>
                     </div>
                   )}
@@ -1353,8 +1353,8 @@ export default function Battle() {
                     <div className="space-y-3">
                       {data.bullets.map((bullet, i) => (
                         <div key={i} className="flex gap-3 items-start">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-primary">{i + 1}</span>
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
                           </div>
                           <p className="text-sm text-foreground leading-relaxed">{bullet}</p>
                         </div>
