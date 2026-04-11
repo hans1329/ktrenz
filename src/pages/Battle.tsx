@@ -256,6 +256,8 @@ function getLocalizedTitle(item: B2Item, lang: string): string {
 /* ── Artist Section: name bar + horizontal card carousel ── */
 function ArtistSection({
   runItems,
+  runId,
+  starId,
   starName,
   starImage,
   contentScore,
@@ -267,6 +269,8 @@ function ArtistSection({
   index,
 }: {
   runItems: B2Item[];
+  runId: string;
+  starId: string;
   starName: string;
   starImage: string | null;
   contentScore: number;
