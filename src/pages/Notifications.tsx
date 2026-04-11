@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn, Crosshair, CheckCheck } from "lucide-react";
+import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn, Crosshair, CheckCheck, Trophy, Sprout, Flame, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
