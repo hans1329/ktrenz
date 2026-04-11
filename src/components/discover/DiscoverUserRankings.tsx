@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -74,8 +74,7 @@ const DiscoverUserRankings = () => {
     return (
       <section className="px-3 mt-4">
         <div className="flex items-center gap-2 mb-3">
-          <Users className="w-4 h-4 text-foreground/60" />
-          <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Top Predictors</h2>
+          <h2 className="text-base font-semibold text-foreground tracking-tight">Top Predictors</h2>
         </div>
         <div className="rounded-xl border border-border/30 bg-card/60 p-6 text-center text-[13px] text-muted-foreground">
           No predictions yet
@@ -93,8 +92,7 @@ const DiscoverUserRankings = () => {
   return (
     <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <Users className="w-4 h-4 text-foreground/60" />
-        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Top Predictors</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Top Predictors</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

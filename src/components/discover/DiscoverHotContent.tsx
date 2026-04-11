@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Newspaper } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import SmartImage from "@/components/SmartImage";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -89,8 +89,7 @@ const DiscoverHotContent = () => {
   return (
     <section className="px-3 mt-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
-        <Newspaper className="w-4 h-4 text-foreground/60" />
-        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Hot Content</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Hot Content</h2>
         <span className="text-[10px] text-muted-foreground ml-auto">Recent</span>
       </div>
 
