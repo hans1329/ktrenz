@@ -317,11 +317,10 @@ function ArtistSection({
       if (children.length === 0) return;
 
       const scrollLeft = el.scrollLeft;
-      let closest = offset + insightOffset;
+      let closest = offset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
-        if (i < insightOffset) return; // skip insight card
         const dist = Math.abs(child.offsetLeft - scrollLeft);
         if (dist < minDist) {
           minDist = dist;
@@ -329,25 +328,23 @@ function ArtistSection({
         }
       });
 
-      setActiveIndex(((closest - offset - insightOffset) % itemCount + itemCount) % itemCount);
+      setActiveIndex(((closest - offset) % itemCount + itemCount) % itemCount);
     };
 
     const settleLoop = () => {
       const children = Array.from(el.children) as HTMLElement[];
-      const insightCard = children[0] as HTMLElement | undefined;
-      const middleStart = children[offset + insightOffset] as HTMLElement | undefined;
-      const thirdStart = children[offset + itemCount + insightOffset] as HTMLElement | undefined;
+      const middleStart = children[offset] as HTMLElement | undefined;
+      const thirdStart = children[offset + itemCount] as HTMLElement | undefined;
 
       if (!middleStart || !thirdStart) return;
 
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
 
-      // Don't loop if user is near or at the insight card area
-      if (insightCard && el.scrollLeft < middleStart.offsetLeft) return;
-
       if (el.scrollLeft >= thirdStart.offsetLeft) {
         el.scrollLeft -= setWidth;
+      } else if (el.scrollLeft < middleStart.offsetLeft) {
+        el.scrollLeft += setWidth;
       }
 
       updateActiveIndex();
