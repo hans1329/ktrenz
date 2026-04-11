@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -749,6 +750,13 @@ export default function Battle() {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      <SEO
+        title="KTrenZ – K-Pop Content Battle"
+        titleKo="KTrenZ – K-Pop 콘텐츠 배틀"
+        description="Predict which K-Pop content wins each round. Vote, earn K-Cash, and climb the leaderboard."
+        descriptionKo="어떤 K-Pop 콘텐츠가 이길지 예측하세요. 투표하고, K-Cash를 모으고, 리더보드에 도전하세요."
+        path="/"
+      />
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header rightSlot={
           <button onClick={() => setShowTicketInfo(true)} className="flex items-center gap-1.5 active:opacity-60 transition-opacity">
