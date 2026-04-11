@@ -1,4 +1,19 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+
+const InsightLoadingText = ({ starName, t }: { starName: string; t: (k: string) => string }) => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setIdx(p => (p + 1) % 2), 2500);
+    return () => clearInterval(iv);
+  }, []);
+  const msgs = [
+    t("battle.analyzingTrend").replace("{name}", starName),
+    t("battle.pleaseWait"),
+  ];
+  return (
+    <p className="text-sm text-muted-foreground animate-pulse text-center">{msgs[idx]}</p>
+  );
+};
 import { createPortal } from "react-dom";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
