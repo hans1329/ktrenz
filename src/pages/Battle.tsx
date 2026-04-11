@@ -293,20 +293,17 @@ function ArtistSection({
     ? [...runItems, ...runItems, ...runItems]
     : runItems;
   const offset = itemCount > 1 ? itemCount : 0;
+  const insightOffset = 1; // insight card is always the first child
 
-  // Initialize scroll to the first real card in the middle set
+  // Initialize scroll — start at insight card (position 0)
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || itemCount <= 1) return;
-
+    if (!el) return;
     requestAnimationFrame(() => {
-      const child = el.children[offset] as HTMLElement | undefined;
-      if (child) {
-        el.scrollLeft = child.offsetLeft;
-        setActiveIndex(0);
-      }
+      el.scrollLeft = 0;
+      setActiveIndex(-1); // -1 = insight card
     });
-  }, [itemCount, offset]);
+  }, [itemCount]);
 
   // Track active index and loop only after scroll settles
   useEffect(() => {
@@ -320,10 +317,11 @@ function ArtistSection({
       if (children.length === 0) return;
 
       const scrollLeft = el.scrollLeft;
-      let closest = offset;
+      let closest = offset + insightOffset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
+        if (i < insightOffset) return; // skip insight card
         const dist = Math.abs(child.offsetLeft - scrollLeft);
         if (dist < minDist) {
           minDist = dist;
@@ -331,18 +329,22 @@ function ArtistSection({
         }
       });
 
-      setActiveIndex(((closest - offset) % itemCount + itemCount) % itemCount);
+      setActiveIndex(((closest - offset - insightOffset) % itemCount + itemCount) % itemCount);
     };
 
     const settleLoop = () => {
       const children = Array.from(el.children) as HTMLElement[];
-      const middleStart = children[offset] as HTMLElement | undefined;
-      const thirdStart = children[offset + itemCount] as HTMLElement | undefined;
+      const insightCard = children[0] as HTMLElement | undefined;
+      const middleStart = children[offset + insightOffset] as HTMLElement | undefined;
+      const thirdStart = children[offset + itemCount + insightOffset] as HTMLElement | undefined;
 
       if (!middleStart || !thirdStart) return;
 
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
+
+      // Don't loop if user is viewing the insight card
+      if (insightCard && el.scrollLeft <= insightCard.offsetLeft + insightCard.offsetWidth) return;
 
       if (el.scrollLeft >= thirdStart.offsetLeft) {
         el.scrollLeft -= setWidth;
@@ -371,7 +373,7 @@ function ArtistSection({
     const el = scrollRef.current;
     if (!el) return;
 
-    const child = el.children[i + offset] as HTMLElement | undefined;
+    const child = el.children[i + offset + insightOffset] as HTMLElement | undefined;
     if (child) {
       child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
     }
@@ -446,7 +448,7 @@ function ArtistSection({
                   <SmartImage
                     src={item.thumbnail}
                     alt={item.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-top"
                     fallbackSrc={starImage}
                     fallbackClassName="w-full h-full object-contain p-4 opacity-40"
                   />
