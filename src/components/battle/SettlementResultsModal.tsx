@@ -169,21 +169,8 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
         </div>
 
         {/* Results list */}
-        <div className="p-4 space-y-4 overflow-y-auto flex-1">
-          {/* Wins */}
-          {wins.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-foreground">{winHeader}</p>
-              {wins.map(renderResult)}
-            </div>
-          )}
-          {/* Losses */}
-          {losses.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-foreground">{loseHeader}</p>
-              {losses.map(renderResult)}
-            </div>
-          )}
+        <div className="p-4 space-y-2.5 overflow-y-auto flex-1">
+          {results.map(renderResult)}
         </div>
 
         {/* Close */}
