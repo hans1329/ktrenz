@@ -1640,6 +1640,17 @@ export default function Battle() {
         kPoints={kPoints}
         totalTickets={totalTickets}
       />
+      {confirmModal && (
+        <PredictionConfirmModal
+          open={!!confirmModal}
+          onClose={() => setConfirmModal(null)}
+          language={language}
+          starName={confirmModal.starName}
+          band={confirmModal.band}
+          reward={confirmModal.reward}
+          kPoints={kPoints}
+        />
+      )}
     </div>
   );
 }
