@@ -373,7 +373,7 @@ function ArtistSection({
     const el = scrollRef.current;
     if (!el) return;
 
-    const child = el.children[i + offset] as HTMLElement | undefined;
+    const child = el.children[i + offset + insightOffset] as HTMLElement | undefined;
     if (child) {
       child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
     }
