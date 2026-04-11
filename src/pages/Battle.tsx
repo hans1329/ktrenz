@@ -414,7 +414,15 @@ function ArtistSection({
               {/* Square image */}
               <div className="relative aspect-video bg-muted">
                 {item.thumbnail ? (
-                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                  <SmartImage
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                    fallbackSrc={starImage}
+                    fallbackClassName="w-full h-full object-contain p-4 opacity-40"
+                  />
+                ) : starImage ? (
+                  <SmartImage src={starImage} alt="" className="w-full h-full object-contain p-4 opacity-40" />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
                 )}
