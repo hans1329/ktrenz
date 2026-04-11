@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
           status,
           reward_amount: reward,
           settled_at: new Date().toISOString(),
+          picked_growth: Math.round(pickedGrowth),
+          opponent_growth: Math.round(opponentGrowth),
         })
         .eq("id", pred.id);
 

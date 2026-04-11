@@ -454,9 +454,12 @@ export type Database = {
           battle_date: string
           created_at: string
           id: string
+          opponent_growth: number | null
           opponent_run_id: string
+          picked_growth: number | null
           picked_run_id: string
           reward_amount: number | null
+          seen_at: string | null
           settled_at: string | null
           status: string
           user_id: string
@@ -466,9 +469,12 @@ export type Database = {
           battle_date?: string
           created_at?: string
           id?: string
+          opponent_growth?: number | null
           opponent_run_id: string
+          picked_growth?: number | null
           picked_run_id: string
           reward_amount?: number | null
+          seen_at?: string | null
           settled_at?: string | null
           status?: string
           user_id: string
@@ -478,9 +484,12 @@ export type Database = {
           battle_date?: string
           created_at?: string
           id?: string
+          opponent_growth?: number | null
           opponent_run_id?: string
+          picked_growth?: number | null
           picked_run_id?: string
           reward_amount?: number | null
+          seen_at?: string | null
           settled_at?: string | null
           status?: string
           user_id?: string

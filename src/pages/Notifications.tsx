@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn, Crosshair, CheckCheck } from "lucide-react";
+import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn, Crosshair, CheckCheck, Trophy, Sprout, Flame, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,7 +24,7 @@ interface WatchedArtistScore {
 const Notifications = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
   }, []);
@@ -126,6 +126,37 @@ const Notifications = () => {
         .order("created_at", { ascending: false })
         .limit(20);
       return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch recent battle results
+  const { data: battleResults } = useQuery({
+    queryKey: ["notifications-battle-results", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data: preds } = await supabase
+        .from("b2_predictions")
+        .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, picked_growth, opponent_growth, settled_at")
+        .eq("user_id", user.id)
+        .in("status", ["won", "lost"])
+        .order("settled_at", { ascending: false })
+        .limit(20);
+      if (!preds || preds.length === 0) return [];
+      const runIds = [...new Set(preds.flatMap(p => [p.picked_run_id, p.opponent_run_id]))];
+      const { data: runs } = await (supabase.from("ktrenz_b2_runs") as any).select("id, star_id").in("id", runIds);
+      const starIds = [...new Set((runs || []).map((r: any) => r.star_id))];
+      const { data: stars } = await (supabase.from("ktrenz_stars") as any).select("id, display_name").in("id", starIds);
+      const runToStar = new Map<string, string>();
+      (runs || []).forEach((r: any) => {
+        const star = (stars || []).find((s: any) => s.id === r.star_id);
+        if (star) runToStar.set(r.id, star.display_name);
+      });
+      return preds.map(p => ({
+        ...p,
+        picked_star_name: runToStar.get(p.picked_run_id) || "Unknown",
+        opponent_star_name: runToStar.get(p.opponent_run_id) || "Unknown",
+      }));
     },
     enabled: !!user?.id,
   });
@@ -262,6 +293,80 @@ const Notifications = () => {
                   </span>
                 </button>
               ))}
+            </div>
+          )}
+        </section>
+
+        {/* Battle Results Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-primary" />
+            {language === "ko" ? "배틀 결과" : "Battle Results"}
+          </h2>
+          {(!battleResults || battleResults.length === 0) ? (
+            <div className="rounded-xl bg-card border border-border/50 p-6 text-center">
+              <Trophy className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {language === "ko" ? "아직 정산된 배틀이 없습니다" : "No settled battles yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {battleResults.map((r: any) => {
+                const won = r.status === "won";
+                const bandIcon = r.band === "steady" ? Sprout : r.band === "rising" ? Flame : Rocket;
+                const BandIcon = bandIcon;
+                const bandColor = r.band === "steady" ? "text-emerald-500" : r.band === "rising" ? "text-orange-500" : "text-red-500";
+                const bandLabel = r.band === "steady" ? (language === "ko" ? "안정" : "Steady")
+                  : r.band === "rising" ? (language === "ko" ? "상승" : "Rising")
+                  : (language === "ko" ? "급등" : "Surge");
+                return (
+                  <div
+                    key={r.id}
+                    className={cn(
+                      "rounded-xl border p-3 space-y-1.5",
+                      won ? "border-emerald-500/20 bg-emerald-500/[0.02]" : "border-border bg-card/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={cn(
+                          "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                          won ? "bg-emerald-500/15 text-emerald-600" : "bg-red-500/10 text-red-500"
+                        )}>
+                          {won ? "✅ WIN" : "❌ LOSE"}
+                        </span>
+                        <span className="text-xs font-bold text-primary truncate">{r.picked_star_name}</span>
+                        <span className="text-[10px] text-muted-foreground">vs</span>
+                        <span className="text-xs text-muted-foreground truncate">{r.opponent_star_name}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-[11px]">
+                        <span className={cn("font-bold", (r.picked_growth ?? 0) > 0 ? "text-emerald-500" : "text-red-500")}>
+                          {r.picked_growth !== null ? `${r.picked_growth > 0 ? "+" : ""}${r.picked_growth}%` : "–"}
+                        </span>
+                        <span className="text-muted-foreground">vs</span>
+                        <span className={cn("font-bold", (r.opponent_growth ?? 0) > 0 ? "text-emerald-500" : "text-red-500")}>
+                          {r.opponent_growth !== null ? `${r.opponent_growth > 0 ? "+" : ""}${r.opponent_growth}%` : "–"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <BandIcon className={cn("w-3 h-3", bandColor)} />
+                          <span className="text-[10px] text-muted-foreground">{bandLabel}</span>
+                        </div>
+                        {won && r.reward_amount > 0 && (
+                          <span className="text-xs font-bold text-primary">+{r.reward_amount} 💎</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(r.settled_at).toLocaleDateString(language === "ko" ? "ko-KR" : "en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
