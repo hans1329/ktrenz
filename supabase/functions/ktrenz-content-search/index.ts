@@ -607,24 +607,33 @@ Deno.serve(async (req) => {
     };
 
     // ── Atomic replacement: delete previous runs/items for this star ──
-    // Delete items first (FK), then runs
-    const { data: oldRuns } = await sb
-      .from("ktrenz_b2_runs")
-      .select("id")
-      .eq("star_id", star_id);
-    if (oldRuns && oldRuns.length > 0) {
-      const oldRunIds = oldRuns.map((r: any) => r.id);
-      for (let i = 0; i < oldRunIds.length; i += 50) {
-        const chunk = oldRunIds.slice(i, i + 50);
-        await sb.from("ktrenz_b2_items").delete().in("run_id", chunk);
+    // Only delete old runs when search_round === 1 (initial collection)
+    // Round 2 must preserve round 1 data for settlement comparison
+    if (search_round === 1) {
+      const { data: oldRuns } = await sb
+        .from("ktrenz_b2_runs")
+        .select("id")
+        .eq("star_id", star_id);
+      if (oldRuns && oldRuns.length > 0) {
+        const oldRunIds = oldRuns.map((r: any) => r.id);
+        for (let i = 0; i < oldRunIds.length; i += 50) {
+          const chunk = oldRunIds.slice(i, i + 50);
+          await sb.from("ktrenz_b2_items").delete().in("run_id", chunk);
+        }
+        await sb.from("ktrenz_b2_runs").delete().eq("star_id", star_id);
       }
-      await sb.from("ktrenz_b2_runs").delete().eq("star_id", star_id);
     }
 
     // ── Save to B2 tables ──
     const { data: runData, error: runErr } = await sb
       .from("ktrenz_b2_runs")
-      .insert({ star_id, content_score: contentScore, counts: countsObj })
+      .insert({
+        star_id,
+        content_score: contentScore,
+        counts: countsObj,
+        batch_id: batch_id,
+        search_round: search_round,
+      })
       .select("id")
       .single();
 
