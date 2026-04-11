@@ -213,10 +213,14 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
                 <span className="text-sm font-bold text-primary">{tierNames[nextTier][lang]}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{battlesLabel}</span>
+                <div className="flex items-center gap-1.5">
+                  <Ticket className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs text-muted-foreground">{battlesLabel}</span>
+                </div>
                 <span className="text-xs font-bold text-foreground">
                   {tierBattles[currentTier]}🎫 → {tierBattles[nextTier]}🎫
                 </span>
+              </div>
               </div>
             </div>
           )}
