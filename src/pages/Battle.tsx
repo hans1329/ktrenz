@@ -1,4 +1,19 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+
+const InsightLoadingText = ({ starName, t }: { starName: string; t: (k: string) => string }) => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setIdx(p => (p + 1) % 2), 2500);
+    return () => clearInterval(iv);
+  }, []);
+  const msgs = [
+    t("battle.analyzingTrend").replace("{name}", starName),
+    t("battle.pleaseWait"),
+  ];
+  return (
+    <p className="text-sm text-muted-foreground animate-pulse text-center">{msgs[idx]}</p>
+  );
+};
 import { createPortal } from "react-dom";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
@@ -1257,9 +1272,9 @@ export default function Battle() {
           </SheetHeader>
           <div className="py-4 space-y-4">
             {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="text-sm text-muted-foreground">Generating trend analysis...</p>
+              <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                <InsightLoadingText starName={insightDrawer?.starName ?? ""} t={t} />
               </div>
             ) : (() => {
               const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
