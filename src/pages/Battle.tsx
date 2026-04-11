@@ -612,14 +612,13 @@ function ArtistSection({
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
         <button
           onClick={onInsightOpen}
-          disabled={disabled}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
             isSubmitted && isPicked
               ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
               : isPicked
                 ? "border border-primary/30 shadow-primary/10"
                 : "border border-purple-300/50 hover:border-purple-400/60"
-          } ${disabled && !isSubmitted ? "opacity-60" : ""}`}
+          }`}
         >
           <div className="flex items-center gap-1.5">
             <span className={`text-sm sm:text-base font-extrabold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
