@@ -1356,11 +1356,12 @@ export default function Battle() {
                                     key={band.key}
                                     onClick={() => {
                                       if (!user) { toast({ title: "Please log in", variant: "destructive" }); navigate("/login"); return; }
-                                      // First pick this run if not picked
-                                      if (pairState?.pickedRunId !== currentRun.id) {
-                                        handlePick(pairIdx, currentRun.id);
-                                      }
-                                      handleBandSelect(pairIdx, band.key);
+                                      // Set pick + band in a single state update to avoid stale state
+                                      const currentBand = pairState?.pickedRunId === currentRun.id ? pairState?.selectedBand : null;
+                                      updatePairState(pairIdx, {
+                                        pickedRunId: currentRun.id,
+                                        selectedBand: currentBand === band.key ? null : band.key,
+                                      });
                                     }}
                                     className={cn(
                                       "flex flex-col items-center py-2.5 px-1 rounded-xl border transition-all",
