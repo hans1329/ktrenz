@@ -4,8 +4,12 @@ import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DiscoverBattleStatus = () => {
+  const { t: globalT } = useLanguage();
+  const t = (key: string) => globalT(`discover.${key}`);
+
   const { data: battle, isLoading } = useQuery({
     queryKey: ["discover-battle-status"],
     queryFn: async () => {
@@ -52,7 +56,7 @@ const DiscoverBattleStatus = () => {
     const target = new Date(battle.betting_closes_at).getTime();
     const tick = () => {
       const diff = target - Date.now();
-      if (diff <= 0) { setCountdown("Closed"); return; }
+      if (diff <= 0) { setCountdown(t("closed")); return; }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       setCountdown(`${h}h ${m}m`);
@@ -62,9 +66,9 @@ const DiscoverBattleStatus = () => {
     return () => clearInterval(iv);
   }, [battle?.betting_closes_at]);
 
-  const statusLabel = battle?.status === "open" ? "Open" :
-    battle?.status === "collecting" ? "Collecting" :
-    battle?.status === "settled" ? "Settled" : battle?.status || "—";
+  const statusLabel = battle?.status === "open" ? t("open") :
+    battle?.status === "collecting" ? t("collecting") :
+    battle?.status === "settled" ? t("settled") : battle?.status || "—";
 
   if (isLoading) {
     return (
@@ -77,7 +81,7 @@ const DiscoverBattleStatus = () => {
   return (
     <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Battle Status</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("battleStatus")}</h2>
       </div>
 
       <div className="rounded-xl border border-border/30 bg-card/60 p-3.5">
@@ -104,9 +108,9 @@ const DiscoverBattleStatus = () => {
 
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Battles", value: stats?.totalBattles || 0 },
-            { label: "Today", value: stats?.todayPredictions || 0 },
-            { label: "Total Bets", value: stats?.totalPredictions || 0 },
+            { label: t("battles"), value: stats?.totalBattles || 0 },
+            { label: t("today"), value: stats?.todayPredictions || 0 },
+            { label: t("totalBets"), value: stats?.totalPredictions || 0 },
           ].map((item) => (
             <div key={item.label} className="text-center py-2 rounded-lg bg-muted/20">
               <p className="text-[15px] font-semibold text-foreground tabular-nums">{item.value}</p>

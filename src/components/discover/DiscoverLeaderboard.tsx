@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import SmartImage from "@/components/SmartImage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TrendEntry {
   keyword: string;
@@ -13,17 +14,20 @@ interface TrendEntry {
   stars: Array<{ id: string; display_name: string; image_url: string | null }>;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  brand: "Brand",
-  product: "Product",
-  program: "Program",
-  place: "Place",
-  collaboration: "Collab",
-};
-
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 const DiscoverLeaderboard = () => {
+  const { t: globalT } = useLanguage();
+  const t = (key: string) => globalT(`discover.${key}`);
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    brand: globalT("common.brand") || "Brand",
+    product: globalT("common.product") || "Product",
+    program: "Program",
+    place: "Place",
+    collaboration: "Collab",
+  };
+
   const { data: trends = [], isLoading } = useQuery({
     queryKey: ["discover-trend-leaderboard"],
     queryFn: async () => {
@@ -82,7 +86,7 @@ const DiscoverLeaderboard = () => {
   return (
     <section className="px-3 pt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Trend Leaderboard</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("trendLeaderboard")}</h2>
         <span className="text-[10px] text-muted-foreground ml-auto">7d</span>
       </div>
 
@@ -99,7 +103,7 @@ const DiscoverLeaderboard = () => {
           </div>
         ) : trends.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground text-[13px]">
-            No trend keywords yet
+            {t("noTrendKeywords")}
           </div>
         ) : (
           <div className="divide-y divide-border/15">

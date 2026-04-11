@@ -835,6 +835,26 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.allDone": { en: "All battles done for today!", ko: "오늘의 배틀을 모두 완료했습니다!", ja: "今日のバトルは全て完了！", zh: "今天的对战已全部完成！" },
   "battle.markHot": { en: "Mark as Hot", ko: "Hot 표시", ja: "Hot マーク", zh: "标记为Hot" },
   "battle.joined": { en: "Joined", ko: "참여완료", ja: "参加済み", zh: "已参与" },
+
+  // ── Discover ──
+  "discover.trendLeaderboard": { en: "Trend Leaderboard", ko: "트렌드 리더보드", ja: "トレンドリーダーボード", zh: "趋势排行榜" },
+  "discover.noTrendKeywords": { en: "No trend keywords yet", ko: "아직 트렌드 키워드가 없습니다", ja: "トレンドキーワードはまだありません", zh: "暂无趋势关键词" },
+  "discover.battleStatus": { en: "Battle Status", ko: "배틀 현황", ja: "バトル状況", zh: "对战状态" },
+  "discover.battles": { en: "Battles", ko: "배틀", ja: "バトル", zh: "对战" },
+  "discover.today": { en: "Today", ko: "오늘", ja: "今日", zh: "今天" },
+  "discover.totalBets": { en: "Total Bets", ko: "총 예측", ja: "累計予測", zh: "总预测" },
+  "discover.topPredictors": { en: "Top Predictors", ko: "예측 랭킹", ja: "予測ランキング", zh: "预测排名" },
+  "discover.noPredictions": { en: "No predictions yet", ko: "아직 예측이 없습니다", ja: "まだ予測がありません", zh: "暂无预测" },
+  "discover.mostActive": { en: "Most Active", ko: "가장 활발한", ja: "最もアクティブ", zh: "最活跃" },
+  "discover.bestWinRate": { en: "Best Win Rate", ko: "최고 적중률", ja: "最高的中率", zh: "最高命中率" },
+  "discover.minBetsRequired": { en: "Min 2 bets required", ko: "최소 2회 예측 필요", ja: "最低2回の予測が必要", zh: "至少需要2次预测" },
+  "discover.bets": { en: "bets", ko: "예측", ja: "予測", zh: "预测" },
+  "discover.hotContent": { en: "Hot Content", ko: "인기 콘텐츠", ja: "人気コンテンツ", zh: "热门内容" },
+  "discover.recent": { en: "Recent", ko: "최신", ja: "最新", zh: "最近" },
+  "discover.open": { en: "Open", ko: "진행중", ja: "進行中", zh: "进行中" },
+  "discover.collecting": { en: "Collecting", ko: "수집중", ja: "集計中", zh: "统计中" },
+  "discover.settled": { en: "Settled", ko: "정산완료", ja: "精算済み", zh: "已结算" },
+  "discover.closed": { en: "Closed", ko: "마감", ja: "終了", zh: "已结束" },
 };
 
 export default translations;

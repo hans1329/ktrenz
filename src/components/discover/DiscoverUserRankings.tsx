@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface UserStat {
   user_id: string;
@@ -15,6 +16,9 @@ interface UserStat {
 }
 
 const DiscoverUserRankings = () => {
+  const { t: globalT } = useLanguage();
+  const t = (key: string) => globalT(`discover.${key}`);
+
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["discover-user-rankings"],
     queryFn: async () => {
@@ -73,10 +77,10 @@ const DiscoverUserRankings = () => {
     return (
       <section className="px-3 mt-4">
         <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-base font-semibold text-foreground tracking-tight">Top Predictors</h2>
+          <h2 className="text-base font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
         </div>
         <div className="rounded-xl border border-border/30 bg-card/60 p-6 text-center text-[13px] text-muted-foreground">
-          No predictions yet
+          {t("noPredictions")}
         </div>
       </section>
     );
@@ -91,18 +95,24 @@ const DiscoverUserRankings = () => {
   return (
     <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Top Predictors</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">{t("topPredictors")}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <RankingCard title="Most Active" users={mostActive} />
-        <RankingCard title="Best Win Rate" users={highestWinRate} showWinRate />
+        <RankingCard title={t("mostActive")} users={mostActive} betsLabel={t("bets")} minLabel={t("minBetsRequired")} />
+        <RankingCard title={t("bestWinRate")} users={highestWinRate} showWinRate betsLabel={t("bets")} minLabel={t("minBetsRequired")} />
       </div>
     </section>
   );
 };
 
-const RankingCard = ({ title, users, showWinRate }: { title: string; users: UserStat[]; showWinRate?: boolean }) => (
+const RankingCard = ({ title, users, showWinRate, betsLabel, minLabel }: {
+  title: string;
+  users: UserStat[];
+  showWinRate?: boolean;
+  betsLabel: string;
+  minLabel: string;
+}) => (
   <div className="rounded-xl border border-border/30 bg-card/60 overflow-hidden">
     <div className="px-3.5 py-2 border-b border-border/20">
       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
@@ -123,7 +133,7 @@ const RankingCard = ({ title, users, showWinRate }: { title: string; users: User
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-medium text-foreground/80 truncate">{u.display_name}</p>
-              <p className="text-[9px] text-muted-foreground/60">{u.total_bets} bets · {u.wins}W</p>
+              <p className="text-[9px] text-muted-foreground/60">{u.total_bets} {betsLabel} · {u.wins}W</p>
             </div>
             <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">
               {showWinRate ? `${u.win_rate}%` : `${u.total_bets}`}
@@ -132,7 +142,7 @@ const RankingCard = ({ title, users, showWinRate }: { title: string; users: User
         ))
       ) : (
         <div className="p-4 text-center text-[11px] text-muted-foreground/50">
-          Min 2 bets required
+          {minLabel}
         </div>
       )}
     </div>
