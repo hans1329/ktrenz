@@ -543,7 +543,7 @@ export default function Battle() {
   const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
   const [collapsedPairs, setCollapsedPairs] = useState<Set<number>>(new Set());
   const [insightDrawer, setInsightDrawer] = useState<{ open: boolean; runId: string; starId: string; starName: string } | null>(null);
-  const [insightData, setInsightData] = useState<Record<string, { headline?: string; bullets?: string[]; vibe?: string }>>({}); // keyed by `runId-starId`
+  const [insightData, setInsightData] = useState<Record<string, { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string }>>({}); // keyed by `runId-starId`
   const [insightLoading, setInsightLoading] = useState(false);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
