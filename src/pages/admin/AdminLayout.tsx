@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck, CalendarDays, UserPlus, Star, TrendingUp } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck, CalendarDays, UserPlus, Star, TrendingUp, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ const navItems = [
   { label: '스타 관리', path: '/admin/stars', icon: Star },
   { label: 'T2 트렌드 인텔', path: '/admin/trend-intel', icon: TrendingUp },
   { label: '쇼핑 키워드', path: '/admin/shopping-keywords', icon: ShoppingBag },
+  { label: 'SEO 리포트', path: '/admin/auto-report', icon: Newspaper },
   { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 

@@ -43,6 +43,7 @@ import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import AdminShoppingKeywords from "./pages/admin/AdminShoppingKeywords";
 import AdminUserAnalytics from "./pages/admin/AdminUserAnalytics";
 import AdminKeywordMonitor from "./pages/admin/AdminKeywordMonitor";
+import AdminAutoReport from "./pages/admin/AdminAutoReport";
 
 import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
@@ -139,6 +140,7 @@ const App = () => (
                   <Route path="shopping-keywords" element={<AdminShoppingKeywords />} />
                   <Route path="user-analytics" element={<AdminUserAnalytics />} />
                   <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
+                  <Route path="auto-report" element={<AdminAutoReport />} />
                 </Route>
                 <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
                 <Route path="/b2b/login" element={<B2BLogin />} />
