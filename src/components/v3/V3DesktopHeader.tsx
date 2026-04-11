@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Activity, Bell, Globe } from "lucide-react";
+import { Flame, Bot, Activity, Bell, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -17,8 +17,8 @@ import type { V3Tab } from "@/components/v3/V3TabBar";
 
 
 
-const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
-  { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
+const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof Flame }[] = [
+  { id: "battle", titleKey: "nav.battle", icon: Flame },
   { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
   { id: "myActivity", titleKey: "nav.myActivity", icon: Activity },
 ];
