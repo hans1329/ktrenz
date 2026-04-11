@@ -1007,6 +1007,8 @@ export default function Battle() {
                     <div className="space-y-2">
                       <ArtistSection
                         runItems={pairItems[run.id] || []}
+                        runId={run.id}
+                        starId={run.star_id}
                         starName={run.star?.display_name || "Unknown"}
                         starImage={run.star?.image_url || null}
                         contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
