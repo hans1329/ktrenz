@@ -923,6 +923,7 @@ export default function Battle() {
                       <ArtistSection
                         runItems={pairItems[run.id] || []}
                         starName={run.star?.display_name || "Unknown"}
+                        starImage={run.star?.image_url || null}
                         contentScore={parseFloat((run.content_score + getHotBonus(pairIdx, run.id)).toFixed(1))}
                         scoreLabel={t("contentScore")}
                         isPicked={pairState.pickedRunId === run.id}
