@@ -91,6 +91,9 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
   const winHeader = lang === "ko" ? "적중 ✅" : lang === "ja" ? "的中 ✅" : lang === "zh" ? "命中 ✅" : "Correct ✅";
   const loseHeader = lang === "ko" ? "미적중 ❌" : lang === "ja" ? "不的中 ❌" : lang === "zh" ? "未命中 ❌" : "Missed ❌";
 
+  const winLabel = lang === "ko" ? "적중" : lang === "ja" ? "的中" : lang === "zh" ? "命中" : "Correct";
+  const loseLabel = lang === "ko" ? "미적중" : lang === "ja" ? "不的中" : lang === "zh" ? "未命中" : "Missed";
+
   const renderResult = (result: SettledPrediction) => {
     const band = BAND_META[result.band];
     const BandIcon = band?.icon || Sprout;
@@ -101,24 +104,35 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
       <div
         key={result.id}
         className={cn(
-          "rounded-xl border p-3 space-y-1.5",
-          won ? "border-emerald-500/30 bg-emerald-500/[0.03]" : "border-red-500/15 bg-red-500/[0.02]"
+          "rounded-xl border p-3.5 space-y-2.5",
+          won ? "border-emerald-500/30 bg-emerald-500/[0.04]" : "border-red-500/20 bg-red-500/[0.03]"
         )}
       >
-        {/* Artists + Growth */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-bold text-primary truncate">{result.picked_star_name}</span>
+        {/* Status badge centered */}
+        <div className="flex justify-center">
+          <span className={cn(
+            "text-[11px] font-bold px-3 py-0.5 rounded-full",
+            won ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"
+          )}>
+            {won ? `✅ ${winLabel}` : `❌ ${loseLabel}`}
+          </span>
+        </div>
+
+        {/* Artists side by side */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col items-start min-w-0 flex-1">
+            <span className="text-sm font-bold text-primary truncate w-full">{result.picked_star_name}</span>
             <GrowthBadge value={result.picked_growth} />
           </div>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground truncate">{result.opponent_star_name}</span>
+          <span className="text-[10px] text-muted-foreground shrink-0">vs</span>
+          <div className="flex flex-col items-end min-w-0 flex-1">
+            <span className="text-sm font-bold text-muted-foreground truncate w-full text-right">{result.opponent_star_name}</span>
             <GrowthBadge value={result.opponent_growth} />
           </div>
         </div>
 
         {/* Reason */}
-        <p className="text-[11px] text-muted-foreground leading-snug">{reason}</p>
+        <p className="text-[11px] text-muted-foreground leading-snug text-center">{reason}</p>
 
         {/* Band + Reward */}
         <div className="flex items-center justify-between">
