@@ -381,23 +381,14 @@ function ArtistSection({
         <button
           onClick={onInsightOpen}
           disabled={disabled}
-          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm ${
-            isPicked ? "bg-white border-primary/30 shadow-primary/10" : "bg-white border-purple-300/50 hover:border-purple-400/60"
+          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all border shadow-sm bg-white ${
+            isPicked ? "border-primary/30 shadow-primary/10" : "border-purple-300/50 hover:border-purple-400/60"
           } ${disabled ? "opacity-60" : ""}`}
         >
           <div className="flex items-center gap-1.5">
             <span className={`text-sm sm:text-base font-extrabold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
              <span className="text-xs sm:text-sm text-muted-foreground">Trend by</span>
              <span className={`text-sm sm:text-base font-bold transition-colors ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
-          </div>
-          <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-              isPicked ? "bg-primary" : "bg-muted"
-            }`}
-          >
-            <svg className={`w-3.5 h-3.5 ${isPicked ? "text-primary-foreground" : "text-white"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
           </div>
         </button>
       </div>
