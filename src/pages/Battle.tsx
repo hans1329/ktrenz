@@ -257,6 +257,7 @@ function getLocalizedTitle(item: B2Item, lang: string): string {
 function ArtistSection({
   runItems,
   starName,
+  starImage,
   contentScore,
   scoreLabel,
   isPicked,
@@ -267,6 +268,7 @@ function ArtistSection({
 }: {
   runItems: B2Item[];
   starName: string;
+  starImage: string | null;
   contentScore: number;
   scoreLabel: string;
   isPicked: boolean;
