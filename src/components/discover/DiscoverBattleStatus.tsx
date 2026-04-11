@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Swords, Clock, Users, CheckCircle2 } from "lucide-react";
+import { Activity, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
@@ -62,67 +62,58 @@ const DiscoverBattleStatus = () => {
     return () => clearInterval(iv);
   }, [battle?.betting_closes_at]);
 
-  const statusLabel = battle?.status === "open" ? "Betting Open" :
-    battle?.status === "collecting" ? "Collecting Data" :
+  const statusLabel = battle?.status === "open" ? "Open" :
+    battle?.status === "collecting" ? "Collecting" :
     battle?.status === "settled" ? "Settled" : battle?.status || "—";
-
-  const statusColor = battle?.status === "open" ? "text-emerald-400 bg-emerald-500/10" :
-    battle?.status === "collecting" ? "text-amber-400 bg-amber-500/10" :
-    "text-muted-foreground bg-muted/30";
 
   if (isLoading) {
     return (
-      <section className="px-3 mt-5">
-        <Skeleton className="h-36 rounded-2xl" />
+      <section className="px-3 mt-4">
+        <Skeleton className="h-20 rounded-xl" />
       </section>
     );
   }
 
   return (
-    <section className="px-3 mt-5">
+    <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Swords className="w-4 h-4 text-primary" />
-        </div>
-        <h2 className="text-[15px] font-bold text-foreground">Battle Status</h2>
+        <Activity className="w-4 h-4 text-foreground/60" />
+        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Battle Status</h2>
       </div>
 
-      <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm p-4">
-        {/* Status badge + countdown */}
-        <div className="flex items-center justify-between mb-4">
-          <div className={cn("px-2.5 py-1 rounded-full text-[11px] font-bold", statusColor)}>
-            {statusLabel}
+      <div className="rounded-xl border border-border/30 bg-card/60 p-3.5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              battle?.status === "open" ? "bg-foreground" : "bg-muted-foreground/40"
+            )} />
+            <span className="text-[12px] font-medium text-foreground">{statusLabel}</span>
+            {battle?.battle_date && (
+              <span className="text-[10px] text-muted-foreground">
+                {new Date(battle.battle_date).toLocaleDateString("en", { month: "short", day: "numeric" })}
+              </span>
+            )}
           </div>
           {battle?.status === "open" && countdown && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <Clock className="w-3 h-3" />
-              Closes in {countdown}
+              {countdown}
             </div>
-          )}
-          {battle?.battle_date && (
-            <span className="text-[10px] text-muted-foreground">
-              {new Date(battle.battle_date).toLocaleDateString("en", { month: "short", day: "numeric" })}
-            </span>
           )}
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-2.5 rounded-xl bg-muted/30">
-            <Swords className="w-4 h-4 mx-auto mb-1 text-primary/60" />
-            <p className="text-lg font-bold text-foreground">{stats?.totalBattles || 0}</p>
-            <p className="text-[10px] text-muted-foreground">Total Battles</p>
-          </div>
-          <div className="text-center p-2.5 rounded-xl bg-muted/30">
-            <Users className="w-4 h-4 mx-auto mb-1 text-primary/60" />
-            <p className="text-lg font-bold text-foreground">{stats?.todayPredictions || 0}</p>
-            <p className="text-[10px] text-muted-foreground">Today's Bets</p>
-          </div>
-          <div className="text-center p-2.5 rounded-xl bg-muted/30">
-            <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-primary/60" />
-            <p className="text-lg font-bold text-foreground">{stats?.totalPredictions || 0}</p>
-            <p className="text-[10px] text-muted-foreground">Total Bets</p>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Battles", value: stats?.totalBattles || 0 },
+            { label: "Today", value: stats?.todayPredictions || 0 },
+            { label: "Total Bets", value: stats?.totalPredictions || 0 },
+          ].map((item) => (
+            <div key={item.label} className="text-center py-2 rounded-lg bg-muted/20">
+              <p className="text-[15px] font-semibold text-foreground tabular-nums">{item.value}</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">{item.label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

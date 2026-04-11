@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Flame, Award } from "lucide-react";
+import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -64,29 +64,26 @@ const DiscoverUserRankings = () => {
 
   if (isLoading) {
     return (
-      <section className="px-3 mt-5">
-        <Skeleton className="h-40 rounded-2xl" />
+      <section className="px-3 mt-4">
+        <Skeleton className="h-32 rounded-xl" />
       </section>
     );
   }
 
   if (users.length === 0) {
     return (
-      <section className="px-3 mt-5">
+      <section className="px-3 mt-4">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
-            <Users className="w-4 h-4 text-violet-400" />
-          </div>
-          <h2 className="text-[15px] font-bold text-foreground">Top Predictors</h2>
+          <Users className="w-4 h-4 text-foreground/60" />
+          <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Top Predictors</h2>
         </div>
-        <div className="rounded-2xl border border-border/40 bg-card/80 p-6 text-center text-sm text-muted-foreground">
-          No predictions yet. Be the first to join!
+        <div className="rounded-xl border border-border/30 bg-card/60 p-6 text-center text-[13px] text-muted-foreground">
+          No predictions yet
         </div>
       </section>
     );
   }
 
-  // Split: most active + highest win rate
   const mostActive = [...users].sort((a, b) => b.total_bets - a.total_bets).slice(0, 5);
   const highestWinRate = [...users]
     .filter((u) => u.total_bets >= 2)
@@ -94,81 +91,54 @@ const DiscoverUserRankings = () => {
     .slice(0, 5);
 
   return (
-    <section className="px-3 mt-5">
+    <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
-          <Users className="w-4 h-4 text-violet-400" />
-        </div>
-        <h2 className="text-[15px] font-bold text-foreground">Top Predictors</h2>
+        <Users className="w-4 h-4 text-foreground/60" />
+        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Top Predictors</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Most Active */}
-        <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden">
-          <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border/30 bg-gradient-to-r from-orange-500/5 to-transparent">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-[12px] font-bold text-foreground">Most Active</span>
-          </div>
-          <div className="divide-y divide-border/20">
-            {mostActive.map((u, i) => (
-              <UserRow key={u.user_id} user={u} rank={i + 1} />
-            ))}
-          </div>
-        </div>
-
-        {/* Highest Win Rate */}
-        <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden">
-          <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border/30 bg-gradient-to-r from-emerald-500/5 to-transparent">
-            <Award className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[12px] font-bold text-foreground">Highest Win Rate</span>
-          </div>
-          <div className="divide-y divide-border/20">
-            {highestWinRate.length > 0 ? (
-              highestWinRate.map((u, i) => (
-                <UserRow key={u.user_id} user={u} rank={i + 1} showWinRate />
-              ))
-            ) : (
-              <div className="p-4 text-center text-[11px] text-muted-foreground">
-                Need 2+ bets to qualify
-              </div>
-            )}
-          </div>
-        </div>
+        <RankingCard title="Most Active" users={mostActive} />
+        <RankingCard title="Best Win Rate" users={highestWinRate} showWinRate />
       </div>
     </section>
   );
 };
 
-const UserRow = ({ user, rank, showWinRate }: { user: UserStat; rank: number; showWinRate?: boolean }) => (
-  <div className="flex items-center gap-2.5 px-3.5 py-2">
-    <span className="w-5 text-center text-[11px] font-bold text-muted-foreground shrink-0">
-      {rank}
-    </span>
-    <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-muted/50 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-      {user.avatar_url ? (
-        <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+const RankingCard = ({ title, users, showWinRate }: { title: string; users: UserStat[]; showWinRate?: boolean }) => (
+  <div className="rounded-xl border border-border/30 bg-card/60 overflow-hidden">
+    <div className="px-3.5 py-2 border-b border-border/20">
+      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
+    </div>
+    <div className="divide-y divide-border/15">
+      {users.length > 0 ? (
+        users.map((u, i) => (
+          <div key={u.user_id} className="flex items-center gap-2 px-3.5 py-2">
+            <span className="w-4 text-[10px] font-medium text-muted-foreground/60 tabular-nums shrink-0">
+              {i + 1}
+            </span>
+            <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-muted/30 flex items-center justify-center text-[9px] font-medium text-muted-foreground">
+              {u.avatar_url ? (
+                <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                (u.display_name || "?").charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium text-foreground/80 truncate">{u.display_name}</p>
+              <p className="text-[9px] text-muted-foreground/60">{u.total_bets} bets · {u.wins}W</p>
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">
+              {showWinRate ? `${u.win_rate}%` : `${u.total_bets}`}
+            </span>
+          </div>
+        ))
       ) : (
-        (user.display_name || "?").charAt(0).toUpperCase()
+        <div className="p-4 text-center text-[11px] text-muted-foreground/50">
+          Min 2 bets required
+        </div>
       )}
     </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-[12px] font-semibold text-foreground truncate">{user.display_name}</p>
-      <p className="text-[10px] text-muted-foreground">
-        {user.total_bets} bets · {user.wins}W {user.losses}L
-      </p>
-    </div>
-    {showWinRate ? (
-      <span className={cn(
-        "text-[11px] font-bold px-1.5 py-0.5 rounded-md shrink-0",
-        user.win_rate >= 50 ? "text-emerald-400 bg-emerald-500/10" : "text-muted-foreground bg-muted/30"
-      )}>
-        {user.win_rate}%
-      </span>
-    ) : (
-      <span className="text-[11px] font-bold text-primary shrink-0">
-        {user.total_bets} bets
-      </span>
-    )}
   </div>
 );
 

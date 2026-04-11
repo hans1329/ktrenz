@@ -14,14 +14,6 @@ interface TrendEntry {
   stars: Array<{ id: string; display_name: string; image_url: string | null }>;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  brand: "bg-blue-500/10 text-blue-400",
-  product: "bg-emerald-500/10 text-emerald-400",
-  program: "bg-purple-500/10 text-purple-400",
-  place: "bg-amber-500/10 text-amber-400",
-  collaboration: "bg-pink-500/10 text-pink-400",
-};
-
 const CATEGORY_LABELS: Record<string, string> = {
   brand: "Brand",
   product: "Product",
@@ -36,7 +28,6 @@ const DiscoverLeaderboard = () => {
   const { data: trends = [], isLoading } = useQuery({
     queryKey: ["discover-trend-leaderboard"],
     queryFn: async () => {
-      // 최근 7일 키워드를 가져와서 mention_count 합산 랭킹
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("ktrenz_discover_keywords")
@@ -47,7 +38,6 @@ const DiscoverLeaderboard = () => {
 
       if (error || !data?.length) return [];
 
-      // 키워드별 합산 (여러 날에 걸쳐 등장 가능)
       const kwMap = new Map<string, TrendEntry>();
       for (const row of data) {
         const existing = kwMap.get(row.keyword);
@@ -68,7 +58,6 @@ const DiscoverLeaderboard = () => {
         }
       }
 
-      // 스타 정보 조회
       const allStarIds = [...new Set(Array.from(kwMap.values()).flatMap((k) => k.star_ids))];
       if (allStarIds.length > 0) {
         const { data: stars } = await supabase
@@ -94,97 +83,89 @@ const DiscoverLeaderboard = () => {
   return (
     <section className="px-3 pt-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-primary" />
-        </div>
-        <h2 className="text-[15px] font-bold text-foreground">Trend Leaderboard</h2>
-        <span className="text-[10px] text-muted-foreground ml-auto">Last 7 days</span>
+        <Sparkles className="w-4 h-4 text-foreground/60" />
+        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Trend Leaderboard</h2>
+        <span className="text-[10px] text-muted-foreground ml-auto">7d</span>
       </div>
 
-      <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-border/30 bg-card/60 overflow-hidden">
         {isLoading ? (
           <div className="p-4 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <Skeleton className="w-6 h-6 rounded" />
-                <Skeleton className="h-5 w-20 rounded" />
-                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="w-5 h-5 rounded" />
+                <Skeleton className="h-4 w-24 rounded" />
+                <Skeleton className="h-3 flex-1" />
               </div>
             ))}
           </div>
         ) : trends.length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground text-sm">
-            No trend keywords yet. Data will appear after the next battle cycle.
+          <div className="p-8 text-center text-muted-foreground text-[13px]">
+            No trend keywords yet
           </div>
         ) : (
-          <div className="divide-y divide-border/20">
+          <div className="divide-y divide-border/15">
             {trends.map((entry, idx) => {
               const rank = idx + 1;
               const isTop3 = rank <= 3;
-              const catColor = CATEGORY_COLORS[entry.category] || "bg-muted/50 text-muted-foreground";
-              const catLabel = CATEGORY_LABELS[entry.category] || entry.category;
 
               return (
                 <div
                   key={entry.keyword}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-2.5 transition-colors",
-                    isTop3 && "bg-primary/[0.02]"
-                  )}
+                  className="flex items-center gap-2.5 px-3.5 py-2.5"
                 >
-                  <div className="w-6 text-center shrink-0">
+                  <div className="w-5 text-center shrink-0">
                     {isTop3 ? (
-                      <span className="text-base">{MEDALS[rank - 1]}</span>
+                      <span className="text-sm">{MEDALS[rank - 1]}</span>
                     ) : (
-                      <span className="text-xs font-bold text-muted-foreground">{rank}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">{rank}</span>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className={cn(
-                        "text-[13px] font-semibold truncate",
-                        isTop3 ? "text-foreground" : "text-foreground/80"
+                        "text-[13px] font-medium truncate",
+                        isTop3 ? "text-foreground" : "text-foreground/70"
                       )}>
                         {entry.keyword}
                       </p>
-                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0", catColor)}>
-                        {catLabel}
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium shrink-0">
+                        {CATEGORY_LABELS[entry.category] || entry.category}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {entry.keyword_en && (
-                        <span className="text-[10px] text-muted-foreground">{entry.keyword_en}</span>
+                        <span className="text-[10px] text-muted-foreground/60">{entry.keyword_en}</span>
                       )}
                       {entry.stars.length > 0 && (
-                        <div className="flex items-center -space-x-1.5 ml-1">
+                        <div className="flex items-center -space-x-1 ml-0.5">
                           {entry.stars.slice(0, 3).map((star) => (
                             <div
                               key={star.id}
-                              className="w-4 h-4 rounded-full overflow-hidden border border-background shrink-0"
+                              className="w-3.5 h-3.5 rounded-full overflow-hidden border border-card shrink-0"
                               title={star.display_name}
                             >
                               {star.image_url ? (
                                 <SmartImage src={star.image_url} alt={star.display_name} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center text-[7px] font-bold text-muted-foreground">
+                                <div className="w-full h-full bg-muted flex items-center justify-center text-[6px] text-muted-foreground">
                                   {star.display_name.charAt(0)}
                                 </div>
                               )}
                             </div>
                           ))}
                           {entry.stars.length > 3 && (
-                            <span className="text-[9px] text-muted-foreground ml-1.5">+{entry.stars.length - 3}</span>
+                            <span className="text-[8px] text-muted-foreground/50 ml-1">+{entry.stars.length - 3}</span>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-primary shrink-0">
-                    <TrendingUp className="w-3 h-3" />
+                  <span className="text-[11px] font-medium text-muted-foreground tabular-nums shrink-0">
                     {entry.mention_count}
-                  </div>
+                  </span>
                 </div>
               );
             })}
