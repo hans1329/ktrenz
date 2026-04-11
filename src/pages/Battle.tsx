@@ -750,6 +750,7 @@ export default function Battle() {
   const [insightData, setInsightData] = useState<Record<string, { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string }>>({}); // keyed by `runId-starId`
   const [insightLoading, setInsightLoading] = useState(false);
   const [showAllUsedModal, setShowAllUsedModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ starName: string; band: Band; reward: number } | null>(null);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
