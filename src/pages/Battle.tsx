@@ -1182,8 +1182,8 @@ export default function Battle() {
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header rightSlot={
           <button onClick={() => setShowTicketInfo(true)} className="flex items-center gap-1 active:opacity-60 transition-opacity">
-            <Ticket className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-primary">{remainingTickets}</span>
+            <Ticket className="text-primary h-[16px] w-[18px]" />
+            <span className="font-bold text-primary text-sm">{remainingTickets}</span>
           </button>
         } />
       </div>
