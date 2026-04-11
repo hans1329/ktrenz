@@ -857,6 +857,7 @@ const translations: Record<string, Record<Language, string>> = {
   "discover.closed": { en: "Closed", ko: "마감", ja: "終了", zh: "已结束" },
   "battle.analyzingTrend": { en: "Analyzing {name}'s trends...", ko: "{name}의 트렌드를 분석하고 있어요...", ja: "{name}のトレンドを分析中...", zh: "正在分析{name}的趋势..." },
   "battle.pleaseWait": { en: "Please wait a moment!", ko: "잠시만 기다려주세요!", ja: "少々お待ちください！", zh: "请稍等！" },
+  "battle.predicted": { en: "Predicted", ko: "예측 완료", ja: "予測済み", zh: "已预测" },
 };
 
 export default translations;
