@@ -793,10 +793,10 @@ export default function Battle() {
                   key={tab.key}
                   onClick={() => setBattleFilter(tab.key)}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
+                    "px-3.5 py-2 text-xs font-semibold transition-all border-b-2",
                     battleFilter === tab.key
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {tab.label} {count > 0 && <span className="ml-0.5 opacity-70">{count}</span>}
