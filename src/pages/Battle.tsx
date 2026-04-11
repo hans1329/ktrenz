@@ -1343,7 +1343,7 @@ export default function Battle() {
               const data = insightData[key];
               if (!data) return <p className="text-sm text-muted-foreground text-center py-8">No data available</p>;
               return (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {data.headline && (
                     <div className="rounded-xl bg-muted border border-border p-4">
                       <p className="text-lg font-bold text-foreground">{data.headline}</p>
@@ -1361,8 +1361,27 @@ export default function Battle() {
                       ))}
                     </div>
                   )}
+
+                  {/* Lifestyle Trends */}
+                  {data.lifestyle && data.lifestyle.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lifestyle Trends</p>
+                      <div className="grid gap-2">
+                        {data.lifestyle.map((item, i) => {
+                          const icon = item.category === "fashion" ? "👗" : item.category === "food" ? "🍽️" : item.category === "place" ? "📍" : "🎬";
+                          return (
+                            <div key={i} className="flex items-start gap-2.5 rounded-lg bg-muted p-3">
+                              <span className="text-base">{icon}</span>
+                              <p className="text-sm text-foreground leading-snug">{item.text}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {data.vibe && (
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex items-center gap-2 pt-1">
                       <span className="text-xs text-muted-foreground">Trend Vibe:</span>
                       <Badge variant="secondary" className={cn(
                         "text-xs",
@@ -1374,6 +1393,51 @@ export default function Battle() {
                       </Badge>
                     </div>
                   )}
+
+                  {/* Trend Bet Box */}
+                  {(() => {
+                    const pairIdx = battlePairs.findIndex(p => p.runs.some(r => r.id === insightDrawer?.runId));
+                    const pair = battlePairs[pairIdx];
+                    const pairState = pairIdx >= 0 ? getPairState(pairIdx) : null;
+                    const currentRun = pair?.runs.find(r => r.id === insightDrawer?.runId);
+                    if (!pair || !currentRun) return null;
+                    const isAlreadyPicked = pairState?.submitted;
+                    const isPicked = pairState?.pickedRunId === currentRun.id;
+                    return (
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-primary" />
+                          <p className="text-sm font-bold text-foreground">
+                            {insightDrawer?.starName}'s trend will rise tomorrow?
+                          </p>
+                        </div>
+                        {isAlreadyPicked ? (
+                          <div className="flex items-center gap-2 py-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {isPicked ? "✅ You bet on this!" : "Already predicted"}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              if (!user) {
+                                toast({ title: "Please log in", variant: "destructive" });
+                                navigate("/login");
+                                return;
+                              }
+                              handlePick(pairIdx, currentRun.id);
+                              setInsightDrawer(null);
+                              // Scroll to the pair for band selection
+                            }}
+                          >
+                            <Flame className="w-4 h-4 mr-1" /> Bet on {insightDrawer?.starName}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
