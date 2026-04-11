@@ -214,8 +214,8 @@ const Notifications = () => {
               <Crosshair className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">{t("notif.noKeywordAlerts")}</p>
               <p className="text-xs text-muted-foreground/60 mt-1">{t("notif.followKeywords")}</p>
-              <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => navigate("/t2")}>
-                {t("nav.trendz")}
+              <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => navigate("/")}>
+                {t("nav.battle")}
               </Button>
             </div>
           ) : (

@@ -359,7 +359,7 @@ const T2KeywordDetail = () => {
         </header>
         <div className={cn("pt-16 px-4 pb-8 text-center", !isMobile && "max-w-4xl mx-auto")}>
           <p className="text-muted-foreground mt-20">Keyword not found.</p>
-          <button onClick={() => navigate("/t2")} className="mt-4 text-sm text-primary underline">
+          <button onClick={() => navigate("/")} className="mt-4 text-sm text-primary underline">
             ← {t2l("trendMap", language)}
           </button>
         </div>

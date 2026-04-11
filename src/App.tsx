@@ -43,7 +43,7 @@ import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import AdminShoppingKeywords from "./pages/admin/AdminShoppingKeywords";
 import AdminUserAnalytics from "./pages/admin/AdminUserAnalytics";
 import AdminKeywordMonitor from "./pages/admin/AdminKeywordMonitor";
-import T2TrendMap from "./pages/T2TrendMap";
+
 import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
 import T2PitchDeck from "./pages/T2PitchDeck";
@@ -87,7 +87,7 @@ const App = () => (
             <WelcomeBonusManager />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<T2TrendMap />} />
+                <Route path="/" element={<Battle />} />
                 <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                 <Route path="/fes-engine" element={<FesEngine />} />
                 <Route path="/agent" element={<FanAgent />} />
@@ -100,7 +100,7 @@ const App = () => (
                 <Route path="/pitchdeck" element={<PitchDeck />} />
                 <Route path="/deck" element={<Deck />} />
                 <Route path="/signal" element={<SignalRadar />} />
-                <Route path="/t2" element={<T2TrendMap />} />
+                
                 <Route path="/t2/my" element={<T2MyArtists />} />
                 <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
                 <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
@@ -111,7 +111,7 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/key" element={<ContentSearch />} />
-                <Route path="/battle" element={<Battle />} />
+                
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />

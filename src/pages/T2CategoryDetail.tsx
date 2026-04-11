@@ -62,7 +62,7 @@ const T2CategoryDetail = () => {
         />
       </div>
 
-      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+      <V3TabBar activeTab="battle" onTabChange={() => {}} />
     </div>
   );
 };

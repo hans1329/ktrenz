@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -558,18 +556,13 @@ spikeDirection = changeRate > 0 ? "surge" : "drop"
 
   return (
     <><SEO title="스코어링 엔진 – KTrenZ" description="KTrenZ가 YouTube, Buzz, Music, Album, Social, Fan 데이터를 활용하여 K-Pop 에너지 스코어를 계산하는 방법." path="/fes-engine" />
-      <SidebarProvider defaultOpen={true}>
-        <div className="h-screen flex w-full overflow-hidden">
-          <V3Sidebar activeTab="rankings" onTabChange={() => navigate('/')} />
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <header className="h-[68px] border-b border-border/50 bg-background/60 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 gap-3">
-              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
-              <h1 className="text-lg font-bold text-foreground">스코어링 엔진</h1>
-            </header>
-            <main className="flex-1 overflow-auto"><PageContent /></main>
-          </div>
-        </div>
-      </SidebarProvider>
+      <div className="h-screen flex flex-col overflow-hidden">
+        <header className="h-[68px] border-b border-border/50 bg-background/60 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 gap-3">
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
+          <h1 className="text-lg font-bold text-foreground">스코어링 엔진</h1>
+        </header>
+        <main className="flex-1 overflow-auto"><PageContent /></main>
+      </div>
     </>
   );
 };
