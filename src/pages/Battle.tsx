@@ -417,19 +417,19 @@ function ArtistSection({
           className="snap-start flex-shrink-0 w-[85%] sm:w-80 lg:w-96 cursor-pointer"
           onClick={onInsightOpen}
         >
-          <div className="rounded-xl overflow-hidden bg-card border border-primary/20 h-full">
-            <div className="relative aspect-video bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 flex items-center justify-center">
+          <div className="rounded-xl overflow-hidden border border-primary/20 h-full">
+            <div className="relative aspect-video bg-gradient-to-br from-violet-500/20 via-pink-500/15 to-amber-400/20 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/60 backdrop-blur flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <span className="text-xs font-semibold text-foreground">Trend Report</span>
                 <span className="text-[10px] text-muted-foreground">Tap to view</span>
               </div>
             </div>
-            <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
+            <div className="p-3 min-h-[40px] flex items-center bg-card">
               <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
-                📊 {starName}
+                {starName}
               </p>
             </div>
           </div>
