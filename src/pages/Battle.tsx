@@ -295,19 +295,15 @@ function ArtistSection({
   const offset = itemCount > 1 ? itemCount : 0;
   const insightOffset = 1; // insight card is always the first child
 
-  // Initialize scroll to the first real card in the middle set
+  // Initialize scroll — start at insight card (position 0)
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || itemCount <= 1) return;
-
+    if (!el) return;
     requestAnimationFrame(() => {
-      const child = el.children[offset + insightOffset] as HTMLElement | undefined;
-      if (child) {
-        el.scrollLeft = child.offsetLeft;
-        setActiveIndex(0);
-      }
+      el.scrollLeft = 0;
+      setActiveIndex(-1); // -1 = insight card
     });
-  }, [itemCount, offset]);
+  }, [itemCount]);
 
   // Track active index and loop only after scroll settles
   useEffect(() => {
