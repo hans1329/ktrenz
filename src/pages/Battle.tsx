@@ -338,8 +338,8 @@ function ArtistSection({
 
     const settleLoop = () => {
       const children = Array.from(el.children) as HTMLElement[];
-      const middleStart = children[offset] as HTMLElement | undefined;
-      const thirdStart = children[offset + itemCount] as HTMLElement | undefined;
+      const middleStart = children[offset + insightOffset] as HTMLElement | undefined;
+      const thirdStart = children[offset + itemCount + insightOffset] as HTMLElement | undefined;
 
       if (!middleStart || !thirdStart) return;
 
