@@ -274,7 +274,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { star_id } = await req.json();
+    const body = await req.json();
+    const star_id = body.star_id;
+    const batch_id = body.batch_id || null;
+    const search_round = body.search_round || 1;
     if (!star_id) {
       return new Response(JSON.stringify({ error: "star_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
