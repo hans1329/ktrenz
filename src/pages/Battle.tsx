@@ -301,7 +301,7 @@ function ArtistSection({
     if (!el || itemCount <= 1) return;
 
     requestAnimationFrame(() => {
-      const child = el.children[offset] as HTMLElement | undefined;
+      const child = el.children[offset + insightOffset] as HTMLElement | undefined;
       if (child) {
         el.scrollLeft = child.offsetLeft;
         setActiveIndex(0);
