@@ -569,7 +569,7 @@ export default function Battle() {
     const starIds = bestRuns.map((r) => r.star_id);
     const { data: starsData } = await supabase
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko")
+      .select("id, display_name, name_ko, image_url")
       .in("id", starIds);
 
     const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
