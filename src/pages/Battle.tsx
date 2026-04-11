@@ -1237,6 +1237,61 @@ export default function Battle() {
           );
         })}
 
+        {/* Today's Battle Summary — only in live tab when there are submissions */}
+        {battleFilter === "live" && predictions.filter(p => p.status === "pending").length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 mt-6 mb-2">
+            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-foreground">
+                  {language === "ko" ? "오늘의 배틀 요약" : language === "ja" ? "今日のバトルまとめ" : language === "zh" ? "今日战斗摘要" : "Today's Battle Summary"}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {predictions.filter(p => p.status === "pending").map((pred, i) => {
+                  const bandInfo = BANDS.find(b => b.key === pred.band);
+                  const BandIcon = bandInfo?.icon || Sprout;
+                  const bandLabel = pred.band === "steady" ? (language === "ko" ? "안정" : "Steady")
+                    : pred.band === "rising" ? (language === "ko" ? "상승" : "Rising")
+                    : (language === "ko" ? "급등" : "Surge");
+                  return (
+                    <div key={i} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-bold text-foreground truncate">{pred.pickedStarName}</span>
+                        <span className="text-[10px] text-muted-foreground">vs</span>
+                        <span className="text-xs text-muted-foreground truncate">{pred.opponentStarName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <BandIcon className={cn("w-3.5 h-3.5", bandInfo?.iconColor)} />
+                        <span className="text-[11px] font-semibold text-foreground">{bandLabel}</span>
+                        <span className="text-[10px] text-muted-foreground">+{bandInfo?.reward}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <Ticket className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-[11px] text-muted-foreground">
+                    {language === "ko" ? "사용한 티켓" : "Tickets used"}
+                  </span>
+                  <span className="text-xs font-bold text-foreground">
+                    {predictions.filter(p => p.status === "pending").length}/{totalTickets}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-[11px] text-muted-foreground">
+                    {language === "ko" ? "매일 결과 발표" : "Daily results"}
+                  </span>
+                  <span className="text-xs font-bold text-foreground">15:00 GMT</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Empty state for filter */}
         {battlePairs.every((_, idx) => {
           const s = getPairState(idx);
