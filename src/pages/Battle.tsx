@@ -774,6 +774,12 @@ interface Prediction {
   created_at: string;
 }
 
+/* ── Simple in-memory cache ── */
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const battleCache: { data: BattlePair[] | null; ts: number; ticketInfo: any; ticketTs: number } = {
+  data: null, ts: 0, ticketInfo: null, ticketTs: 0,
+};
+
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
