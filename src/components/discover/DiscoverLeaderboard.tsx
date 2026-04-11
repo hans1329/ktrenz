@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import SmartImage from "@/components/SmartImage";
@@ -83,8 +82,7 @@ const DiscoverLeaderboard = () => {
   return (
     <section className="px-3 pt-4">
       <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-4 h-4 text-foreground/60" />
-        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Trend Leaderboard</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Trend Leaderboard</h2>
         <span className="text-[10px] text-muted-foreground ml-auto">7d</span>
       </div>
 

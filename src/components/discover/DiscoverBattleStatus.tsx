@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, Clock, Users } from "lucide-react";
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
@@ -77,8 +77,7 @@ const DiscoverBattleStatus = () => {
   return (
     <section className="px-3 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <Activity className="w-4 h-4 text-foreground/60" />
-        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">Battle Status</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Battle Status</h2>
       </div>
 
       <div className="rounded-xl border border-border/30 bg-card/60 p-3.5">
