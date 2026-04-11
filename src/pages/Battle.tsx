@@ -876,13 +876,21 @@ export default function Battle() {
     updatePairState(pairIdx, { hotVotes: next });
   }
 
-  // Load ticket info
+  // Load ticket info (cached)
   const loadTickets = useCallback(async () => {
+    if (battleCache.ticketInfo && Date.now() - battleCache.ticketTs < CACHE_TTL) {
+      setTicketInfo(battleCache.ticketInfo);
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed) setTicketInfo(parsed);
+      if (parsed) {
+        battleCache.ticketInfo = parsed;
+        battleCache.ticketTs = Date.now();
+        setTicketInfo(parsed);
+      }
     }
   }, []);
 
