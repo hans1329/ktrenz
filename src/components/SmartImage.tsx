@@ -6,6 +6,8 @@ interface SmartImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src
   className?: string;
   loading?: "lazy" | "eager";
   fallback?: ReactNode;
+  fallbackSrc?: string | null;
+  fallbackClassName?: string;
 }
 
 export default function SmartImage({
