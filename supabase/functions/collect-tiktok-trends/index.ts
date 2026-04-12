@@ -328,7 +328,66 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit: batchLimit, dryRun, offset: requestOffset } = body;
+    const { limit: batchLimit, dryRun, offset: requestOffset, mode: requestMode } = body;
+
+    // ── secUid 캐싱 전용 모드 ──
+    if (requestMode === "cache_secuid") {
+      const apiKey = Deno.env.get("RAPIDAPI_KEY");
+      if (!apiKey) {
+        return new Response(JSON.stringify({ success: false, error: "RAPIDAPI_KEY not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey);
+
+      // 캐싱 안 된 스타만 조회
+      const cacheLimit = batchLimit || 200;
+      const { data: uncached, error: ucErr } = await sb
+        .from("ktrenz_stars")
+        .select("id, display_name, social_handles")
+        .eq("is_active", true)
+        .not("social_handles->tiktok", "is", null)
+        .neq("social_handles->>tiktok" as any, "")
+        .neq("social_handles->>tiktok" as any, "_not_found")
+        .is("social_handles->tiktok_secuid" as any, null)
+        .order("display_name")
+        .limit(cacheLimit);
+
+      if (ucErr) throw ucErr;
+      if (!uncached?.length) {
+        return new Response(JSON.stringify({ success: true, message: "All TikTok handles already cached", cached: 0 }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      let cached = 0, failed = 0, apiCalls = 0;
+      for (const star of uncached as any[]) {
+        if (Date.now() - startTime > TIMEGUARD_MS) {
+          console.warn(`[tiktok-cache] ⏱ Timeguard at ${Math.round((Date.now() - startTime) / 1000)}s`);
+          break;
+        }
+        const handle = ((star.social_handles?.tiktok) || "").replace(/^@/, "").trim();
+        if (!handle) continue;
+
+        const secUid = await getUserSecUid(apiKey, handle);
+        apiCalls++;
+
+        if (secUid) {
+          const merged = { ...star.social_handles, tiktok_secuid: secUid };
+          await sb.from("ktrenz_stars").update({ social_handles: merged }).eq("id", star.id);
+          cached++;
+          console.log(`[tiktok-cache] ✅ @${handle} (${star.display_name})`);
+        } else {
+          failed++;
+          console.warn(`[tiktok-cache] ❌ @${handle} (${star.display_name})`);
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      console.log(`[tiktok-cache] Done: ${cached} cached, ${failed} failed, ${apiCalls} API calls in ${Date.now() - startTime}ms`);
+      return new Response(JSON.stringify({ success: true, mode: "cache_secuid", cached, failed, apiCalls, total: uncached.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const apiKey = Deno.env.get("RAPIDAPI_KEY");
     if (!apiKey) {
