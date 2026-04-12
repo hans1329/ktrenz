@@ -1,0 +1,1 @@
+DELETE FROM ktrenz_b2_items WHERE id IN ('0a31eac5-348c-4def-af52-c9f9870afb95', '9c54189c-bf18-4b15-aded-a2d447df19e8');
