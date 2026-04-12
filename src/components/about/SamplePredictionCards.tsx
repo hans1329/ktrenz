@@ -39,22 +39,30 @@ const SamplePredictionCards = () => {
 
         if (!battle?.batch_id) { setLoading(false); return; }
 
-        // Get batch queue with stars
+        // Get batch queue
         const { data: queue } = await (supabase as any)
           .from("ktrenz_b2_batch_queue")
-          .select("pair_index, side, star_id, ktrenz_stars(display_name, name_ko, image_url)")
+          .select("pair_index, side, star_id")
           .eq("batch_id", battle.batch_id)
           .order("pair_index")
           .order("side");
 
         if (!queue || queue.length === 0) { setLoading(false); return; }
 
+        // Fetch star info separately
+        const starIds = [...new Set(queue.map((q: any) => q.star_id))] as string[];
+        const { data: stars } = await supabase
+          .from("ktrenz_stars")
+          .select("id, display_name, name_ko, image_url")
+          .in("id", starIds);
+        const starMap = new Map((stars || []).map((s: any) => [s.id, s]));
+
         // Group by pair_index
         const pairMap = new Map<number, { A?: any; B?: any }>();
         for (const row of queue) {
           if (!pairMap.has(row.pair_index)) pairMap.set(row.pair_index, {});
           const entry = pairMap.get(row.pair_index)!;
-          const star = row.ktrenz_stars;
+          const star = starMap.get(row.star_id);
           const mapped = {
             name: star?.display_name || "Unknown",
             name_ko: star?.name_ko || null,
