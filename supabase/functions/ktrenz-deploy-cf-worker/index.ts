@@ -88,7 +88,39 @@ async function deployWorker(accountId: string, apiToken: string, workerName: str
   return await res.json();
 }
 
-async function setWorkerRoute(zoneId: string, apiToken: string, workerName: string) {
+async function ensureGhostDnsRecord(zoneId: string, apiToken: string) {
+  const listUrl = `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=A&name=ghost.ktrenz.com`;
+  const listRes = await fetch(listUrl, {
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+  });
+  const listData = await listRes.json();
+
+  if (listData.result?.length > 0) {
+    console.log("Ghost DNS record already exists");
+    return listData.result[0];
+  }
+
+  // Create DNS-only (not proxied) A record
+  const createRes = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "A",
+      name: "ghost",
+      content: "168.144.100.36",
+      proxied: false,
+      ttl: 1,
+    }),
+  });
+  if (!createRes.ok) {
+    const errBody = await createRes.text();
+    throw new Error(`DNS record create failed ${createRes.status}: ${errBody}`);
+  }
+  console.log("Ghost DNS record created");
+  return await createRes.json();
+}
+
+
   // List existing routes first
   const listUrl = `https://api.cloudflare.com/client/v4/zones/${zoneId}/workers/routes`;
   const listRes = await fetch(listUrl, {
