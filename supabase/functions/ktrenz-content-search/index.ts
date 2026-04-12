@@ -203,12 +203,14 @@ async function searchTikTok(rapidApiKey: string, handle: string | null, secUid: 
     const res = await fetchWithTimeout(url, {
       headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": rapidApiKey },
     });
-    if (!res.ok) { await res.text(); return []; }
+    if (!res.ok) { console.warn(`[TikTok] user/posts HTTP ${res.status}`); await res.text(); return []; }
     const text = await res.text();
+    console.log(`[TikTok] response length=${text.length}, keys=${Object.keys(JSON.parse(text || '{}') || {}).join(',')}`);
     if (!text || text.trim().length === 0) return [];
     let data: any;
     try { data = JSON.parse(text); } catch { return []; }
     const items = data?.itemList || data?.item_list || [];
+    console.log(`[TikTok] items count=${Array.isArray(items) ? items.length : 'not-array'}`);
     if (!Array.isArray(items)) return [];
     return items.slice(0, count).filter((v: any) => v && v.id).map((v: any) => {
       const stats = v.stats || {};
