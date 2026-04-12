@@ -19,4 +19,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://ktrenz.lovable.app/sitemap.xml
+Sitemap: https://ktrenz.com/sitemap.xml
