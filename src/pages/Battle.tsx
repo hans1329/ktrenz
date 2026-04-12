@@ -1676,14 +1676,13 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram: official embed first, in-drawer fallback second
+                    // Instagram: resolve media via edge function, play in-drawer
                     if (source === "instagram" && url) {
                       return (
                         <InstagramEmbed
-                          key={url}
-                          url={url}
-                          title={drawerItem.title}
-                          thumbnail={drawerItem.thumbnail}
+                          key={drawerItem.id}
+                          item={drawerItem}
+                          starId={drawerItem.star_id}
                         />
                       );
                     }
