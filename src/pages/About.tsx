@@ -8,6 +8,27 @@ import SamplePredictionCards from "@/components/about/SamplePredictionCards";
 import HeroSignalCanvas from "@/components/about/HeroSignalCanvas";
 import { useState } from "react";
 
+const FaqItem = ({ question, answer }: { question: string; answer: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-4 text-left"
+      >
+        <span className="text-sm font-semibold text-foreground pr-4">{question}</span>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="px-4 pb-4 text-sm text-muted-foreground leading-relaxed">
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 const About = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
