@@ -788,10 +788,7 @@ export default function Battle() {
   const t = (key: string) => globalT(`battle.${key}`);
   const { translateIfNeeded } = useFieldTranslation();
 
-  // Determine unlocked battle count based on user tier
   const userLevel = profile?.current_level ?? 1;
-  const unlockedBattleCount = userLevel >= 16 ? 10 : userLevel >= 6 ? 5 : 3;
-  const nextTierName = userLevel >= 16 ? "" : userLevel >= 6 ? (language === "ko" ? "분석가" : "Analyst") : (language === "ko" ? "탐색가" : "Explorer");
 
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
@@ -1275,14 +1272,13 @@ export default function Battle() {
           if (battleFilter === "settled" && (!state.submitted || pred?.status === "pending")) return null;
           if (battleFilter === "myBets" && !state.submitted) return null;
 
-          const isLocked = pairIdx >= unlockedBattleCount;
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
           const pairItems = pair.items;
           const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
           return (
-            <div key={pairIdx} className={cn("space-y-5 relative", isLocked && "opacity-40 pointer-events-none select-none")}>
+            <div key={pairIdx} className="space-y-5 relative">
               <div
                 className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5", battleFilter === "live" && pairState.submitted && "cursor-pointer")}
                 onClick={() => {
@@ -1306,15 +1302,6 @@ export default function Battle() {
                 <div className="flex-1 h-px bg-primary/30" />
               </div>
 
-              {/* Lock overlay for tier-restricted battles */}
-              {isLocked && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-auto">
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-card/90 border border-border shadow-lg">
-                    <Lock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">{nextTierName} {language === "ko" ? "등급부터 참여 가능" : "tier required"}</span>
-                  </div>
-                </div>
-              )}
 
               {/* Collapsible content for submitted pairs in live tab */}
               {battleFilter === "live" && pairState.submitted && collapsedPairs.has(pairIdx) ? null : (
