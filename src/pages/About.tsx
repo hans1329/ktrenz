@@ -332,7 +332,49 @@ const About = () => {
           </div>
         </section>
 
-        {/* CTA */}
+        {/* GEO: What is KTrenZ — definition paragraph for AI crawlers */}
+        <section className="bg-muted/30">
+          <div className="max-w-5xl mx-auto px-4 py-14 md:py-20">
+            <h2 className="text-xl md:text-3xl font-bold text-foreground mb-4">
+              {t("about.whatIsTitle")}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl mb-6">
+              {t("about.whatIsDesc")}
+            </p>
+
+            {/* Key stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">
+              {[
+                { value: "600+", labelKey: "about.stat1" },
+                { value: "7+", labelKey: "about.stat2" },
+                { value: "6", labelKey: "about.stat3" },
+                { value: "24/7", labelKey: "about.stat4" },
+              ].map((stat) => (
+                <div key={stat.labelKey} className="text-center p-4 rounded-xl border border-border bg-card">
+                  <div className="text-2xl md:text-3xl font-extrabold text-primary">{stat.value}</div>
+                  <div className="text-[11px] text-muted-foreground mt-1">{t(stat.labelKey)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* GEO: FAQ Section */}
+        <section className="max-w-5xl mx-auto px-4 py-14 md:py-20">
+          <div className="flex items-center gap-2 mb-2">
+            <HelpCircle className="w-5 h-5 text-primary" />
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">FAQ</span>
+          </div>
+          <h2 className="text-xl md:text-3xl font-bold text-foreground mb-8">
+            {t("about.faqTitle")}
+          </h2>
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <FaqItem key={i} question={t(faq.q)} answer={t(faq.a)} />
+            ))}
+          </div>
+        </section>
+
         <section className="bg-zinc-900 py-14 px-4">
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <h2 className="text-xl md:text-2xl font-bold text-primary-foreground">
