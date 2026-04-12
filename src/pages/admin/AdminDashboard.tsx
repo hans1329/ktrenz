@@ -55,6 +55,20 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const [deploying, setDeploying] = useState(false);
+
+  const handleDeployWorker = async () => {
+    setDeploying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ktrenz-deploy-cf-worker');
+      if (error) throw error;
+      toast.success('Cloudflare Worker 배포 완료', { description: `Route: ${data?.route || 'ktrenz.com/*'}` });
+    } catch (e: any) {
+      toast.error('워커 배포 실패', { description: e.message });
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
