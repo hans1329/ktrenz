@@ -14,11 +14,11 @@ export default {
     if (url.pathname.startsWith('/report')) {
       // Strip /report prefix — Ghost slugs don't include it
       const ghostPath = url.pathname.replace(/^\\/report/, '') || '/';
-      const ghostUrl = 'http://168.144.100.36' + ghostPath + url.search;
+      const ghostUrl = 'http://ghost.ktrenz.com' + ghostPath + url.search;
       const response = await fetch(ghostUrl, {
         method: request.method,
         headers: new Headers({
-          'Host': '168.144.100.36',
+          'Host': 'ghost.ktrenz.com',
           'X-Forwarded-Host': 'ktrenz.com',
           'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
           'X-Forwarded-Proto': 'https',
