@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, type ReactNode } from "react";
 
 const InsightLoadingText = ({ starName, t }: { starName: string; t: (k: string) => string }) => {
   const [idx, setIdx] = useState(0);
@@ -131,18 +131,13 @@ interface B2Run {
 
 type Band = "steady" | "rising" | "surge";
 
-function getInstagramEmbedUrl(url: string): string | null {
-  if (!url) return null;
-
-  const match = url.match(/instagram\.com\/(p|reel|reels|tv)\/([^/?#]+)/i);
-  if (!match) return null;
-
-  const rawType = match[1].toLowerCase();
-  const shortcode = match[2];
-  const type = rawType === "reels" ? "reel" : rawType;
-
-  return `https://www.instagram.com/${type}/${shortcode}/embed/`;
+interface InstagramMediaAsset {
+  type: "video" | "image";
+  url: string;
+  poster: string | null;
 }
+
+const instagramMediaCache = new Map<string, InstagramMediaAsset[]>();
 
 const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
   { key: "steady", label: "Steady", range: "15–30%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
@@ -388,36 +383,159 @@ function sourceIcon(source: string): ReactNode {
   );
 }
 
-function InstagramEmbed({ url, title, thumbnail }: { url: string; title: string; thumbnail: string | null }) {
-  const embedUrl = getInstagramEmbedUrl(url);
+const InstagramEmbed = forwardRef<HTMLDivElement, { item: B2Item; starId: string }>(function InstagramEmbed(
+  { item, starId },
+  ref,
+) {
+  const cachedItems = instagramMediaCache.get(item.id) ?? null;
+  const [mediaItems, setMediaItems] = useState<InstagramMediaAsset[] | null>(cachedItems);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [loadingMedia, setLoadingMedia] = useState(!cachedItems);
 
-  if (!embedUrl) {
-    return thumbnail ? (
-      <SmartImage src={thumbnail} alt={title} className="w-full aspect-[4/5] object-cover" />
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [item.id]);
+
+  useEffect(() => {
+    const cached = instagramMediaCache.get(item.id);
+    if (cached) {
+      setMediaItems(cached);
+      setLoadingMedia(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingMedia(true);
+    setMediaItems(null);
+
+    supabase.functions
+      .invoke("ktrenz-instagram-media", {
+        body: {
+          star_id: starId,
+          item_url: item.url,
+        },
+      })
+      .then(({ data, error }) => {
+        if (error) throw error;
+
+        const items = Array.isArray(data?.items)
+          ? data.items.filter((entry: any) => entry?.type && entry?.url)
+          : [];
+
+        if (!items.length) {
+          throw new Error("No playable Instagram media found");
+        }
+
+        instagramMediaCache.set(item.id, items);
+        if (!cancelled) {
+          setMediaItems(items);
+        }
+      })
+      .catch((error) => {
+        console.error("Instagram media resolve failed:", error);
+        if (!cancelled) {
+          setMediaItems(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingMedia(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, item.url, starId]);
+
+  const totalItems = mediaItems?.length ?? 0;
+  const activeItem = totalItems > 0 ? mediaItems?.[Math.min(activeIndex, totalItems - 1)] ?? null : null;
+
+  if (loadingMedia) {
+    return (
+      <div ref={ref} className="flex w-full aspect-[4/5] items-center justify-center bg-muted">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!activeItem) {
+    return item.thumbnail ? (
+      <div ref={ref} className="relative w-full bg-background">
+        <SmartImage src={item.thumbnail} alt={item.title} className="w-full aspect-[4/5] object-cover" />
+      </div>
     ) : (
-      <div className="flex w-full aspect-[4/5] items-center justify-center bg-muted text-xs text-muted-foreground">
+      <div ref={ref} className="flex w-full aspect-[4/5] items-center justify-center bg-muted text-xs text-muted-foreground">
         Instagram preview unavailable
       </div>
     );
   }
 
+  const showCarouselControls = totalItems > 1;
+
   return (
-    <div className="relative w-full overflow-hidden bg-background">
-      <iframe
-        key={embedUrl}
-        src={embedUrl}
-        title={decodeHtml(title)}
-        className="w-full border-0 bg-background"
-        style={{ height: "72vh", maxHeight: "840px" }}
-        loading="lazy"
-        sandbox="allow-scripts allow-same-origin allow-forms"
-        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-        scrolling="no"
-      />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background via-background to-transparent" />
+    <div ref={ref} className="relative w-full overflow-hidden bg-background">
+      <div className="relative flex w-full items-center justify-center bg-muted/30">
+        {activeItem.type === "video" ? (
+          <video
+            key={`${item.id}-${activeIndex}`}
+            src={activeItem.url}
+            poster={activeItem.poster || undefined}
+            className="w-full max-h-[72vh] object-contain"
+            controls
+            autoPlay
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <SmartImage
+            src={activeItem.url}
+            alt={item.title}
+            className="w-full max-h-[72vh] object-contain"
+          />
+        )}
+
+        {showCarouselControls && (
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveIndex((prev) => (prev - 1 + totalItems) % totalItems)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-background/85 p-2 text-foreground shadow-sm transition hover:bg-background"
+              aria-label="Previous Instagram media"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveIndex((prev) => (prev + 1) % totalItems)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-background/85 p-2 text-foreground shadow-sm transition hover:bg-background"
+              aria-label="Next Instagram media"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-background/80 px-2 py-1">
+              {mediaItems?.map((_, index) => (
+                <button
+                  key={`${item.id}-dot-${index}`}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className={cn(
+                    "h-2 w-2 rounded-full transition",
+                    index === activeIndex ? "bg-primary" : "bg-muted-foreground/40",
+                  )}
+                  aria-label={`Instagram media ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
-}
+});
+
+InstagramEmbed.displayName = "InstagramEmbed";
 
 /* ── Flip Timer ── */
 function FlipCard({ digit }: { digit: string }) {
