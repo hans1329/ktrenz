@@ -704,10 +704,10 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "about.fanLoop4Title": { en: "Redeem for Spotify Premium & More", ko: "스포티파이 프리미엄 쿠폰 교환", ja: "Spotifyプレミアムクーポンと交換", zh: "兑换Spotify Premium优惠券等" },
   "about.fanLoop4Desc": {
-    en: "Accumulated K-Points can be redeemed for Spotify Premium coupons, exclusive K-Pop merchandise, and other premium perks — all earned for free through predictions.",
-    ko: "모은 K-Points로 스포티파이 프리미엄 쿠폰, 독점 K-Pop 굿즈 등 다양한 혜택으로 교환하세요 — 모두 예측만으로 무료로 획득한 보상입니다.",
-    ja: "貯めたK-PointsでSpotifyプレミアムクーポン、限定K-Popグッズなどに交換できます — すべて予測だけで無料で獲得した報酬です。",
-    zh: "积累的K-Points可以兑换Spotify Premium优惠券、独家K-Pop周边商品等——全部通过预测免费获得。",
+    en: "K-Cashes can be redeemed for Spotify Premium coupons, exclusive K-Pop merchandise, and other premium perks — all earned for free through predictions.",
+    ko: "K-Cashes로 스포티파이 프리미엄 쿠폰, 독점 K-Pop 굿즈 등 다양한 혜택으로 교환하세요 — 모두 예측만으로 무료로 획득한 보상입니다.",
+    ja: "K-CashesでSpotifyプレミアムクーポン、限定K-Popグッズなどに交換できます — すべて予測だけで無料で獲得した報酬です。",
+    zh: "K-Cashes可以兑换Spotify Premium优惠券、独家K-Pop周边商品等——全部通过预测免费获得。",
   },
 
   "about.valueTitle": { en: "Why KTrenZ?", ko: "왜 KTrenZ인가?", ja: "なぜKTrenZ?", zh: "为什么选择KTrenZ？" },
