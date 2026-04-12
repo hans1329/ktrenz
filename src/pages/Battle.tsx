@@ -1902,7 +1902,7 @@ export default function Battle() {
                         data.vibe === "rising" && "bg-orange-500/10 text-orange-600",
                         data.vibe === "steady" && "bg-emerald-500/10 text-emerald-600",
                       )}>
-                        {data.vibe === "hot" ? "🔥 Hot" : data.vibe === "rising" ? "📈 Rising" : "✅ Steady"}
+                        {data.vibe === "hot" ? "Hot" : data.vibe === "rising" ? "Rising" : "Steady"}
                       </Badge>
                     </div>
                   )}
