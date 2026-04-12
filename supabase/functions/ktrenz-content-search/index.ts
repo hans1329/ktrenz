@@ -174,20 +174,41 @@ async function searchYouTube(apiKey: string, query: string, maxResults = 15): Pr
   } catch { return []; }
 }
 
-// ── TikTok (tiktok-api23 RapidAPI — collect-tiktok-trends와 동일 구조) ──
-async function searchTikTok(rapidApiKey: string, query: string, count = 15): Promise<any[]> {
+// ── TikTok (핸들 기반 피드 수집 — 키워드 검색은 빈 응답 반환하므로 피드 방식 사용) ──
+const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
+
+async function getTikTokSecUid(apiKey: string, handle: string): Promise<string | null> {
   try {
-    const url = `https://tiktok-api23.p.rapidapi.com/api/search/video?keyword=${encodeURIComponent(query)}&search_id=0`;
+    const url = `https://${TIKTOK_API_HOST}/api/user/info?uniqueId=${encodeURIComponent(handle)}`;
     const res = await fetchWithTimeout(url, {
-      headers: { "x-rapidapi-host": "tiktok-api23.p.rapidapi.com", "x-rapidapi-key": rapidApiKey },
+      headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": apiKey },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.userInfo?.user?.secUid || null;
+  } catch { return null; }
+}
+
+async function searchTikTok(rapidApiKey: string, handle: string | null, secUid: string | null, count = 15): Promise<any[]> {
+  if (!handle && !secUid) return [];
+  try {
+    // Resolve secUid if not cached
+    let uid = secUid;
+    if (!uid && handle) {
+      uid = await getTikTokSecUid(rapidApiKey, handle);
+      if (!uid) return [];
+    }
+
+    const url = `https://${TIKTOK_API_HOST}/api/user/posts?secUid=${encodeURIComponent(uid!)}&count=${count}&cursor=0`;
+    const res = await fetchWithTimeout(url, {
+      headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": rapidApiKey },
     });
     if (!res.ok) { await res.text(); return []; }
     const text = await res.text();
     if (!text || text.trim().length === 0) return [];
     let data: any;
     try { data = JSON.parse(text); } catch { return []; }
-    // tiktok-api23 응답: { item_list: [...] }
-    const items = data?.item_list || [];
+    const items = data?.itemList || data?.item_list || [];
     if (!Array.isArray(items)) return [];
     return items.slice(0, count).filter((v: any) => v && v.id).map((v: any) => {
       const stats = v.stats || {};
@@ -196,11 +217,11 @@ async function searchTikTok(rapidApiKey: string, query: string, count = 15): Pro
         source: "tiktok",
         title: v.desc || "",
         description: "",
-        url: `https://www.tiktok.com/@${author.uniqueId || "user"}/video/${v.id}`,
+        url: `https://www.tiktok.com/@${author.uniqueId || handle || "user"}/video/${v.id}`,
         thumbnail: v.video?.cover || v.video?.dynamicCover || null,
         date: v.createTime ? new Date(v.createTime * 1000).toISOString() : null,
         metadata: {
-          author: author.nickname || author.uniqueId,
+          author: author.nickname || author.uniqueId || handle,
           plays: Number(stats.playCount) || 0,
           likes: Number(stats.diggCount) || 0,
           comments: Number(stats.commentCount) || 0,
