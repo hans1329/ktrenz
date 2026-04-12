@@ -12,7 +12,9 @@ export default {
 
     // /report 경로 → Ghost 서버로 프록시
     if (url.pathname.startsWith('/report')) {
-      const ghostUrl = 'http://168.144.100.36' + url.pathname + url.search;
+      // Strip /report prefix — Ghost slugs don't include it
+      const ghostPath = url.pathname.replace(/^\\/report/, '') || '/';
+      const ghostUrl = 'http://168.144.100.36' + ghostPath + url.search;
       const response = await fetch(ghostUrl, {
         method: request.method,
         headers: new Headers({
