@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = "https://ktrenz.lovable.app";
+const SITE_URL = "https://ktrenz.com";
 const DEFAULT_OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/wXvsj6eZbYaEQQgUsiT21k2YrkX2/social-images/social-1771953747573-c463701b-6f1a-48d3-9752-5dcfb19201fe.webp";
 
 interface SEOProps {
@@ -35,11 +35,14 @@ export default function SEO({
 
   const defaultJsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
+    "@type": "Organization",
     name: "KTrenZ",
     url: SITE_URL,
-    description: "Real-time K-Pop trend rankings powered by YouTube, X, and music data",
-    inLanguage: ["en", "ko", "ja"],
+    logo: `${SITE_URL}/pwa-512x512.png`,
+    description: "Real-time K-Pop trend detection platform powered by multi-source data analysis",
+    sameAs: [
+      "https://x.com/ktrenz_official",
+    ],
     potentialAction: {
       "@type": "SearchAction",
       target: `${SITE_URL}/artist/{search_term_string}`,
