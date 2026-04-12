@@ -1498,52 +1498,39 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram preview (use cached thumbnail to preserve original framing)
+                    // Instagram: autoplay videos in-drawer, keep image posts as static previews
                     if (source === "instagram" && url) {
                       const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
                       const shortcode = instaMatch?.[2] || meta.embed_shortcode;
                       if (shortcode) {
                         const instaType = instaMatch?.[1] || "p";
-                        const embedPath = instaType === "reel" ? "reel" : "p";
-                        const instagramUrl = drawerItem.url || meta.url || `https://www.instagram.com/${embedPath}/${shortcode}/`;
+                        const embedPath = instaType === "reel" ? "reel" : instaType === "tv" ? "tv" : "p";
+                        const mediaType = typeof meta.media_type === "string" ? meta.media_type.toLowerCase() : "";
+                        const isInstagramVideo = mediaType === "video" || instaType === "reel" || instaType === "tv";
 
-                        if (drawerItem.thumbnail) {
+                        if (isInstagramVideo || !drawerItem.thumbnail) {
                           return (
-                            <a
-                              href={instagramUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group relative block aspect-[4/3] overflow-hidden bg-muted"
-                              aria-label="Open on Instagram"
-                            >
-                              <SmartImage
-                                src={drawerItem.thumbnail}
-                                alt={drawerItem.title}
-                                className="w-full h-full object-cover object-[center_20%]"
+                            <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
+                              <iframe
+                                src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
+                                title={drawerItem.title}
+                                className="absolute inset-0 w-full h-full border-0"
+                                style={{ overflow: "hidden" }}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                referrerPolicy="no-referrer"
+                                scrolling="no"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-background/55 via-background/10 to-transparent" />
-                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4">
-                                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-background/85 text-foreground shadow-lg backdrop-blur-sm">
-                                  <Play className="ml-1 h-9 w-9 fill-current" />
-                                </div>
-                                <span className="rounded-full bg-background/85 px-4 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm">
-                                  View on Instagram
-                                </span>
-                              </div>
-                            </a>
+                            </div>
                           );
                         }
 
                         return (
-                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
-                            <iframe
-                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
-                              className="absolute inset-0 w-full h-full border-0"
-                              style={{ overflow: "hidden" }}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                              referrerPolicy="no-referrer"
-                              scrolling="no"
+                          <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                            <SmartImage
+                              src={drawerItem.thumbnail}
+                              alt={drawerItem.title}
+                              className="w-full h-full object-cover object-[center_20%]"
                             />
                           </div>
                         );
