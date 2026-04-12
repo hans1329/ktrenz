@@ -1272,6 +1272,16 @@ export default function Battle() {
   }
 
   function handleSubmit(pairIdx: number) {
+    // Block submissions outside the "closing" phase (KST 12:00–00:00)
+    const { phase } = getTimerPhase();
+    if (phase !== "closing") {
+      const closedMsg = language === "ko" ? "제출 마감 시간이 지났습니다. 다음 배틀을 기다려주세요!"
+        : language === "ja" ? "受付時間が終了しました。次のバトルをお待ちください！"
+        : language === "zh" ? "提交时间已过，请等待下一场战斗！"
+        : "Submission period has ended. Please wait for the next battle!";
+      toast({ title: closedMsg, variant: "destructive" });
+      return;
+    }
     const pair = battlePairs[pairIdx];
     const state = getPairState(pairIdx);
     if (!state.pickedRunId || !state.selectedBand || !pair) return;
