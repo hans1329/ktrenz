@@ -416,7 +416,7 @@ Deno.serve(async (req) => {
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "news", searchQuery, 15) : Promise.resolve([]),
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "blog", searchQuery, 10) : Promise.resolve([]),
       YT_KEY ? searchYouTube(YT_KEY, searchQueryEn, 15) : Promise.resolve([]),
-      RAPIDAPI_KEY ? searchTikTok(RAPIDAPI_KEY, searchQueryEn, 15) : Promise.resolve([]),
+      RAPIDAPI_KEY ? searchTikTok(RAPIDAPI_KEY, star.social_handles?.tiktok || null, star.social_handles?.tiktok_secuid || null, 15) : Promise.resolve([]),
       RAPIDAPI_KEY ? searchInstagram(RAPIDAPI_KEY, star.social_handles?.instagram || null, searchQuery) : Promise.resolve([]),
       SERPAPI_KEY ? searchReddit(SERPAPI_KEY, searchQueryEn) : Promise.resolve([]),
     ]);
