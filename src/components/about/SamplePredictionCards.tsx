@@ -1,160 +1,172 @@
-import { TrendingUp, Clock, CheckCircle2, Flame, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Swords, Clock, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import SmartImage from "@/components/SmartImage";
 
-const gradeColors: Record<string, string> = {
-  Spark: "bg-muted text-primary",
-  Rising: "bg-muted text-primary",
-  Hot: "bg-muted text-primary",
-  Viral: "bg-muted text-primary",
-  Mega: "bg-muted text-primary",
-};
-
-const sampleCards = [
-  {
-    artist: "Dahyun",
-    keyword: "CHESS",
-    grade: "Rising",
-    prediction: "strong",
-    status: "settled" as const,
-    result: "win" as const,
-    reward: 300,
-    stake: 50,
-    timeAgo: "2h",
-    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/09209991-f91c-4e6b-963c-4c8bd1813755-dahyun.webp",
-  },
-  {
-    artist: "Jisoo",
-    keyword: "우리 사랑 이대로",
-    grade: "Hot",
-    prediction: "explosive",
-    status: "active" as const,
-    result: null,
-    reward: null,
-    stake: 50,
-    timeAgo: "12m",
-    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/bb9b51d5-7550-4fec-b3d6-500b5e8c13c2/1762432257775.webp",
-  },
-  {
-    artist: "Kep1er",
-    keyword: "KILLA",
-    grade: "Spark",
-    prediction: "mild",
-    status: "settled" as const,
-    result: "win" as const,
-    reward: 100,
-    stake: 50,
-    timeAgo: "5h",
-    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/v3-artists/b6085cad-73c7-4407-ba1e-a02ca908817e.webp?t=1772357088783",
-  },
-];
+interface BattlePairData {
+  pair_index: number;
+  starA: { name: string; name_ko: string | null; image_url: string | null };
+  starB: { name: string; name_ko: string | null; image_url: string | null };
+}
 
 const SamplePredictionCards = () => {
   const { language } = useLanguage();
+  const [pairs, setPairs] = useState<BattlePairData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const labels = {
-    title: {
-      en: "Live Prediction Cards",
-      ko: "실제 예측 카드 예시",
-      ja: "ライブ予測カード",
-      zh: "实时预测卡片",
-    },
-    mild: { en: "Mild Rise", ko: "소폭 상승", ja: "小幅上昇", zh: "小幅上涨" },
-    strong: { en: "Strong Rise", ko: "강한 상승", ja: "強い上昇", zh: "强劲上涨" },
-    explosive: { en: "Explosive Rise", ko: "폭발적 상승", ja: "爆発的上昇", zh: "爆发式上涨" },
-    win: { en: "Won!", ko: "적중!", ja: "的中!", zh: "赢了!" },
-    active: { en: "In Progress", ko: "진행 중", ja: "進行中", zh: "进行中" },
-    bet: { en: "Bet", ko: "예측", ja: "予測", zh: "预测" },
+    title: { en: "Today's Live Battles", ko: "오늘의 라이브 배틀", ja: "本日のライブバトル", zh: "今日实时对战" },
+    vs: { en: "VS", ko: "VS", ja: "VS", zh: "VS" },
+    live: { en: "LIVE", ko: "LIVE", ja: "LIVE", zh: "LIVE" },
+    joinNow: { en: "Join the Battle →", ko: "배틀 참여하기 →", ja: "バトルに参加 →", zh: "参加对战 →" },
+    noData: { en: "No active battles right now", ko: "현재 진행 중인 배틀이 없습니다", ja: "現在進行中のバトルはありません", zh: "当前没有进行中的对战" },
   };
 
   const t = (key: keyof typeof labels) =>
-    labels[key][language as keyof (typeof labels)[typeof key]] || labels[key].en;
+    labels[key][(language as "en" | "ko" | "ja" | "zh") || "en"] || labels[key].en;
 
-  const predictionLabel = (p: string) =>
-    labels[p as keyof typeof labels]?.[language as "en" | "ko" | "ja" | "zh"] ||
-    labels[p as keyof typeof labels]?.en || p;
+  useEffect(() => {
+    (async () => {
+      try {
+        // Get latest battle
+        const { data: battle } = await supabase
+          .from("ktrenz_b2_battles")
+          .select("batch_id, status")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!battle?.batch_id) { setLoading(false); return; }
+
+        // Get batch queue with stars
+        const { data: queue } = await (supabase as any)
+          .from("ktrenz_b2_batch_queue")
+          .select("pair_index, side, star_id, ktrenz_stars(display_name, name_ko, image_url)")
+          .eq("batch_id", battle.batch_id)
+          .order("pair_index")
+          .order("side");
+
+        if (!queue || queue.length === 0) { setLoading(false); return; }
+
+        // Group by pair_index
+        const pairMap = new Map<number, { A?: any; B?: any }>();
+        for (const row of queue) {
+          if (!pairMap.has(row.pair_index)) pairMap.set(row.pair_index, {});
+          const entry = pairMap.get(row.pair_index)!;
+          const star = row.ktrenz_stars;
+          const mapped = {
+            name: star?.display_name || "Unknown",
+            name_ko: star?.name_ko || null,
+            image_url: star?.image_url || null,
+          };
+          if (row.side === "A") entry.A = mapped;
+          else entry.B = mapped;
+        }
+
+        const result: BattlePairData[] = [];
+        for (const [idx, pair] of pairMap) {
+          if (pair.A && pair.B) {
+            result.push({ pair_index: idx, starA: pair.A, starB: pair.B });
+          }
+        }
+        setPairs(result.slice(0, 4));
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mt-8 flex justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (pairs.length === 0) {
+    return (
+      <div className="mt-8 text-center py-6 text-sm text-muted-foreground">
+        {t("noData")}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8">
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {sampleCards.map((card, i) => (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {pairs.map((pair) => (
           <div
-            key={i}
+            key={pair.pair_index}
             className="relative rounded-xl border border-border bg-card overflow-hidden"
           >
-            {/* Artist image — tall, no dimming */}
-            <div className="relative h-44 overflow-hidden">
-              <img
-                src={card.image}
-                alt={card.artist}
-                className="w-full h-full object-cover object-top"
-                loading="lazy"
-              />
+            {/* LIVE badge */}
+            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/20 backdrop-blur-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+              </span>
+              <span className="text-[9px] font-bold text-red-400">{t("live")}</span>
+            </div>
 
-              {/* Status badge on image */}
-              {card.status === "settled" && card.result === "win" && (
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-sm">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                  <span className="text-[9px] font-bold text-emerald-400">{t("win")}</span>
+            {/* VS images */}
+            <div className="relative h-36 flex">
+              {/* Star A */}
+              <div className="w-1/2 h-full overflow-hidden">
+                {pair.starA.image_url ? (
+                  <SmartImage
+                    src={pair.starA.image_url}
+                    alt={pair.starA.name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                    {pair.starA.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              {/* Star B */}
+              <div className="w-1/2 h-full overflow-hidden border-l border-border">
+                {pair.starB.image_url ? (
+                  <SmartImage
+                    src={pair.starB.image_url}
+                    alt={pair.starB.name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                    {pair.starB.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              {/* VS overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-8 h-8 rounded-full bg-background/90 backdrop-blur-sm border border-border flex items-center justify-center shadow-lg">
+                  <Swords className="w-3.5 h-3.5 text-primary" />
                 </div>
-              )}
-              {card.status === "active" && (
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 backdrop-blur-sm">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-                  </span>
-                  <span className="text-[9px] font-bold text-primary">{t("active")}</span>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* Card body */}
             <div className="px-3 pb-3 pt-2.5">
-              {/* Artist & keyword */}
-              <p className="text-[10px] text-muted-foreground font-medium">{card.artist}</p>
-              <h4 className="text-sm font-bold text-foreground mt-0.5 truncate">
-                {card.keyword}
-              </h4>
-
-              {/* Grade badge */}
-              <div className="flex items-center gap-2 mt-2">
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${gradeColors[card.grade]}`}
-                >
-                  <Flame className="w-3 h-3" />
-                  {card.grade}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground truncate max-w-[45%]">
+                  {(language === "ko" && pair.starA.name_ko) || pair.starA.name}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">vs</span>
+                <span className="text-xs font-bold text-foreground truncate max-w-[45%] text-right">
+                  {(language === "ko" && pair.starB.name_ko) || pair.starB.name}
                 </span>
               </div>
 
-              {/* Prediction */}
-              <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">
-                    {predictionLabel(card.prediction)}
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {card.timeAgo}
-                </span>
-              </div>
-
-              {/* Result / reward */}
-              <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
+              <div className="mt-2 pt-2 border-t border-border flex items-center justify-center gap-1.5">
+                <Clock className="w-3 h-3 text-muted-foreground" />
                 <span className="text-[10px] text-muted-foreground">
-                  {t("bet")}: {card.stake} 캐쉬
+                  {t("joinNow")}
                 </span>
-                {card.status === "settled" && card.result === "win" ? (
-                  <span className="text-xs font-bold text-emerald-400">
-                    +{card.reward} 캐쉬 ✓
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-medium text-primary">
-                    {t("active")}
-                  </span>
-                )}
               </div>
             </div>
           </div>
