@@ -220,13 +220,22 @@ function buildJsonLd(content: any, lang: string, reportDate: string) {
 
 // ── Ghost publish ──
 async function publishToGhost(ghostUrl: string, token: string, post: any) {
-  const res = await fetch(`${ghostUrl}/ghost/api/admin/posts/?source=html`, {
+  const baseUrl = ghostUrl.replace(/\/ghost\/?$/, "");
+  const url = `${baseUrl}/ghost/api/admin/posts/?source=html`;
+  console.log(`Publishing to Ghost: ${url}`);
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Ghost ${token}` },
     body: JSON.stringify({ posts: [post] }),
   });
-  if (!res.ok) throw new Error(`Ghost API error ${res.status}: ${await res.text()}`);
-  return await res.json();
+  const rawText = await res.text();
+  console.log(`Ghost response status=${res.status}, content-type=${res.headers.get("content-type")}, body-length=${rawText.length}`);
+  if (!res.ok) throw new Error(`Ghost API error ${res.status}: ${rawText.slice(0, 500)}`);
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    throw new Error(`Ghost returned non-JSON (status ${res.status}): ${rawText.slice(0, 300)}`);
+  }
 }
 
 // ── Main handler ──
