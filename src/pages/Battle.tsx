@@ -1065,6 +1065,10 @@ export default function Battle() {
     }
 
     setLoading(false);
+   } catch (err) {
+    console.error("loadBattleData error:", err);
+    setLoading(false);
+   }
   }
 
   function handlePick(pairIdx: number, runId: string) {
