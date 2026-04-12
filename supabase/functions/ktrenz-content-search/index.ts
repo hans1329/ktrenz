@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
     // Fetch star info
     const { data: star, error: starErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, social_handles, star_type")
+      .select("id, display_name, name_ko, social_handles, star_type, group_star_id, search_qualifier")
       .eq("id", star_id)
       .maybeSingle();
     if (starErr || !star) {
@@ -299,7 +299,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const searchQuery = star.name_ko || star.display_name;
+    // ── Build search query with group context for members ──
+    let groupNameKo: string | null = null;
+    if (star.star_type === "member" && star.group_star_id) {
+      const { data: group } = await sb
+        .from("ktrenz_stars")
+        .select("name_ko, display_name")
+        .eq("id", star.group_star_id)
+        .maybeSingle();
+      if (group) {
+        groupNameKo = group.name_ko || group.display_name;
+      }
+    }
+
+    // For member: "그룹명 이름" to narrow search; for others: name as-is
+    const searchQuery = (star.star_type === "member" && groupNameKo)
+      ? `${groupNameKo} ${star.name_ko || star.display_name}`
+      : star.name_ko || star.display_name;
     const searchQueryEn = star.display_name;
 
     // Fetch member names for title filtering (group → members)
@@ -319,12 +335,42 @@ Deno.serve(async (req) => {
     const relevanceKeywords = [
       star.display_name,
       star.name_ko,
+      ...(groupNameKo ? [groupNameKo] : []),
       ...memberNames,
     ].filter(Boolean).map((k: string) => k.toLowerCase());
 
+    // For member-type stars with short Korean names (≤3 chars),
+    // require group name or English name co-occurrence to prevent homonym contamination
+    // e.g. "성훈" matches "박성훈" (politician) → blocked unless "엔하이픈" or "ENHYPEN" also appears
+    const needsGroupContext = star.star_type === "member" && groupNameKo
+      && star.name_ko && star.name_ko.length <= 3;
+    const groupContextKeywords = needsGroupContext
+      ? [groupNameKo!, star.display_name].map((k) => k.toLowerCase())
+      : [];
+
     function isTitleRelevant(title: string): boolean {
       const t = title.toLowerCase();
-      return relevanceKeywords.some((kw) => t.includes(kw));
+      const hasAnyKeyword = relevanceKeywords.some((kw) => t.includes(kw));
+      if (!hasAnyKeyword) return false;
+
+      // For short-name members: if title contains the Korean name,
+      // verify it's not a substring of a longer name (e.g. "박성훈" vs "성훈")
+      if (needsGroupContext && star.name_ko) {
+        const nameKo = star.name_ko;
+        const idx = t.indexOf(nameKo.toLowerCase());
+        if (idx >= 0) {
+          // Check if the name is preceded by another Korean character (= part of a longer name)
+          const charBefore = idx > 0 ? t[idx - 1] : "";
+          const charAfter = t[idx + nameKo.length] || "";
+          const koreanRange = /[\uAC00-\uD7A3]/;
+          const isEmbedded = koreanRange.test(charBefore) || (koreanRange.test(charAfter) && charAfter !== "씨");
+          if (isEmbedded) {
+            // Embedded in longer name → require group/english name co-occurrence
+            return groupContextKeywords.some((gk) => t.includes(gk));
+          }
+        }
+      }
+      return true;
     }
 
     // API Keys
