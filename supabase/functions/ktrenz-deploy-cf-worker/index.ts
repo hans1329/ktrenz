@@ -120,7 +120,7 @@ async function ensureGhostDnsRecord(zoneId: string, apiToken: string) {
   return await createRes.json();
 }
 
-
+async function setWorkerRoute(zoneId: string, apiToken: string, workerName: string) {
   // List existing routes first
   const listUrl = `https://api.cloudflare.com/client/v4/zones/${zoneId}/workers/routes`;
   const listRes = await fetch(listUrl, {
