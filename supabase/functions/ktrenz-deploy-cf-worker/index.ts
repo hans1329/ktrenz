@@ -194,9 +194,9 @@ Deno.serve(async (req) => {
 
     const workerName = "ktrenz-report-proxy";
 
-    // Step 0: Ensure ghost.ktrenz.com DNS record exists
-    console.log("Ensuring ghost DNS record...");
-    await ensureGhostDnsRecord(zoneId, apiToken);
+    // Step 0: ghost.ktrenz.com DNS record must exist (created manually)
+    // DNS API token lacks permissions, so skip auto-creation
+    console.log("Assuming ghost.ktrenz.com DNS record exists...");
 
     // Step 1: Deploy worker script
     console.log("Deploying worker script...");
