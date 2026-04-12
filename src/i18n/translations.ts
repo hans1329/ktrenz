@@ -801,12 +801,12 @@ const translations: Record<string, Record<Language, string>> = {
     ja: "KTrenZは、キーワードの速度、クロスプラットフォームでの存在感、エンゲージメントパターンを分析する独自のマルチソーススコアリングアルゴリズムを使用し、6段階のグレードを付与します。",
     zh: "KTrenZ使用专有多源评分算法，分析关键词速度、跨平台存在感和互动模式，将关键词分为六个等级。",
   },
-  "about.faq3Q": { en: "What are Battles and how do I earn K-Points?", ko: "배틀이란 무엇이고 K-Points는 어떻게 획득하나요?", ja: "バトルとは何ですか？K-Pointsはどう獲得しますか？", zh: "什么是Battle？如何赚取K-Points？" },
+  "about.faq3Q": { en: "What are Battles and how do I earn K-Cashes?", ko: "배틀이란 무엇이고 K-Cashes는 어떻게 획득하나요?", ja: "バトルとは何ですか？K-Cashesはどう獲得しますか？", zh: "什么是Battle？如何赚取K-Cashes？" },
   "about.faq3A": {
-    en: "Battles are daily trend prediction games where you pick which keyword will grow faster over the next 24 hours. If your prediction is correct, you earn K-Points — virtual reward points that can be redeemed for prizes like Spotify Premium gift cards. New users receive a welcome bonus of K-Points to get started immediately.",
-    ko: "배틀은 두 키워드 중 24시간 동안 더 빠르게 성장할 키워드를 예측하는 일일 트렌드 예측 게임입니다. 예측이 맞으면 K-Points를 획득하고, 이를 Spotify Premium 기프트 카드 등의 보상으로 교환할 수 있습니다. 신규 사용자에게는 웰컴 보너스 K-Points가 지급됩니다.",
-    ja: "バトルは、24時間でどのキーワードがより速く成長するかを予測するデイリーゲームです。予測が当たるとK-Pointsを獲得でき、Spotify Premiumギフトカードなどの報酬と交換できます。",
-    zh: "Battle是每日趋势预测游戏，预测哪个关键词在24小时内增长更快。预测正确可获得K-Points，兑换Spotify Premium等奖励。",
+    en: "Battles are daily trend prediction games where you pick which keyword will grow faster over the next 24 hours. If your prediction is correct, you earn K-Cashes — virtual reward points that can be redeemed for prizes like Spotify Premium gift cards. New users receive a welcome bonus of K-Cashes to get started immediately.",
+    ko: "배틀은 두 키워드 중 24시간 동안 더 빠르게 성장할 키워드를 예측하는 일일 트렌드 예측 게임입니다. 예측이 맞으면 K-Cashes를 획득하고, 이를 Spotify Premium 기프트 카드 등의 보상으로 교환할 수 있습니다. 신규 사용자에게는 웰컴 보너스 K-Cashes가 지급됩니다.",
+    ja: "バトルは、24時間でどのキーワードがより速く成長するかを予測するデイリーゲームです。予測が当たるとK-Cashesを獲得でき、Spotify Premiumギフトカードなどの報酬と交換できます。",
+    zh: "Battle是每日趋势预测游戏，预测哪个关键词在24小时内增长更快。预测正确可获得K-Cashes，兑换Spotify Premium等奖励。",
   },
   "about.faq4Q": { en: "Is KTrenZ free to use?", ko: "KTrenZ는 무료인가요?", ja: "KTrenZは無料ですか？", zh: "KTrenZ是免费的吗？" },
   "about.faq4A": {
