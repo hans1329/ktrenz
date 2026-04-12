@@ -220,7 +220,8 @@ function buildJsonLd(content: any, lang: string, reportDate: string) {
 
 // ── Ghost publish ──
 async function publishToGhost(ghostUrl: string, token: string, post: any) {
-  const url = `${ghostUrl}/ghost/api/admin/posts/?source=html`;
+  const baseUrl = ghostUrl.replace(/\/ghost\/?$/, "");
+  const url = `${baseUrl}/ghost/api/admin/posts/?source=html`;
   console.log(`Publishing to Ghost: ${url}`);
   const res = await fetch(url, {
     method: "POST",
