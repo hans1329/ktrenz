@@ -5,10 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SUPABASE_PROJECT_REF = "jguylowswwgjvotdcsfj";
+
 const WORKER_SCRIPT = `
 export default {
   async fetch(request) {
     const url = new URL(request.url);
+
+    // /sitemap.xml → Supabase Edge Function (동적 사이트맵)
+    if (url.pathname === '/sitemap.xml') {
+      const sitemapUrl = 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/ktrenz-sitemap';
+      const res = await fetch(sitemapUrl);
+      return new Response(res.body, {
+        status: res.status,
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+          'X-Robots-Tag': 'noindex',
+        },
+      });
+    }
 
     // /report 경로 → Ghost 서버로 프록시
     if (url.pathname.startsWith('/report')) {
