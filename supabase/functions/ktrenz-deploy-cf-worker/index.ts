@@ -12,6 +12,34 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
 
+    // /robots.txt → 직접 응답
+    if (url.pathname === '/robots.txt') {
+      const robotsTxt = [
+        'User-agent: Googlebot',
+        'Allow: /',
+        '',
+        'User-agent: Yeti',
+        'Allow: /',
+        '',
+        'User-agent: Twitterbot',
+        'Allow: /',
+        '',
+        'User-agent: facebookexternalhit',
+        'Allow: /',
+        '',
+        'User-agent: *',
+        'Allow: /',
+        '',
+        'Sitemap: https://ktrenz.com/sitemap.xml',
+      ].join('\\n');
+      return new Response(robotsTxt, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    }
+
     // /sitemap.xml → Supabase Edge Function (동적 사이트맵)
     if (url.pathname === '/sitemap.xml') {
       const sitemapUrl = 'https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/ktrenz-sitemap';
