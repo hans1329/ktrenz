@@ -355,15 +355,18 @@ Deno.serve(async (req) => {
 
       // For short-name members: if title contains the Korean name,
       // verify it's not a substring of a longer name (e.g. "박성훈" vs "성훈")
+      // But allow Korean grammatical particles after the name (e.g. "카리나로", "성훈이")
       if (needsGroupContext && star.name_ko) {
         const nameKo = star.name_ko;
         const idx = t.indexOf(nameKo.toLowerCase());
         if (idx >= 0) {
-          // Check if the name is preceded by another Korean character (= part of a longer name)
           const charBefore = idx > 0 ? t[idx - 1] : "";
           const charAfter = t[idx + nameKo.length] || "";
           const koreanRange = /[\uAC00-\uD7A3]/;
-          const isEmbedded = koreanRange.test(charBefore) || koreanRange.test(charAfter);
+          // Common Korean particles/suffixes that follow names naturally
+          const koreanParticles = "가는을를의에와과도로이은랑한며서";
+          const isParticleAfter = koreanRange.test(charAfter) && koreanParticles.includes(charAfter);
+          const isEmbedded = koreanRange.test(charBefore) || (koreanRange.test(charAfter) && !isParticleAfter);
           if (isEmbedded) {
             // Embedded in longer name → require group/english name co-occurrence
             return groupContextKeywords.some((gk) => t.includes(gk));
