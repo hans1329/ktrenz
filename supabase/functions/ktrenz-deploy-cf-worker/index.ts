@@ -15,20 +15,46 @@ export default {
       // Strip /report prefix — Ghost slugs don't include it
       const ghostPath = url.pathname.replace(/^\\/report/, '') || '/';
       const ghostUrl = 'http://ghost.ktrenz.com' + ghostPath + url.search;
+
+      const ghostHeaders = new Headers({
+        'Host': 'ghost.ktrenz.com',
+        'X-Forwarded-Host': 'ktrenz.com',
+        'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
+        'X-Forwarded-Proto': 'https',
+        'Accept': request.headers.get('Accept') || '*/*',
+        'Accept-Encoding': request.headers.get('Accept-Encoding') || '',
+      });
+
       const response = await fetch(ghostUrl, {
         method: request.method,
-        headers: new Headers({
-          'Host': 'ghost.ktrenz.com',
-          'X-Forwarded-Host': 'ktrenz.com',
-          'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
-          'X-Forwarded-Proto': 'https',
-        }),
+        headers: ghostHeaders,
         body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
       });
 
+      const contentType = response.headers.get('Content-Type') || '';
       const newHeaders = new Headers(response.headers);
       newHeaders.set('X-Robots-Tag', 'index, follow');
       newHeaders.delete('X-Frame-Options');
+
+      // For HTML responses, rewrite asset URLs to include /report prefix
+      if (contentType.includes('text/html')) {
+        let html = await response.text();
+        // Rewrite absolute paths for Ghost assets to /report/...
+        html = html.replace(/(href|src|content)="\\/(assets|public|content|ghost|favicon|shared|members)\\//g, '$1="/report/$2/');
+        // Rewrite srcset paths
+        html = html.replace(/srcset="\\/(content)\\//g, 'srcset="/report/$1/');
+        // Rewrite url() in inline styles  
+        html = html.replace(/url\\(\\/(assets|content|public)\\//g, 'url(/report/$1/');
+        // Rewrite canonical and other meta URLs that point to ghost.ktrenz.com or the raw domain
+        html = html.replace(/https?:\\/\\/ghost\\.ktrenz\\.com\\//g, 'https://ktrenz.com/report/');
+        // Fix internal Ghost links (e.g. href="/some-slug/") to point to /report/some-slug/
+        // Only for <a> tags with relative paths that look like Ghost post slugs
+        html = html.replace(/href="\\/((?!report\\/|assets\\/|public\\/|content\\/|ghost\\/|favicon|shared\\/|members\\/)[a-z0-9][a-z0-9-]*\\/?)"/g, 'href="/report/$1"');
+        return new Response(html, {
+          status: response.status,
+          headers: newHeaders,
+        });
+      }
 
       return new Response(response.body, {
         status: response.status,
