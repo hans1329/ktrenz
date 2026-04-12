@@ -5,8 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, CheckCircle, Loader2, Clock, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, CheckCircle, Loader2, Clock, AlertTriangle, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   naver_news: { label: '네이버뉴스', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
