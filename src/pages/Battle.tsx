@@ -1271,7 +1271,7 @@ export default function Battle() {
     updatePairState(pairIdx, { selectedBand: state.selectedBand === band ? null : band });
   }
 
-  function handleSubmit(pairIdx: number) {
+  async function handleSubmit(pairIdx: number) {
     // Block submissions outside the "closing" phase (KST 12:00–00:00)
     const { phase } = getTimerPhase();
     if (phase !== "closing") {
@@ -1289,6 +1289,29 @@ export default function Battle() {
     const opponentRun = pairRuns.find((r) => r.id !== state.pickedRunId);
     if (!opponentRun) return;
 
+    // --- Ticket validation BEFORE submission ---
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
+    if (ticketError) {
+      console.error("[Battle] ticket RPC error:", ticketError);
+      toast({ title: language === "ko" ? "티켓 처리 중 오류가 발생했습니다." : "Ticket processing error.", variant: "destructive" });
+      return;
+    }
+    const ticket = typeof ticketResult === "string" ? JSON.parse(ticketResult) : ticketResult;
+    if (!ticket?.success) {
+      // No tickets remaining → show ticket exhaustion modal
+      battleCache.ticketTs = 0;
+      await loadTickets();
+      setShowAllUsedModal(true);
+      return;
+    }
+
+    // Ticket consumed successfully — proceed with prediction
+    battleCache.ticketTs = 0;
+    await loadTickets();
+
     const prediction: Prediction = {
       pickedRunId: state.pickedRunId,
       opponentRunId: opponentRun.id,
@@ -1301,10 +1324,8 @@ export default function Battle() {
 
     setPredictions((prev) => [...prev, prediction]);
     updatePairState(pairIdx, { submitted: true });
-    // Auto-collapse submitted battle in live tab
     setCollapsedPairs(prev => new Set(prev).add(pairIdx));
 
-    // Show confirm modal
     const bandInfo = BANDS.find(b => b.key === state.selectedBand);
     setConfirmModal({
       starName: prediction.pickedStarName,
@@ -1312,34 +1333,23 @@ export default function Battle() {
       reward: bandInfo?.reward || 100,
     });
 
-    const capturedPickedRunId = state.pickedRunId;
-    const capturedSelectedBand = state.selectedBand;
+    // Check if all tickets used → show celebration
+    if (ticket.remaining === 0) {
+      setTimeout(() => setShowAllUsedModal(true), 600);
+    }
 
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      try {
-        const { data: ticketResult, error: ticketError } = await supabase.rpc("ktrenz_use_prediction_ticket" as any, { _user_id: user.id });
-        if (ticketError) console.error("[Battle] ticket RPC error:", ticketError);
-        else console.log("[Battle] ticket used:", ticketResult);
-        battleCache.ticketTs = 0; // invalidate cache
-        await loadTickets();
-        // Check if all tickets used → show celebration
-        const { data: updatedTicket } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
-        const parsed = typeof updatedTicket === "string" ? JSON.parse(updatedTicket) : updatedTicket;
-        if (parsed && parsed.remaining === 0) {
-          setTimeout(() => setShowAllUsedModal(true), 600);
-        }
-        const { error: predError } = await supabase.from("b2_predictions").insert({
-          user_id: user.id,
-          picked_run_id: capturedPickedRunId,
-          opponent_run_id: opponentRun.id,
-          band: capturedSelectedBand,
-        });
-        if (predError) console.error("[Battle] prediction insert error:", predError);
-      } catch (e) {
-        console.error("[Battle] submit error:", e);
-      }
-    });
+    // Insert prediction record
+    try {
+      const { error: predError } = await supabase.from("b2_predictions").insert({
+        user_id: user.id,
+        picked_run_id: state.pickedRunId,
+        opponent_run_id: opponentRun.id,
+        band: state.selectedBand,
+      });
+      if (predError) console.error("[Battle] prediction insert error:", predError);
+    } catch (e) {
+      console.error("[Battle] submit error:", e);
+    }
   }
 
 
