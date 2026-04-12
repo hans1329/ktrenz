@@ -246,6 +246,13 @@ const Login = () => {
               {t("login.backToRankings")}
             </button>
           </div>
+
+          {/* Legal links */}
+          <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60">
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+            <span>·</span>
+            <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          </div>
         </div>
       </div>
     </>
