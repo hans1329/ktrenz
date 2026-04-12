@@ -1511,39 +1511,24 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram: autoplay videos in-drawer, keep image posts as static previews
+                    // Instagram: always embed in-drawer for autoplay
                     if (source === "instagram" && url) {
                       const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
                       const shortcode = instaMatch?.[2] || meta.embed_shortcode;
                       if (shortcode) {
                         const instaType = instaMatch?.[1] || "p";
                         const embedPath = instaType === "reel" ? "reel" : instaType === "tv" ? "tv" : "p";
-                        const mediaType = typeof meta.media_type === "string" ? meta.media_type.toLowerCase() : "";
-                        const isInstagramVideo = mediaType === "video" || instaType === "reel" || instaType === "tv";
-
-                        if (isInstagramVideo || !drawerItem.thumbnail) {
-                          return (
-                            <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
-                              <iframe
-                                src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
-                                title={drawerItem.title}
-                                className="absolute inset-0 w-full h-full border-0"
-                                style={{ overflow: "hidden" }}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                referrerPolicy="no-referrer"
-                                scrolling="no"
-                              />
-                            </div>
-                          );
-                        }
-
                         return (
-                          <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                            <SmartImage
-                              src={drawerItem.thumbnail}
-                              alt={drawerItem.title}
-                              className="w-full h-full object-cover object-[center_20%]"
+                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
+                            <iframe
+                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
+                              title={drawerItem.title}
+                              className="absolute inset-0 w-full h-full border-0"
+                              style={{ overflow: "hidden" }}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              referrerPolicy="no-referrer"
+                              scrolling="no"
                             />
                           </div>
                         );
