@@ -1337,9 +1337,24 @@ export default function Battle() {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
+          {/* Sword & Shield clash animation */}
+          <div className="relative w-24 h-24 mb-2">
+            {/* Left sword */}
+            <span className="absolute text-3xl animate-[swordLeft_1.2s_ease-in-out_infinite]" style={{ left: 0, top: '50%', transform: 'translateY(-50%)' }}>
+              ⚔️
+            </span>
+            {/* Right shield */}
+            <span className="absolute text-3xl animate-[shieldRight_1.2s_ease-in-out_infinite]" style={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}>
+              🛡️
+            </span>
+            {/* Clash spark */}
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl animate-[clashSpark_1.2s_ease-in-out_infinite]">
+              💥
+            </span>
+          </div>
           <div className="w-48 h-2 rounded-full overflow-hidden bg-muted">
             <div
-              className="h-full rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]"
+              className="h-full rounded-full"
               style={{
                 background: "linear-gradient(90deg, #ff6b6b, #ffa94d, #ffd43b, #69db7c, #4dabf7, #9775fa, #ff6b6b)",
                 backgroundSize: "200% 100%",
@@ -1349,7 +1364,22 @@ export default function Battle() {
           </div>
           <p className="text-muted-foreground text-sm">{t("loading")}</p>
         </div>
-        <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        <style>{`
+          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+          @keyframes swordLeft {
+            0%, 100% { transform: translateY(-50%) translateX(-8px) rotate(-15deg); }
+            45%, 55% { transform: translateY(-50%) translateX(18px) rotate(10deg); }
+          }
+          @keyframes shieldRight {
+            0%, 100% { transform: translateY(-50%) translateX(8px) rotate(15deg); }
+            45%, 55% { transform: translateY(-50%) translateX(-18px) rotate(-10deg); }
+          }
+          @keyframes clashSpark {
+            0%, 35% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+            45%, 55% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            70%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+          }
+        `}</style>
       </div>
     );
   }
