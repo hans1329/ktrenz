@@ -938,6 +938,7 @@ export default function Battle() {
   }
 
   async function loadBattleData(skipTranslation = false) {
+   try {
     // Use cached data if fresh
     if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
       setBattlePairs(battleCache.data);
@@ -1064,6 +1065,10 @@ export default function Battle() {
     }
 
     setLoading(false);
+   } catch (err) {
+    console.error("loadBattleData error:", err);
+    setLoading(false);
+   }
   }
 
   function handlePick(pairIdx: number, runId: string) {
