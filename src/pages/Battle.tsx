@@ -1433,7 +1433,7 @@ export default function Battle() {
 
       {/* Detail Drawer */}
       <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto sm:max-w-lg sm:left-1/2 sm:-translate-x-1/2 focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto sm:max-w-lg sm:mx-auto focus:outline-none focus-visible:outline-none focus-visible:ring-0" hideClose>
           {drawerItem && (() => {
             const drawerPair = battlePairs[drawerPairIndex];
             const drawerRuns = drawerPair?.runs || [];
@@ -1506,14 +1506,17 @@ export default function Battle() {
                         const instaType = instaMatch?.[1] || "p";
                         const embedPath = instaType === "reel" ? "reel" : "p";
                         return (
-                          <iframe
-                            src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
-                            className="w-full border-0"
-                            style={{ height: "480px" }}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            referrerPolicy="no-referrer"
-                          />
+                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
+                            <iframe
+                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
+                              className="absolute inset-0 w-full h-full border-0"
+                              style={{ overflow: "hidden" }}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              referrerPolicy="no-referrer"
+                              scrolling="no"
+                            />
+                          </div>
                         );
                       }
                     }
@@ -1635,7 +1638,7 @@ export default function Battle() {
 
       {/* Insight Report Drawer */}
       <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
-        <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] overflow-y-auto sm:max-w-lg sm:left-1/2 sm:-translate-x-1/2" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetHeader>
             <SheetTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
