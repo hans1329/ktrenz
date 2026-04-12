@@ -1074,6 +1074,11 @@ export default function Battle() {
       navigate("/login");
       return;
     }
+    // If all tickets used, show tier info instead of allowing pick
+    if (remainingTickets <= 0) {
+      setShowTicketInfo(true);
+      return;
+    }
     updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
   }
 
