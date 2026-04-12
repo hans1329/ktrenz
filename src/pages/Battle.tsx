@@ -1498,13 +1498,42 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram embed
+                    // Instagram preview (use cached thumbnail to preserve original framing)
                     if (source === "instagram" && url) {
                       const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
                       const shortcode = instaMatch?.[2] || meta.embed_shortcode;
                       if (shortcode) {
                         const instaType = instaMatch?.[1] || "p";
                         const embedPath = instaType === "reel" ? "reel" : "p";
+                        const instagramUrl = drawerItem.url || meta.url || `https://www.instagram.com/${embedPath}/${shortcode}/`;
+
+                        if (drawerItem.thumbnail) {
+                          return (
+                            <a
+                              href={instagramUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group relative block aspect-[4/3] overflow-hidden bg-muted"
+                              aria-label="Open on Instagram"
+                            >
+                              <SmartImage
+                                src={drawerItem.thumbnail}
+                                alt={drawerItem.title}
+                                className="w-full h-full object-cover object-[center_20%]"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-background/55 via-background/10 to-transparent" />
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4">
+                                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-background/85 text-foreground shadow-lg backdrop-blur-sm">
+                                  <Play className="ml-1 h-9 w-9 fill-current" />
+                                </div>
+                                <span className="rounded-full bg-background/85 px-4 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm">
+                                  View on Instagram
+                                </span>
+                              </div>
+                            </a>
+                          );
+                        }
+
                         return (
                           <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
                             <iframe
