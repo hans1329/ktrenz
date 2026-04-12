@@ -18,7 +18,8 @@ export default {
       const response = await fetch(ghostUrl, {
         method: request.method,
         headers: new Headers({
-          'Host': 'ktrenz.com',
+          'Host': '168.144.100.36',
+          'X-Forwarded-Host': 'ktrenz.com',
           'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
           'X-Forwarded-Proto': 'https',
         }),
