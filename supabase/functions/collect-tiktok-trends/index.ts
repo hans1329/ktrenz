@@ -1,6 +1,8 @@
-// TikTok Trend Collector: RapidAPI tiktok-api23를 통해 아티스트별 TikTok 검색 데이터 수집
-// 1) 검색 결과에서 조회수/좋아요/댓글/공유 통계 집계 → ktrenz_social_snapshots 저장
-// 2) 영상 설명(desc)에서 AI 키워드 추출 → ktrenz_trend_triggers 저장 (인스타와 동일 패턴)
+// TikTok Trend Collector: 핸들 기반 피드 방식 (검색 → 유저 피드 전환)
+// 1) /api/user/info?uniqueId={handle} → secUid 획득 (DB 캐싱)
+// 2) /api/user/posts?secUid={secUid}&count=35 → 피드 조회
+// 3) AI 키워드 추출 → ktrenz_trend_triggers 저장
+// 4) 스냅샷 → ktrenz_social_snapshots 저장
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,11 +12,28 @@ const corsHeaders = {
 };
 
 const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
-const SEARCH_COUNT = 12;
-// ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
+const FEED_COUNT = 35;
 const DAILY_API_CALL_HARD_LIMIT = 450;
+const FETCH_TIMEOUT_MS = 12_000;
+const AI_FETCH_TIMEOUT_MS = 20_000;
+const RATE_LIMIT_SLEEP_MS = 500;
+const TIMEGUARD_MS = 130_000;
 
-// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+// ── 타임아웃 fetch 헬퍼 ──
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { ...init, signal: controller.signal });
+    clearTimeout(timeout);
+    return resp;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
+}
+
+// ─── 아티스트/멤버 이름 키워드 필터 ───
 function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
   const kw = keyword.trim().toLowerCase();
   if (!kw) return false;
@@ -58,59 +77,61 @@ interface TikTokMetrics {
   verified_author_count: number;
 }
 
-// TikTok 검색 API 호출
-async function searchTikTok(
-  apiKey: string,
-  keyword: string,
-  count: number = SEARCH_COUNT,
-): Promise<TikTokVideo[]> {
+// ── Step 1: uniqueId → secUid 조회 ──
+async function getUserSecUid(apiKey: string, uniqueId: string): Promise<string | null> {
   try {
-    // tiktok-api23 (tikfly): /api/search/video 엔드포인트
-    // cursor 제거 — 문서 기준 첫 호출 시 불필요, 204 응답 원인으로 추정
-    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&search_id=0`;
-    const response = await fetch(url, {
+    const url = `https://${TIKTOK_API_HOST}/api/user/info?uniqueId=${encodeURIComponent(uniqueId)}`;
+    const resp = await fetchWithTimeout(url, {
       method: "GET",
       headers: {
         "x-rapidapi-host": TIKTOK_API_HOST,
         "x-rapidapi-key": apiKey,
       },
-    });
+    }, FETCH_TIMEOUT_MS);
 
-    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}, headers: ${JSON.stringify(Object.fromEntries(response.headers.entries())).slice(0, 300)}`);
+    if (!resp.ok) {
+      console.warn(`[tiktok] user/info failed for @${uniqueId}: HTTP ${resp.status}`);
+      return null;
+    }
 
-    if (response.status === 204) {
-      console.warn(`[tiktok] 204 No Content for "${keyword}" — API may have changed`);
+    const data = await resp.json();
+    const secUid = data?.userInfo?.user?.secUid;
+    if (!secUid) {
+      console.warn(`[tiktok] No secUid in response for @${uniqueId}: statusCode=${data?.statusCode}`);
+      return null;
+    }
+
+    console.log(`[tiktok] Resolved @${uniqueId} → secUid=${secUid.slice(0, 20)}...`);
+    return secUid;
+  } catch (e) {
+    console.warn(`[tiktok] user/info error for @${uniqueId}: ${(e as Error).message}`);
+    return null;
+  }
+}
+
+// ── Step 2: secUid → 피드 조회 ──
+async function getUserPosts(apiKey: string, secUid: string, count: number = FEED_COUNT): Promise<TikTokVideo[]> {
+  try {
+    const url = `https://${TIKTOK_API_HOST}/api/user/posts?secUid=${encodeURIComponent(secUid)}&count=${count}&cursor=0`;
+    const resp = await fetchWithTimeout(url, {
+      method: "GET",
+      headers: {
+        "x-rapidapi-host": TIKTOK_API_HOST,
+        "x-rapidapi-key": apiKey,
+      },
+    }, FETCH_TIMEOUT_MS);
+
+    if (!resp.ok) {
+      console.warn(`[tiktok] user/posts failed: HTTP ${resp.status}`);
       return [];
     }
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.warn(`[tiktok] Search failed for "${keyword}": HTTP ${response.status} ${err.slice(0, 300)}`);
-      return [];
-    }
-
-    const text = await response.text();
-    if (!text || text.trim().length === 0) {
-      console.warn(`[tiktok] Empty response for "${keyword}"`);
-      return [];
-    }
-
-    let data: any;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 200)}`);
-      return [];
-    }
-
-    // tiktok-api23 응답: { item_list: [...], hasMore: 1, cursor: 12 }
-    const items = data?.item_list || [];
+    const data = await resp.json();
+    const items = data?.data?.itemList || [];
     if (!Array.isArray(items)) {
-      console.warn(`[tiktok] Unexpected structure for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
+      console.warn(`[tiktok] Unexpected posts structure: ${JSON.stringify(data).slice(0, 200)}`);
       return [];
     }
-
-    console.log(`[tiktok] "${keyword}": ${items.length} videos returned`);
 
     return items
       .filter((v: any) => v && v.id)
@@ -137,7 +158,7 @@ async function searchTikTok(
         };
       });
   } catch (e) {
-    console.warn(`[tiktok] Search error for "${keyword}": ${(e as Error).message}`);
+    console.warn(`[tiktok] user/posts error: ${(e as Error).message}`);
     return [];
   }
 }
@@ -210,7 +231,7 @@ function calculateTikTokActivityScore(metrics: TikTokMetrics): number {
   return viewScore + engagementScore + recencyScore + verifiedScore + volumeScore;
 }
 
-// ── AI 키워드 추출 (인스타와 동일 패턴) ──
+// ── AI 키워드 추출 ──
 async function extractKeywordsFromVideos(
   videos: TikTokVideo[],
   artistName: string,
@@ -228,18 +249,16 @@ async function extractKeywordsFromVideos(
 }>> {
   if (videos.length === 0) return [];
 
-  // 영상 설명 요약 생성
   const videoSummaries = videos.map((v, i) => {
     const parts = [`[${i + 1}] Views: ${v.stats.playCount.toLocaleString()}`];
     if (v.desc) parts.push(`Desc: "${v.desc.slice(0, 300)}"`);
     if (v.author.uniqueId) parts.push(`@${v.author.uniqueId}${v.author.verified ? " ✓" : ""}`);
-    // desc에서 해시태그 추출
     const hashtags = (v.desc.match(/#[\w가-힣]+/g) || []).map((h: string) => h.slice(1));
     if (hashtags.length) parts.push(`#Tags: ${hashtags.join(", ")}`);
     return parts.join(" | ");
   }).join("\n");
 
-  const prompt = `You are a K-Pop commercial trend analyst. Analyze the following TikTok videos related to ${artistName} and extract commercially significant keywords.
+  const prompt = `You are a K-Pop commercial trend analyst. Analyze the following TikTok videos from ${artistName}'s official account and extract commercially significant keywords.
 
 VIDEOS:
 ${videoSummaries}
@@ -271,7 +290,7 @@ Return JSON array:
 If no meaningful commercial keywords found, return [].`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${openaiKey}`,
@@ -283,7 +302,7 @@ If no meaningful commercial keywords found, return [].`;
         temperature: 0.3,
         response_format: { type: "json_object" },
       }),
-    });
+    }, AI_FETCH_TIMEOUT_MS);
 
     if (!res.ok) {
       console.warn(`[tiktok] OpenAI API error: ${res.status}`);
@@ -304,6 +323,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -326,7 +347,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ★ 일일 API 호출 하드 리밋 체크 (월 500건 무료, 초과 과금 방지)
+    // ★ 일일 API 호출 하드 리밋 체크
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const { data: todayLogs } = await sb
@@ -342,48 +363,41 @@ Deno.serve(async (req) => {
       if (match) todayApiCalls += parseInt(match[1]);
     }
 
-    // ktrenz_stars에서 활성 아티스트 (star_id 기반) — member 포함
-    const ttOffset = requestOffset || 0;
-    const ttBatchSize = batchLimit || 50;
-    const { data: stars, error: starsErr } = await sb
-      .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_type, group_star_id")
-      .eq("is_active", true)
-      .in("star_type", ["group", "solo", "member"])
-      .order("display_name")
-      .range(ttOffset, ttOffset + ttBatchSize - 1);
-
-    // 그룹명 매핑 (멤버의 group_star_id → 그룹 display_name)
-    const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
-    const tiktokGroupMap: Record<string, string> = {};
-    if (groupStarIds.length > 0) {
-      const { data: groups } = await sb.from("ktrenz_stars").select("id, display_name").in("id", groupStarIds);
-      for (const g of (groups || [])) tiktokGroupMap[g.id] = g.display_name;
-    }
-
-    if (starsErr) throw starsErr;
-    if (!stars?.length) {
-      return new Response(
-        JSON.stringify({ success: true, message: "No active stars", results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 하드 리밋 초과 시 즉시 중단
     if (todayApiCalls >= DAILY_API_CALL_HARD_LIMIT) {
-      console.warn(`[tiktok] HARD LIMIT reached: ${todayApiCalls} >= ${DAILY_API_CALL_HARD_LIMIT}, aborting`);
+      console.warn(`[tiktok] HARD LIMIT reached: ${todayApiCalls} >= ${DAILY_API_CALL_HARD_LIMIT}`);
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "daily_hard_limit", todayApiCalls, limit: DAILY_API_CALL_HARD_LIMIT }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 남은 쿼터 내에서만 처리할 아티스트 수 제한
+    // ── 핸들 보유 스타만 조회 (핸들 기반 피드 방식) ──
+    const ttOffset = requestOffset || 0;
+    const ttBatchSize = batchLimit || 50;
+    const { data: stars, error: starsErr } = await sb
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, star_type, group_star_id, social_handles")
+      .eq("is_active", true)
+      .not("social_handles->tiktok", "is", null)
+      .neq("social_handles->>tiktok" as any, "")
+      .neq("social_handles->>tiktok" as any, "_not_found")
+      .order("display_name")
+      .range(ttOffset, ttOffset + ttBatchSize - 1);
+
+    if (starsErr) throw starsErr;
+    if (!stars?.length) {
+      return new Response(
+        JSON.stringify({ success: true, message: "No stars with TikTok handles in this batch", processed: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 남은 쿼터 내에서만 처리 (피드 조회 1호출 + secUid 조회 최대 1호출 = 최대 2호출/스타)
     const remainingCalls = DAILY_API_CALL_HARD_LIMIT - todayApiCalls;
-    const safeBatchSize = Math.min(stars.length, remainingCalls);
+    const safeBatchSize = Math.min(stars.length, Math.floor(remainingCalls / 2));
     const starsToProcess = stars.slice(0, safeBatchSize);
 
-    console.log(`[tiktok] Processing ${starsToProcess.length}/${stars.length} artists (dryRun=${!!dryRun}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
+    console.log(`[tiktok] Feed mode: ${starsToProcess.length}/${stars.length} artists (offset=${ttOffset}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
 
     // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
     const globalStarNames = new Set<string>();
@@ -391,55 +405,62 @@ Deno.serve(async (req) => {
       if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
       if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
     }
-    for (const gName of Object.values(tiktokGroupMap)) {
-      if (gName) globalStarNames.add(gName.toLowerCase());
-    }
-    console.log(`[tiktok] Built globalStarNames: ${globalStarNames.size} entries`);
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
     let totalKeywords = 0;
     let apiCallCount = 0;
-    let emptyResponseStreak = 0; // 이제 누적 빈 응답 수 (연속 아님)
+    let feedSuccessCount = 0;
+    let secUidCacheHits = 0;
 
     for (const star of starsToProcess as any[]) {
-      // 실행 중 하드 리밋 재확인
+      // 타임가드
+      if (Date.now() - startTime > TIMEGUARD_MS) {
+        console.warn(`[tiktok] ⏱ Timeguard at ${Math.round((Date.now() - startTime) / 1000)}s, stopping`);
+        break;
+      }
+
+      // 하드 리밋 재확인
       if (todayApiCalls + apiCallCount >= DAILY_API_CALL_HARD_LIMIT) {
-        console.warn(`[tiktok] Mid-batch hard limit reached at ${todayApiCalls + apiCallCount} calls, stopping`);
+        console.warn(`[tiktok] Mid-batch hard limit at ${todayApiCalls + apiCallCount} calls`);
         break;
       }
-      // 빈 응답 연속 5회 시 중단 (과금만 되는 상황 방지)
-      // 빈 응답 누적 비율 체크: 15건 이상 처리 후 80% 이상이 빈 응답이면 중단
-      if (apiCallCount >= 15 && emptyResponseStreak / apiCallCount > 0.8) {
-        console.warn(`[tiktok] ${emptyResponseStreak}/${apiCallCount} empty responses (>80%), stopping to prevent wasted calls`);
-        break;
-      }
+
       try {
-        // ─── 검색 키워드 최적화 ───
-        // 멤버: display_name만 사용 (예: "Jimin" — 그룹명 prefix 제거로 204 비율 감소)
-        // 짧은 이름(≤2글자): 한글 이름 우선 시도, 없으면 그룹명 prefix
-        // 그룹/솔로: display_name 그대로
-        let searchKeyword = star.display_name;
-        const nameLen = (star.display_name || "").replace(/\s/g, "").length;
-        
-        if (star.star_type === "member") {
-          if (nameLen <= 2 && star.name_ko) {
-            // 짧은 영문명은 한글로 검색 (예: "RM" → "알엠" 대신 그룹명 prefix)
-            const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
-            searchKeyword = groupName ? `${groupName} ${star.display_name}` : star.display_name;
+        const handles = star.social_handles || {};
+        const tiktokHandle = (handles.tiktok || "").replace(/^@/, "").trim();
+        if (!tiktokHandle) continue;
+
+        // ── secUid: DB 캐시 → API 조회 ──
+        let secUid = handles.tiktok_secuid || null;
+
+        if (!secUid) {
+          // API로 secUid 조회
+          secUid = await getUserSecUid(apiKey, tiktokHandle);
+          apiCallCount++;
+
+          if (secUid) {
+            // DB에 캐싱
+            const merged = { ...handles, tiktok_secuid: secUid };
+            await sb.from("ktrenz_stars")
+              .update({ social_handles: merged })
+              .eq("id", star.id);
+            console.log(`[tiktok] Cached secUid for @${tiktokHandle}`);
+          } else {
+            console.warn(`[tiktok] Could not resolve secUid for @${tiktokHandle}, skipping`);
+            results.push({ star_id: star.id, display_name: star.display_name, error: "secUid_not_found" });
+            await new Promise(r => setTimeout(r, RATE_LIMIT_SLEEP_MS));
+            continue;
           }
-          // 3글자 이상 멤버는 그대로 display_name 사용
-        } else if (nameLen <= 2) {
-          searchKeyword = `${star.display_name} K-pop`;
+        } else {
+          secUidCacheHits++;
         }
-        
-        const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
+
+        // ── 피드 조회 ──
+        const videos = await getUserPosts(apiKey, secUid, FEED_COUNT);
         apiCallCount++;
 
-        // 빈 응답 누적 카운트 (연속 리셋 없음)
-        if (videos.length === 0) {
-          emptyResponseStreak++;
-        }
+        if (videos.length > 0) feedSuccessCount++;
 
         const metrics = aggregateMetrics(videos);
         const topPosts = extractTopPosts(videos);
@@ -448,32 +469,32 @@ Deno.serve(async (req) => {
         results.push({
           star_id: star.id,
           display_name: star.display_name,
+          handle: tiktokHandle,
           video_count: metrics.video_count,
           total_views: metrics.total_views,
           tiktok_score: tikTokActivityScore,
         });
 
         if (!dryRun) {
-          // 1) 스냅샷 저장 (기존 통계 수집)
+          // 1) 스냅샷 저장
           snapshotsToInsert.push({
             star_id: star.id,
             platform: "tiktok",
-            keyword: searchKeyword,
-            keyword_type: "artist_search",
+            keyword: `@${tiktokHandle}`,
+            keyword_type: "user_feed",
             metrics: {
               ...metrics,
               tiktok_activity_score: tikTokActivityScore,
-              search_keyword: searchKeyword,
+              tiktok_handle: tiktokHandle,
             },
             top_posts: topPosts,
           });
 
-          // 2) AI 키워드 추출 → ktrenz_trend_triggers 저장
+          // 2) AI 키워드 추출
           if (openaiKey && videos.length > 0) {
             const keywords = await extractKeywordsFromVideos(videos, star.display_name, openaiKey);
 
             if (keywords.length > 0) {
-              // 중복 체크: 같은 star_id + keyword + trigger_source(tiktok) + 3일 이내
               const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
               const { data: existing } = await sb
                 .from("ktrenz_trend_triggers")
@@ -490,14 +511,13 @@ Deno.serve(async (req) => {
                 .filter((kw) => {
                   if (existingKws.has(kw.keyword.toLowerCase())) return false;
                   if (isStarNameKeyword(kw.keyword, globalStarNames)) {
-                    console.warn(`[tiktok] ⛔ Star name keyword filtered: "${kw.keyword}" (${star.display_name})`);
+                    console.warn(`[tiktok] ⛔ Star name filtered: "${kw.keyword}" (${star.display_name})`);
                     return false;
                   }
-                  // 순수 인물명 필터 (한글 2~4자만으로 구성된 키워드 제거)
                   const kwTrimmed = kw.keyword.trim();
                   const kwKo = (kw.keyword_ko || "").trim();
                   if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKo)) {
-                    console.warn(`[tiktok] ⛔ Pure person-name filtered: "${kw.keyword}" (${star.display_name})`);
+                    console.warn(`[tiktok] ⛔ Person-name filtered: "${kw.keyword}" (${star.display_name})`);
                     return false;
                   }
                   return true;
@@ -520,8 +540,8 @@ Deno.serve(async (req) => {
                     context: kw.context || "",
                     context_ko: kw.context_ko || "",
                     confidence: kw.confidence || 0.7,
-                    source_url: `https://www.tiktok.com/search?q=${encodeURIComponent(star.display_name)}`,
-                    source_title: `TikTok search: ${star.display_name}`,
+                    source_url: `https://www.tiktok.com/@${tiktokHandle}`,
+                    source_title: `TikTok @${tiktokHandle}`,
                     detected_at: now,
                     status: "pending",
                     baseline_score: 10,
@@ -534,7 +554,7 @@ Deno.serve(async (req) => {
                       .slice(0, 500),
                     metadata: {
                       source_type: kw.source_type || "tiktok_video",
-                      tiktok_search_keyword: searchKeyword,
+                      tiktok_handle: tiktokHandle,
                       tiktok_video_count: metrics.video_count,
                       tiktok_total_views: metrics.total_views,
                       embed_video_id: matchingVideo?.id || videos[0]?.id || null,
@@ -548,24 +568,18 @@ Deno.serve(async (req) => {
                   console.error(`[tiktok] Trigger insert error for ${star.display_name}: ${insertErr.message}`);
                 } else {
                   totalKeywords += newTriggers.length;
-                  console.log(`[tiktok] ${star.display_name}: ${newTriggers.length} keywords extracted & saved`);
+                  console.log(`[tiktok] ${star.display_name}: ${newTriggers.length} keywords saved`);
                 }
               }
             }
           }
         }
 
-        console.log(`  ${star.display_name}: ${metrics.video_count} videos, ${metrics.total_views} views, score=${tikTokActivityScore}`);
-
-        // Rate limit: RapidAPI 보호 (500ms 간격)
-        await new Promise(r => setTimeout(r, 500));
+        console.log(`  @${tiktokHandle} (${star.display_name}): ${metrics.video_count} videos, ${metrics.total_views} views, score=${tikTokActivityScore}`);
+        await new Promise(r => setTimeout(r, RATE_LIMIT_SLEEP_MS));
       } catch (e) {
         console.warn(`[tiktok] Error for ${star.display_name}: ${(e as Error).message}`);
-        results.push({
-          star_id: star.id,
-          display_name: star.display_name,
-          error: (e as Error).message,
-        });
+        results.push({ star_id: star.id, display_name: star.display_name, error: (e as Error).message });
       }
     }
 
@@ -579,9 +593,7 @@ Deno.serve(async (req) => {
     }
 
     const totalViews = results.reduce((s, r) => s + (r.total_views || 0), 0);
-    const avgScore = results.length > 0
-      ? Math.round(results.reduce((s, r) => s + (r.tiktok_score || 0), 0) / results.length)
-      : 0;
+    const elapsed = Date.now() - startTime;
 
     // 로그 기록
     try {
@@ -589,21 +601,25 @@ Deno.serve(async (req) => {
         platform: "tiktok",
         status: "success",
         records_collected: totalKeywords,
-        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}, offset=${ttOffset}`,
+        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}, offset=${ttOffset}, feedSuccess=${feedSuccessCount}, secUidCacheHits=${secUidCacheHits}`,
       });
     } catch { /* ignore log errors */ }
 
-    console.log(`[tiktok] Done: ${results.length} artists, ${snapshotsToInsert.length} snapshots, ${totalKeywords} keywords, totalViews=${totalViews}`);
+    console.log(`[tiktok] Done in ${elapsed}ms: ${results.length} artists, feedSuccess=${feedSuccessCount}, secUidCacheHits=${secUidCacheHits}, keywords=${totalKeywords}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         dryRun: !!dryRun,
+        mode: "user_feed",
         processed: results.length,
+        feedSuccess: feedSuccessCount,
+        secUidCacheHits,
         snapshotsInserted: dryRun ? 0 : snapshotsToInsert.length,
         keywordsSaved: totalKeywords,
         totalViews,
-        avgScore,
+        apiCalls: apiCallCount,
+        elapsed_ms: elapsed,
         results: results.slice(0, 20),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
