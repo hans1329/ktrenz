@@ -131,58 +131,17 @@ interface B2Run {
 
 type Band = "steady" | "rising" | "surge";
 
-declare global {
-  interface Window {
-    instgrm?: {
-      Embeds?: {
-        process: () => void;
-      };
-    };
-  }
-}
+function getInstagramEmbedUrl(url: string): string | null {
+  if (!url) return null;
 
-const INSTAGRAM_EMBED_SCRIPT_ID = "instagram-embed-script";
-let instagramEmbedScriptPromise: Promise<void> | null = null;
+  const match = url.match(/instagram\.com\/(p|reel|reels|tv)\/([^/?#]+)/i);
+  if (!match) return null;
 
-function ensureInstagramEmbedScript(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (window.instgrm?.Embeds?.process) return Promise.resolve();
-  if (instagramEmbedScriptPromise) return instagramEmbedScriptPromise;
+  const rawType = match[1].toLowerCase();
+  const shortcode = match[2];
+  const type = rawType === "reels" ? "reel" : rawType;
 
-  instagramEmbedScriptPromise = new Promise((resolve, reject) => {
-    const markLoaded = () => {
-      const script = document.getElementById(INSTAGRAM_EMBED_SCRIPT_ID) as HTMLScriptElement | null;
-      script?.setAttribute("data-loaded", "true");
-      resolve();
-    };
-
-    const markError = () => {
-      instagramEmbedScriptPromise = null;
-      reject(new Error("Instagram embed script failed to load"));
-    };
-
-    const existingScript = document.getElementById(INSTAGRAM_EMBED_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existingScript) {
-      if (existingScript.getAttribute("data-loaded") === "true") {
-        resolve();
-        return;
-      }
-
-      existingScript.addEventListener("load", markLoaded, { once: true });
-      existingScript.addEventListener("error", markError, { once: true });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = INSTAGRAM_EMBED_SCRIPT_ID;
-    script.async = true;
-    script.src = "https://www.instagram.com/embed.js";
-    script.addEventListener("load", markLoaded, { once: true });
-    script.addEventListener("error", markError, { once: true });
-    document.body.appendChild(script);
-  });
-
-  return instagramEmbedScriptPromise;
+  return `https://www.instagram.com/${type}/${shortcode}/embed/`;
 }
 
 const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
@@ -430,82 +389,32 @@ function sourceIcon(source: string): ReactNode {
 }
 
 function InstagramEmbed({ url, title, thumbnail }: { url: string; title: string; thumbnail: string | null }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [showFallback, setShowFallback] = useState(false);
+  const embedUrl = getInstagramEmbedUrl(url);
 
-  useEffect(() => {
-    if (!url) return;
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    setShowFallback(false);
-
-    const hasRenderedEmbed = () => Boolean(container.querySelector("iframe"));
-
-    const observer = new MutationObserver(() => {
-      if (hasRenderedEmbed()) {
-        setShowFallback(false);
-      }
-    });
-
-    observer.observe(container, { childList: true, subtree: true });
-
-    const fallbackTimer = window.setTimeout(() => {
-      if (!hasRenderedEmbed()) {
-        setShowFallback(true);
-      }
-    }, 1800);
-
-    ensureInstagramEmbedScript()
-      .then(() => {
-        window.requestAnimationFrame(() => {
-          window.instgrm?.Embeds?.process();
-
-          window.setTimeout(() => {
-            if (!hasRenderedEmbed()) {
-              setShowFallback(true);
-            }
-          }, 800);
-        });
-      })
-      .catch(() => {
-        setShowFallback(true);
-      });
-
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(fallbackTimer);
-    };
-  }, [url]);
+  if (!embedUrl) {
+    return thumbnail ? (
+      <SmartImage src={thumbnail} alt={title} className="w-full aspect-[4/5] object-cover" />
+    ) : (
+      <div className="flex w-full aspect-[4/5] items-center justify-center bg-muted text-xs text-muted-foreground">
+        Instagram preview unavailable
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="relative w-full min-h-[480px] overflow-hidden bg-background">
-      <div
-        aria-hidden={showFallback}
-        className={cn("w-full", showFallback && "absolute inset-0 opacity-0 pointer-events-none")}
-      >
-        <blockquote
-          className="instagram-media !m-0 !w-full !min-w-0"
-          data-instgrm-captioned=""
-          data-instgrm-permalink={url}
-          data-instgrm-version="14"
-        >
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            {title}
-          </a>
-        </blockquote>
-      </div>
-
-      {showFallback && (
-        thumbnail ? (
-          <SmartImage src={thumbnail} alt={title} className="w-full aspect-[4/5] object-cover" />
-        ) : (
-          <div className="flex w-full aspect-[4/5] items-center justify-center bg-muted text-xs text-muted-foreground">
-            Instagram preview unavailable
-          </div>
-        )
-      )}
+    <div className="relative w-full overflow-hidden bg-background">
+      <iframe
+        key={embedUrl}
+        src={embedUrl}
+        title={decodeHtml(title)}
+        className="w-full border-0 bg-background"
+        style={{ height: "72vh", maxHeight: "840px" }}
+        loading="lazy"
+        sandbox="allow-scripts allow-same-origin allow-forms"
+        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        scrolling="no"
+      />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background via-background to-transparent" />
     </div>
   );
 }
