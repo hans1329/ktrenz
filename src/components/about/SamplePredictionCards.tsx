@@ -50,7 +50,7 @@ const SamplePredictionCards = () => {
         if (!queue || queue.length === 0) { setLoading(false); return; }
 
         // Fetch star info separately
-        const starIds = [...new Set(queue.map((q: any) => q.star_id))];
+        const starIds = [...new Set(queue.map((q: any) => q.star_id))] as string[];
         const { data: stars } = await supabase
           .from("ktrenz_stars")
           .select("id, display_name, name_ko, image_url")
