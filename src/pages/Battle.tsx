@@ -830,7 +830,7 @@ function ArtistSection({
   return (
     <div className="space-y-2">
       {/* Pick bar — constrained width */}
-      <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
+      <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-1">
         <button
           onClick={onInsightOpen}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
