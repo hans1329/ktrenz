@@ -5,8 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, CheckCircle, Loader2, Clock, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, CheckCircle, Loader2, Clock, AlertTriangle, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   naver_news: { label: '네이버뉴스', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
@@ -53,6 +55,20 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const [deploying, setDeploying] = useState(false);
+
+  const handleDeployWorker = async () => {
+    setDeploying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ktrenz-deploy-cf-worker');
+      if (error) throw error;
+      toast.success('Cloudflare Worker 배포 완료', { description: `Route: ${data?.route || 'ktrenz.com/*'}` });
+    } catch (e: any) {
+      toast.error('워커 배포 실패', { description: e.message });
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
@@ -206,9 +222,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">대시보드</h1>
-
-      {/* Pipeline Status Banner */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">대시보드</h1>
+        <Button size="sm" variant="outline" onClick={handleDeployWorker} disabled={deploying}>
+          {deploying ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Rocket className="w-3 h-3 mr-1" />}
+          워커 배포
+        </Button>
+      </div>
       <Card className={cn(
         "border-l-4",
         isAnyRunning ? "border-l-blue-500 bg-blue-500/5" : "border-l-green-500/50"
