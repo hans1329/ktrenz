@@ -547,59 +547,32 @@ function FlipCard({ digit }: { digit: string }) {
     if (digit !== cur) {
       setPrev(cur);
       setFlipping(true);
-      const t1 = setTimeout(() => {
+      const t = setTimeout(() => {
         setCur(digit);
-      }, 150);
-      const t2 = setTimeout(() => {
         setFlipping(false);
-      }, 400);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+      }, 350);
+      return () => clearTimeout(t);
     }
   }, [digit]);
 
   return (
-    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md" style={{ perspective: 300 }}>
-      {/* Static top half — new digit */}
-      <div className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden">
-        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground translate-y-[55%]">{digit}</span>
-      </div>
-      {/* Static bottom half */}
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white/90 flex items-start justify-center overflow-hidden">
-        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground -translate-y-[55%]">{cur}</span>
+    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card">
+      {/* Current digit */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{cur}</span>
       </div>
 
-      {/* Flipping top panel — old digit folds down */}
+      {/* Slide-down: new digit enters from top */}
       {flipping && (
         <div
-          className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden rounded-t-lg z-20"
+          className="absolute inset-0 flex items-center justify-center bg-card z-20"
           style={{
-            transformOrigin: "bottom center",
-            animation: "flipTop 0.4s ease-in forwards",
+            animation: "slideDigitDown 0.35s ease-out forwards",
           }}
         >
-          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground translate-y-[55%]">{prev}</span>
+          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{digit}</span>
         </div>
       )}
-
-      {/* Flipping bottom panel — new digit unfolds */}
-      {flipping && (
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/2 bg-white/90 flex items-start justify-center overflow-hidden rounded-b-lg z-20"
-          style={{
-            transformOrigin: "top center",
-            animation: "flipBottom 0.4s 0.15s ease-out forwards",
-            transform: "rotateX(90deg)",
-          }}
-        >
-          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground -translate-y-[55%]">{digit}</span>
-        </div>
-      )}
-
-      {/* Center line */}
-      <div className="absolute inset-x-0 top-1/2 h-px bg-border/50 z-30" />
-      {/* Side notches */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-r-full z-30" />
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-l-full z-30" />
     </div>
   );
 }
