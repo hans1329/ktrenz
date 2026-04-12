@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
       throw new Error("Missing Cloudflare credentials");
     }
 
-    // Auth check (temporarily disabled)
-    /* const authHeader = req.headers.get("Authorization");
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } */
+    }
 
     const workerName = "ktrenz-report-proxy";
 
