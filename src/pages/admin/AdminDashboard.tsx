@@ -222,9 +222,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">대시보드</h1>
-
-      {/* Pipeline Status Banner */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">대시보드</h1>
+        <Button size="sm" variant="outline" onClick={handleDeployWorker} disabled={deploying}>
+          {deploying ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Rocket className="w-3 h-3 mr-1" />}
+          워커 배포
+        </Button>
+      </div>
       <Card className={cn(
         "border-l-4",
         isAnyRunning ? "border-l-blue-500 bg-blue-500/5" : "border-l-green-500/50"
