@@ -19,7 +19,7 @@ import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -130,6 +130,60 @@ interface B2Run {
 }
 
 type Band = "steady" | "rising" | "surge";
+
+declare global {
+  interface Window {
+    instgrm?: {
+      Embeds?: {
+        process: () => void;
+      };
+    };
+  }
+}
+
+const INSTAGRAM_EMBED_SCRIPT_ID = "instagram-embed-script";
+let instagramEmbedScriptPromise: Promise<void> | null = null;
+
+function ensureInstagramEmbedScript(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.instgrm?.Embeds?.process) return Promise.resolve();
+  if (instagramEmbedScriptPromise) return instagramEmbedScriptPromise;
+
+  instagramEmbedScriptPromise = new Promise((resolve, reject) => {
+    const markLoaded = () => {
+      const script = document.getElementById(INSTAGRAM_EMBED_SCRIPT_ID) as HTMLScriptElement | null;
+      script?.setAttribute("data-loaded", "true");
+      resolve();
+    };
+
+    const markError = () => {
+      instagramEmbedScriptPromise = null;
+      reject(new Error("Instagram embed script failed to load"));
+    };
+
+    const existingScript = document.getElementById(INSTAGRAM_EMBED_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existingScript) {
+      if (existingScript.getAttribute("data-loaded") === "true") {
+        resolve();
+        return;
+      }
+
+      existingScript.addEventListener("load", markLoaded, { once: true });
+      existingScript.addEventListener("error", markError, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = INSTAGRAM_EMBED_SCRIPT_ID;
+    script.async = true;
+    script.src = "https://www.instagram.com/embed.js";
+    script.addEventListener("load", markLoaded, { once: true });
+    script.addEventListener("error", markError, { once: true });
+    document.body.appendChild(script);
+  });
+
+  return instagramEmbedScriptPromise;
+}
 
 const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
   { key: "steady", label: "Steady", range: "15–30%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
@@ -362,7 +416,7 @@ function sourceIcon(source: string): ReactNode {
     switch (source) {
       case "youtube": return <Play className={cls} />;
       case "tiktok": return <Music className={cls} />;
-      case "instagram": return <Camera className={cls} />;
+      case "instagram": return <Instagram className={cls} />;
       case "naver_news": return <Newspaper className={cls} />;
       case "reddit": return <MessageCircle className={cls} />;
       default: return <FileText className={cls} />;
@@ -371,6 +425,87 @@ function sourceIcon(source: string): ReactNode {
   return (
     <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
       {icon}
+    </div>
+  );
+}
+
+function InstagramEmbed({ url, title, thumbnail }: { url: string; title: string; thumbnail: string | null }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [showFallback, setShowFallback] = useState(false);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    setShowFallback(false);
+
+    const hasRenderedEmbed = () => Boolean(container.querySelector("iframe"));
+
+    const observer = new MutationObserver(() => {
+      if (hasRenderedEmbed()) {
+        setShowFallback(false);
+      }
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+
+    const fallbackTimer = window.setTimeout(() => {
+      if (!hasRenderedEmbed()) {
+        setShowFallback(true);
+      }
+    }, 1800);
+
+    ensureInstagramEmbedScript()
+      .then(() => {
+        window.requestAnimationFrame(() => {
+          window.instgrm?.Embeds?.process();
+
+          window.setTimeout(() => {
+            if (!hasRenderedEmbed()) {
+              setShowFallback(true);
+            }
+          }, 800);
+        });
+      })
+      .catch(() => {
+        setShowFallback(true);
+      });
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(fallbackTimer);
+    };
+  }, [url]);
+
+  return (
+    <div ref={containerRef} className="relative w-full min-h-[480px] overflow-hidden bg-background">
+      <div
+        aria-hidden={showFallback}
+        className={cn("w-full", showFallback && "absolute inset-0 opacity-0 pointer-events-none")}
+      >
+        <blockquote
+          className="instagram-media !m-0 !w-full !min-w-0"
+          data-instgrm-captioned=""
+          data-instgrm-permalink={url}
+          data-instgrm-version="14"
+        >
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            {title}
+          </a>
+        </blockquote>
+      </div>
+
+      {showFallback && (
+        thumbnail ? (
+          <SmartImage src={thumbnail} alt={title} className="w-full aspect-[4/5] object-cover" />
+        ) : (
+          <div className="flex w-full aspect-[4/5] items-center justify-center bg-muted text-xs text-muted-foreground">
+            Instagram preview unavailable
+          </div>
+        )
+      )}
     </div>
   );
 }
@@ -1514,36 +1649,16 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram: embed with fallback
+                    // Instagram: official embed first, in-drawer fallback second
                     if (source === "instagram" && url) {
-                      const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
-                      const shortcode = instaMatch?.[2] || meta?.embed_shortcode;
-                      if (shortcode) {
-                        const instaType = instaMatch?.[1] || "p";
-                        const embedPath = instaType === "reel" ? "reel" : instaType === "tv" ? "tv" : "p";
-                        return (
-                          <div className="relative w-full">
-                            <iframe
-                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/`}
-                              title={drawerItem.title}
-                              className="w-full border-0"
-                              style={{ minHeight: "480px" }}
-                              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                              loading="lazy"
-                            />
-                          </div>
-                        );
-                      }
-                      // No shortcode: show thumbnail + external link
-                      return drawerItem.thumbnail ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="block relative group">
-                          <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ExternalLink className="w-8 h-8 text-white" />
-                          </div>
-                        </a>
-                      ) : null;
+                      return (
+                        <InstagramEmbed
+                          key={url}
+                          url={url}
+                          title={drawerItem.title}
+                          thumbnail={drawerItem.thumbnail}
+                        />
+                      );
                     }
 
                     // Fallback: thumbnail image
