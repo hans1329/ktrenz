@@ -858,6 +858,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.analyzingTrend": { en: "Analyzing {name}'s trends...", ko: "{name}의 트렌드를 분석하고 있어요...", ja: "{name}のトレンドを分析中...", zh: "正在分析{name}的趋势..." },
   "battle.pleaseWait": { en: "Please wait a moment!", ko: "잠시만 기다려주세요!", ja: "少々お待ちください！", zh: "请稍等！" },
   "battle.predicted": { en: "Growth Predicted", ko: "상승예측", ja: "上昇予測", zh: "上升预测" },
+  "battle.predict": { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
 };
 
 export default translations;
