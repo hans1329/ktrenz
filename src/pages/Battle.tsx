@@ -1467,27 +1467,54 @@ export default function Battle() {
 
           return (
             <div key={pairIdx} className="space-y-5 relative">
-              <div
-                className={cn("flex items-center gap-3 px-6 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5", battleFilter === "live" && pairState.submitted && "cursor-pointer")}
-                onClick={() => {
-                  if (battleFilter === "live" && pairState.submitted) {
-                    setCollapsedPairs(prev => {
-                      const next = new Set(prev);
-                      if (next.has(pairIdx)) next.delete(pairIdx);
-                      else next.add(pairIdx);
-                      return next;
-                    });
-                  }
-                }}
-              >
-                <div className="flex-1 h-px bg-primary/30" />
-                <span className={cn("text-[11px] font-bold uppercase tracking-widest rounded-full px-4 py-1.5 border ring-1 flex items-center gap-1.5", getPairState(pairIdx).submitted ? "bg-sky-600 text-white border-green-400 ring-green-400/30" : "bg-primary text-primary-foreground border-primary/40 ring-primary/30")}>
-                  Battle {pairIdx + 1}{getPairState(pairIdx).submitted ? ` ✓ ${t("joined")}` : ""}
-                  {battleFilter === "live" && pairState.submitted && (
-                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", collapsedPairs.has(pairIdx) && "rotate-180")} />
+              {/* Question-style battle header */}
+              <div className={cn("px-4 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5")}>
+                <div
+                  className={cn(
+                    "rounded-2xl border p-4 space-y-2 transition-all",
+                    pairState.submitted
+                      ? "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800"
+                      : "bg-card border-border"
                   )}
-                </span>
-                <div className="flex-1 h-px bg-primary/30" />
+                  onClick={() => {
+                    if (battleFilter === "live" && pairState.submitted) {
+                      setCollapsedPairs(prev => {
+                        const next = new Set(prev);
+                        if (next.has(pairIdx)) next.delete(pairIdx);
+                        else next.add(pairIdx);
+                        return next;
+                      });
+                    }
+                  }}
+                >
+                  {/* Battle number badge */}
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-[10px] font-bold uppercase tracking-widest rounded-full px-3 py-1 border",
+                      pairState.submitted
+                        ? "bg-sky-600 text-white border-sky-400"
+                        : "bg-primary text-primary-foreground border-primary/40"
+                    )}>
+                      Battle {pairIdx + 1}{pairState.submitted ? ` ✓` : ""}
+                    </span>
+                    {battleFilter === "live" && pairState.submitted && (
+                      <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", collapsedPairs.has(pairIdx) && "rotate-180")} />
+                    )}
+                  </div>
+
+                  {/* Question text */}
+                  <p className="text-sm sm:text-base font-bold text-foreground leading-snug">
+                    {(() => {
+                      const starA = pairRuns[0]?.star?.display_name || "A";
+                      const starB = pairRuns[1]?.star?.display_name || "B";
+                      return t("battle.questionFormat").replace("{a}", starA).replace("{b}", starB);
+                    })()}
+                  </p>
+
+                  {/* Tap to analyze hint */}
+                  {!pairState.submitted && (
+                    <p className="text-[11px] text-muted-foreground">{t("battle.tapToAnalyze")}</p>
+                  )}
+                </div>
               </div>
 
 
