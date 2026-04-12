@@ -763,7 +763,74 @@ const translations: Record<string, Record<Language, string>> = {
     zh: "加入数千名已在使用KTrenZ的K-Pop粉丝，走在趋势前沿，赚取奖励，连接全球粉丝圈。",
   },
 
-  // ── T2 Main Page Sections ──
+  // ── About: GEO elements ──
+  "about.whatIsTitle": {
+    en: "What Is KTrenZ?",
+    ko: "KTrenZ란 무엇인가요?",
+    ja: "KTrenZとは？",
+    zh: "什么是KTrenZ？",
+  },
+  "about.whatIsDesc": {
+    en: "KTrenZ is a real-time K-Pop trend intelligence platform that monitors over 600 artists across 7+ data sources — including Naver News, YouTube, Instagram, TikTok, Reddit, and commerce platforms. It detects emerging keywords, scores them using a proprietary multi-source algorithm, assigns trend grades from Spark to Explosive, and lets fans predict which trends will rise next through daily Battles. Fans earn K-Points for accurate predictions, which can be redeemed for rewards like Spotify Premium. KTrenZ bridges the gap between fan passion and data-driven trend analysis.",
+    ko: "KTrenZ는 600명 이상의 K-Pop 아티스트를 네이버 뉴스, 유튜브, 인스타그램, 틱톡, 레딧, 커머스 플랫폼 등 7개 이상의 데이터 소스에서 실시간으로 모니터링하는 K-Pop 트렌드 인텔리전스 플랫폼입니다. 새로운 키워드를 감지하고, 독자적인 멀티소스 알고리즘으로 점수를 매기며, Spark부터 Explosive까지 트렌드 등급을 부여합니다. 팬들은 매일 배틀을 통해 다음 트렌드를 예측하고, 정확한 예측으로 K-Points를 획득하여 Spotify Premium 등의 보상으로 교환할 수 있습니다.",
+    ja: "KTrenZは、NaverニュースやYouTube、Instagram、TikTok、Redditなど7つ以上のデータソースから600人以上のK-Popアーティストをリアルタイムで監視するトレンドインテリジェンスプラットフォームです。新しいキーワードを検出し、独自のマルチソースアルゴリズムでスコアリングし、SparkからExplosiveまでのトレンドグレードを付与します。",
+    zh: "KTrenZ是一个实时K-Pop趋势情报平台，通过Naver新闻、YouTube、Instagram、TikTok、Reddit等7个以上数据源监控600多位艺人。它检测新兴关键词，使用专有多源算法进行评分，并分配从Spark到Explosive的趋势等级。",
+  },
+  "about.stat1": { en: "Artists Tracked", ko: "추적 아티스트", ja: "追跡アーティスト", zh: "追踪艺人" },
+  "about.stat2": { en: "Data Sources", ko: "데이터 소스", ja: "データソース", zh: "数据源" },
+  "about.stat3": { en: "Trend Grades", ko: "트렌드 등급", ja: "トレンドグレード", zh: "趋势等级" },
+  "about.stat4": { en: "Real-time Monitoring", ko: "실시간 모니터링", ja: "リアルタイム監視", zh: "实时监控" },
+
+  "about.faqTitle": {
+    en: "Frequently Asked Questions",
+    ko: "자주 묻는 질문",
+    ja: "よくある質問",
+    zh: "常见问题",
+  },
+  "about.faq1Q": { en: "What is KTrenZ and how does it work?", ko: "KTrenZ는 무엇이고 어떻게 작동하나요?", ja: "KTrenZとは何ですか？どのように機能しますか？", zh: "KTrenZ是什么？如何运作？" },
+  "about.faq1A": {
+    en: "KTrenZ is a K-Pop trend intelligence platform that collects data from 7+ sources (Naver News, YouTube, Instagram, TikTok, Reddit, Naver Cafe, and commerce platforms), detects trending keywords related to K-Pop artists, and scores them in real-time. Each keyword receives a trend grade from Spark to Explosive based on its momentum across multiple platforms.",
+    ko: "KTrenZ는 네이버 뉴스, 유튜브, 인스타그램, 틱톡, 레딧, 네이버 카페, 커머스 플랫폼 등 7개 이상의 소스에서 데이터를 수집하고, K-Pop 아티스트 관련 트렌드 키워드를 감지하여 실시간으로 점수를 매기는 트렌드 인텔리전스 플랫폼입니다. 각 키워드는 여러 플랫폼에서의 모멘텀에 따라 Spark부터 Explosive까지 트렌드 등급을 부여받습니다.",
+    ja: "KTrenZは、Naverニュース、YouTube、Instagram、TikTok、Reddit、Naverカフェ、コマースプラットフォームなど7つ以上のソースからデータを収集し、K-Popアーティスト関連のトレンドキーワードをリアルタイムでスコアリングするプラットフォームです。",
+    zh: "KTrenZ是一个从7个以上来源收集数据的K-Pop趋势情报平台，实时检测和评分与K-Pop艺人相关的趋势关键词。",
+  },
+  "about.faq2Q": { en: "How are trend grades determined?", ko: "트렌드 등급은 어떻게 결정되나요?", ja: "トレンドグレードはどのように決定されますか？", zh: "趋势等级是如何确定的？" },
+  "about.faq2A": {
+    en: "KTrenZ uses a proprietary multi-source scoring algorithm that analyzes keyword velocity, cross-platform presence, and engagement patterns. Keywords are graded into six tiers: Spark (newly detected), Rising (gaining traction), Hot (significant buzz), Viral (rapid spread), Mega (dominant trend), and Explosive (peak momentum). Grades update in real-time as new data arrives.",
+    ko: "KTrenZ는 키워드 속도, 교차 플랫폼 존재감, 참여 패턴을 분석하는 독자적인 멀티소스 스코어링 알고리즘을 사용합니다. 키워드는 Spark(신규 감지), Rising(주목 상승), Hot(상당한 버즈), Viral(급속 확산), Mega(지배적 트렌드), Explosive(최고 모멘텀)의 6단계로 분류됩니다.",
+    ja: "KTrenZは、キーワードの速度、クロスプラットフォームでの存在感、エンゲージメントパターンを分析する独自のマルチソーススコアリングアルゴリズムを使用し、6段階のグレードを付与します。",
+    zh: "KTrenZ使用专有多源评分算法，分析关键词速度、跨平台存在感和互动模式，将关键词分为六个等级。",
+  },
+  "about.faq3Q": { en: "What are Battles and how do I earn K-Points?", ko: "배틀이란 무엇이고 K-Points는 어떻게 획득하나요?", ja: "バトルとは何ですか？K-Pointsはどう獲得しますか？", zh: "什么是Battle？如何赚取K-Points？" },
+  "about.faq3A": {
+    en: "Battles are daily trend prediction games where you pick which keyword will grow faster over the next 24 hours. If your prediction is correct, you earn K-Points — virtual reward points that can be redeemed for prizes like Spotify Premium gift cards. New users receive a welcome bonus of K-Points to get started immediately.",
+    ko: "배틀은 두 키워드 중 24시간 동안 더 빠르게 성장할 키워드를 예측하는 일일 트렌드 예측 게임입니다. 예측이 맞으면 K-Points를 획득하고, 이를 Spotify Premium 기프트 카드 등의 보상으로 교환할 수 있습니다. 신규 사용자에게는 웰컴 보너스 K-Points가 지급됩니다.",
+    ja: "バトルは、24時間でどのキーワードがより速く成長するかを予測するデイリーゲームです。予測が当たるとK-Pointsを獲得でき、Spotify Premiumギフトカードなどの報酬と交換できます。",
+    zh: "Battle是每日趋势预测游戏，预测哪个关键词在24小时内增长更快。预测正确可获得K-Points，兑换Spotify Premium等奖励。",
+  },
+  "about.faq4Q": { en: "Is KTrenZ free to use?", ko: "KTrenZ는 무료인가요?", ja: "KTrenZは無料ですか？", zh: "KTrenZ是免费的吗？" },
+  "about.faq4A": {
+    en: "Yes, KTrenZ is completely free to use. You can browse trends, participate in Battles, earn K-Points, and redeem rewards without any payment. Simply sign up with your Google account or email to get started.",
+    ko: "네, KTrenZ는 완전히 무료입니다. 트렌드 탐색, 배틀 참여, K-Points 획득, 보상 교환 모두 무료로 이용할 수 있습니다. Google 계정 또는 이메일로 간단히 가입하세요.",
+    ja: "はい、KTrenZは完全無料です。トレンド閲覧、バトル参加、K-Points獲得、報酬交換のすべてを無料でご利用いただけます。",
+    zh: "是的，KTrenZ完全免费。您可以浏览趋势、参与Battle、赚取K-Points并兑换奖励，无需任何付费。",
+  },
+  "about.faq5Q": { en: "What data sources does KTrenZ use?", ko: "KTrenZ는 어떤 데이터 소스를 사용하나요?", ja: "KTrenZはどのデータソースを使用していますか？", zh: "KTrenZ使用哪些数据源？" },
+  "about.faq5A": {
+    en: "KTrenZ aggregates data from Naver News, Naver Blogs, Naver Cafe, YouTube, Instagram, TikTok, Reddit, and e-commerce platforms. This multi-source approach ensures comprehensive trend detection that captures both mainstream media coverage and grassroots fan activity across Korean and global platforms.",
+    ko: "KTrenZ는 네이버 뉴스, 네이버 블로그, 네이버 카페, 유튜브, 인스타그램, 틱톡, 레딧, 이커머스 플랫폼에서 데이터를 수집합니다. 이 멀티소스 접근 방식으로 한국 및 글로벌 플랫폼의 주류 미디어와 팬 활동을 포괄적으로 감지합니다.",
+    ja: "KTrenZは、Naverニュース、ブログ、カフェ、YouTube、Instagram、TikTok、Reddit、Eコマースプラットフォームからデータを集約しています。",
+    zh: "KTrenZ从Naver新闻、博客、Cafe、YouTube、Instagram、TikTok、Reddit和电商平台聚合数据。",
+  },
+  "about.faq6Q": { en: "How many artists does KTrenZ track?", ko: "KTrenZ는 몇 명의 아티스트를 추적하나요?", ja: "KTrenZは何人のアーティストを追跡していますか？", zh: "KTrenZ追踪多少艺人？" },
+  "about.faq6A": {
+    en: "KTrenZ currently tracks over 600 K-Pop artists and groups, including both established acts and emerging talent. The platform continuously expands its coverage, and fans can request new artist listings through the app.",
+    ko: "KTrenZ는 현재 600명 이상의 K-Pop 아티스트와 그룹을 추적하고 있으며, 기존 유명 아티스트와 신인 모두를 포함합니다. 플랫폼은 지속적으로 커버리지를 확장하며, 팬은 앱을 통해 새 아티스트 등록을 요청할 수 있습니다.",
+    ja: "KTrenZは現在600人以上のK-Popアーティストとグループを追跡しており、ファンはアプリから新しいアーティストの登録をリクエストできます。",
+    zh: "KTrenZ目前追踪超过600位K-Pop艺人和团体，粉丝可以通过应用请求添加新艺人。",
+  },
+
+
   "t2.hero.discoverTitle": { en: "Discover Trends\nDriven by K-Pop", ko: "K·스타가 만드는\n소비 트렌드를 발견하세요", ja: "K-Popが生み出す\nトレンドを発見", zh: "发现K-Pop\n驱动的趋势" },
   "t2.hero.discoverDesc": { en: "Fashion, beauty, food & more — real-time analysis", ko: "패션, 뷰티, 음식까지 — 실시간 트렌드 분석", ja: "ファッション、ビューティー、グルメまで — リアルタイム分析", zh: "时尚、美妆、美食等 — 实时分析" },
   "t2.hero.getStarted": { en: "Get Started", ko: "시작하기", ja: "始める", zh: "开始" },
