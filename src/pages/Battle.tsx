@@ -1842,7 +1842,7 @@ export default function Battle() {
             {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
               <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <InsightLoadingText starName={insightDrawer?.starName ?? ""} t={t} />
+                <InsightLoadingText starName={insightDrawer?.starName ?? ""} t={globalT} />
               </div>
             ) : (() => {
               const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
