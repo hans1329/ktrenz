@@ -662,8 +662,10 @@ function ArtistSection({
     <div className="space-y-2">
       {/* Pick bar — constrained width */}
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
-        <div
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-full transition-all shadow-sm bg-white ${
+        <button
+          onClick={onPick}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
             isSubmitted && isPicked
               ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
               : isPicked
@@ -671,32 +673,27 @@ function ArtistSection({
                 : "border border-purple-300/50 hover:border-purple-400/60"
           }`}
         >
-          <button onClick={onInsightOpen} className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <span className={`text-sm sm:text-base font-extrabold transition-colors shrink-0 ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
              <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Trend by</span>
              <span className={`text-sm sm:text-base font-bold transition-colors truncate ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
-          </button>
+          </div>
           {isSubmitted && isPicked ? (
             <span className="flex items-center gap-1 text-xs font-bold text-primary shrink-0 ml-2">
               <Trophy className="w-3.5 h-3.5" />
               {lt("battle.predicted")}
             </span>
           ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPick(); }}
-              disabled={disabled}
-              className={cn(
-                "shrink-0 ml-2 flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                isPicked
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
-              )}
-            >
-              <Zap className="w-3 h-3" />
+            <span className={cn(
+              "shrink-0 ml-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+              isPicked
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            )}>
               {lt("battle.predict") || "Predict"}
-            </button>
+            </span>
           )}
-        </div>
+        </button>
       </div>
 
       {/* Horizontal card carousel */}
