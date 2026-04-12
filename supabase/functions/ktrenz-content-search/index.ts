@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
           const charBefore = idx > 0 ? t[idx - 1] : "";
           const charAfter = t[idx + nameKo.length] || "";
           const koreanRange = /[\uAC00-\uD7A3]/;
-          const isEmbedded = koreanRange.test(charBefore) || (koreanRange.test(charAfter) && charAfter !== "씨");
+          const isEmbedded = koreanRange.test(charBefore) || koreanRange.test(charAfter);
           if (isEmbedded) {
             // Embedded in longer name → require group/english name co-occurrence
             return groupContextKeywords.some((gk) => t.includes(gk));
