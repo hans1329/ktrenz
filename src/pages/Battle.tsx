@@ -663,8 +663,7 @@ function ArtistSection({
       {/* Pick bar — constrained width */}
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-3">
         <button
-          onClick={onPick}
-          disabled={disabled}
+          onClick={onInsightOpen}
           className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
             isSubmitted && isPicked
               ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
@@ -685,7 +684,7 @@ function ArtistSection({
             </span>
           ) : (
             <span className={cn(
-              "shrink-0 ml-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+              "shrink-0 ml-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all pointer-events-none",
               isPicked
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground"
