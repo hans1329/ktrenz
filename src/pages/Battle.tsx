@@ -1468,7 +1468,7 @@ export default function Battle() {
           return (
             <div key={pairIdx} className="space-y-5 relative">
               {/* Question-style battle header */}
-              <div className={cn("px-4 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-10" : "mb-5")}>
+              <div className={cn("px-4 max-w-lg sm:max-w-4xl mx-auto", pairIdx > 0 ? "my-6" : "mb-1")}>
                 <div
                   className={cn(
                     "rounded-2xl border p-4 space-y-2 transition-all",
