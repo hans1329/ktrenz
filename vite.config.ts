@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         cacheId: "ktrenz-lovable",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/],
+        navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
       },
     }),
