@@ -194,6 +194,10 @@ Deno.serve(async (req) => {
 
     const workerName = "ktrenz-report-proxy";
 
+    // Step 0: Ensure ghost.ktrenz.com DNS record exists
+    console.log("Ensuring ghost DNS record...");
+    await ensureGhostDnsRecord(zoneId, apiToken);
+
     // Step 1: Deploy worker script
     console.log("Deploying worker script...");
     const deployResult = await deployWorker(accountId, apiToken, workerName);
