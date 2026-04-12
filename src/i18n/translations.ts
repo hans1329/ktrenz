@@ -679,12 +679,12 @@ const translations: Record<string, Record<Language, string>> = {
     ja: "KTrenZはトレンドを予測するだけで報酬が得られます — 課金は不要。ファンの直感を価値に変える無料ルーティンをご紹介します。",
     zh: "KTrenZ仅通过预测趋势即可获得奖励——完全免费。以下是将您的粉丝直觉转化为实际价值的免费循环。",
   },
-  "about.fanLoop1Title": { en: "Get Free K-Cashes Daily", ko: "매일 무료 K-Cashes 지급", ja: "毎日無料のK-Cashesを獲得", zh: "每日免费获取K-Cashes" },
+  "about.fanLoop1Title": { en: "Get Free Prediction Tickets Daily", ko: "매일 무료 예측 티켓 지급", ja: "毎日無料の予測チケットを獲得", zh: "每日免费获取预测票" },
   "about.fanLoop1Desc": {
-    en: "Every day you receive free prediction tickets (K-Cashes) based on your tier — from 3 to 10 tickets daily. No purchase needed, just log in.",
-    ko: "매일 등급에 따라 3~10장의 무료 예측 티켓(K-Cashes)이 지급됩니다. 구매 필요 없이 로그인만 하면 됩니다.",
-    ja: "毎日ティアに応じて3〜10枚の無料予測チケット（K-Cashes）が付与されます。購入不要、ログインするだけ。",
-    zh: "每天根据您的等级获得3至10张免费预测票（K-Cashes）。无需购买，只需登录。",
+    en: "Every day you receive free prediction tickets based on your tier — from 3 to 10 tickets daily. No purchase needed, just log in. Win battles to earn K-Cashes!",
+    ko: "매일 등급에 따라 3~10장의 무료 예측 티켓이 지급됩니다. 구매 필요 없이 로그인만 하면 됩니다. 배틀에서 승리하면 K-Cashes를 획득할 수 있어요!",
+    ja: "毎日ティアに応じて3〜10枚の無料予測チケットが付与されます。購入不要、ログインするだけ。バトルに勝ってK-Cashesを獲得！",
+    zh: "每天根据您的等级获得3至10张免费预测票。无需购买，只需登录。赢得Battle即可获得K-Cashes！",
   },
   "about.fanLoop2Title": { en: "Predict Trending Keywords", ko: "트렌드 키워드 예측하기", ja: "トレンドキーワードを予測", zh: "预测趋势关键词" },
   "about.fanLoop2Desc": {
