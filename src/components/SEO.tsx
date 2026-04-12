@@ -11,7 +11,7 @@ interface SEOProps {
   path?: string;
   ogImage?: string;
   type?: "website" | "article";
-  jsonLd?: Record<string, unknown>;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 export default function SEO({
