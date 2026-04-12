@@ -1757,6 +1757,8 @@ export default function Battle() {
                   // Filter CSS code, template vars, or heavily garbled text
                   if (/^\.[\w_]+\s*\{/.test(desc.trim())) return null;
                   if (/\{\{[\w#\/]/.test(desc)) return null;
+                  // Strip inline CSS blocks that sneak into scraped descriptions
+                  if (/[\w.#-]+\s*\{[^}]*\}/.test(desc)) return null;
                   // Check for garbled encoding: high ratio of replacement/control chars
                   const garbledCount = (desc.match(/[\x00-\x08\uFFFD]/g) || []).length;
                   if (garbledCount > 5) return null;
