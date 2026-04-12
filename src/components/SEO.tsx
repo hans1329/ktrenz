@@ -80,9 +80,17 @@ export default function SEO({
       <meta name="twitter:image" content={ogImage} />
 
       {/* JSON-LD */}
-      <script type="application/ld+json">
-        {JSON.stringify(jsonLd ?? defaultJsonLd)}
-      </script>
+      {Array.isArray(jsonLd) ? (
+        jsonLd.map((ld, i) => (
+          <script key={i} type="application/ld+json">
+            {JSON.stringify(ld)}
+          </script>
+        ))
+      ) : (
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd ?? defaultJsonLd)}
+        </script>
+      )}
     </Helmet>
   );
 }
