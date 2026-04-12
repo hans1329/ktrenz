@@ -929,8 +929,8 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.pleaseWait": { en: "Please wait a moment!", ko: "잠시만 기다려주세요!", ja: "少々お待ちください！", zh: "请稍等！" },
   "battle.predicted": { en: "Growth Predicted", ko: "상승예측", ja: "上昇予測", zh: "上升预测" },
   "battle.predict": { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
-  "battle.questionFormat": { en: "Will {a}'s trend rise more than {b}'s tomorrow?", ko: "{a}의 트렌드가 {b}보다 내일 더 오를까?", ja: "{a}のトレンドは明日{b}より上がる？", zh: "{a}的趋势明天会比{b}更火吗？" },
-  "battle.tapToAnalyze": { en: "Vote for the trend you think will rise more!", ko: "더 오를 트렌드에 투표해주세요!", ja: "伸びると思うトレンドに投票！", zh: "为你认为会更火的趋势投票！" },
+  "battle.questionFormat": { en: "Will {a}'s trend rise more than {b}'s tomorrow?", ko: "{a}의 트렌드가 {b}보다 내일 더 유행할까?", ja: "{a}のトレンドは明日{b}より上がる？", zh: "{a}的趋势明天会比{b}更火吗？" },
+  "battle.tapToAnalyze": { en: "Vote for the trend you think will rise more!", ko: "더 유행할 트렌드에 투표해주세요!", ja: "伸びると思うトレンドに投票！", zh: "为你认为会更火的趋势投票！" },
 };
 
 export default translations;
