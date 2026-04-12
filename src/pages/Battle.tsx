@@ -357,15 +357,22 @@ function decodeHtml(str: string) {
 }
 
 function sourceIcon(source: string): ReactNode {
-  const cls = "w-4 h-4 text-white drop-shadow-md";
-  switch (source) {
-    case "youtube": return <Play className={cls} />;
-    case "tiktok": return <Music className={cls} />;
-    case "instagram": return <Camera className={cls} />;
-    case "naver_news": return <Newspaper className={cls} />;
-    case "reddit": return <MessageCircle className={cls} />;
-    default: return <FileText className={cls} />;
-  }
+  const cls = "w-3.5 h-3.5 text-white";
+  const icon = (() => {
+    switch (source) {
+      case "youtube": return <Play className={cls} />;
+      case "tiktok": return <Music className={cls} />;
+      case "instagram": return <Camera className={cls} />;
+      case "naver_news": return <Newspaper className={cls} />;
+      case "reddit": return <MessageCircle className={cls} />;
+      default: return <FileText className={cls} />;
+    }
+  })();
+  return (
+    <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+      {icon}
+    </div>
+  );
 }
 
 /* ── Flip Timer ── */
@@ -1507,28 +1514,36 @@ export default function Battle() {
                       }
                     }
 
-                    // Instagram: always embed in-drawer for autoplay
+                    // Instagram: embed with fallback
                     if (source === "instagram" && url) {
                       const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
-                      const shortcode = instaMatch?.[2] || meta.embed_shortcode;
+                      const shortcode = instaMatch?.[2] || meta?.embed_shortcode;
                       if (shortcode) {
                         const instaType = instaMatch?.[1] || "p";
                         const embedPath = instaType === "reel" ? "reel" : instaType === "tv" ? "tv" : "p";
                         return (
-                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: "125%" }}>
+                          <div className="relative w-full">
                             <iframe
-                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/?autoplay=1`}
+                              src={`https://www.instagram.com/${embedPath}/${shortcode}/embed/`}
                               title={drawerItem.title}
-                              className="absolute inset-0 w-full h-full border-0"
-                              style={{ overflow: "hidden" }}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              className="w-full border-0"
+                              style={{ minHeight: "480px" }}
+                              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                               allowFullScreen
-                              referrerPolicy="no-referrer"
-                              scrolling="no"
+                              loading="lazy"
                             />
                           </div>
                         );
                       }
+                      // No shortcode: show thumbnail + external link
+                      return drawerItem.thumbnail ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="block relative group">
+                          <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ExternalLink className="w-8 h-8 text-white" />
+                          </div>
+                        </a>
+                      ) : null;
                     }
 
                     // Fallback: thumbnail image
