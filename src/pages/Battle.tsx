@@ -1360,9 +1360,9 @@ export default function Battle() {
       <SEO
         title="KTrenZ – K-Pop Content Battle"
         titleKo="KTrenZ – K-Pop 콘텐츠 배틀"
-        description="Predict which K-Pop content wins each round. Vote, earn K-Cash, and climb the leaderboard."
-        descriptionKo="어떤 K-Pop 콘텐츠가 이길지 예측하세요. 투표하고, K-Cash를 모으고, 리더보드에 도전하세요."
-        path="/"
+        description="Pick the winning K-Pop content. Vote and earn K-Cash."
+        descriptionKo="이길 K-Pop 콘텐츠를 골라 투표하고 K-Cash를 모으세요."
+        path="/battle"
       />
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header rightSlot={
