@@ -1929,7 +1929,7 @@ export default function Battle() {
 
                     return (
                       <div className="rounded-xl border border-border bg-background p-4 space-y-3">
-                        <p className="text-sm font-bold text-foreground">{betTitle}</p>
+                        <p className="text-sm font-bold text-foreground text-center">{betTitle}</p>
 
                         {isAlreadySubmitted ? (
                           <div className="flex items-center gap-2 py-1">
