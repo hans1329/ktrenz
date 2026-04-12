@@ -1506,13 +1506,13 @@ export default function Battle() {
                     {(() => {
                       const starA = pairRuns[0]?.star?.display_name || "A";
                       const starB = pairRuns[1]?.star?.display_name || "B";
-                      return t("battle.questionFormat").replace("{a}", starA).replace("{b}", starB);
+                      return t("questionFormat").replace("{a}", starA).replace("{b}", starB);
                     })()}
                   </p>
 
                   {/* Tap to analyze hint */}
                   {!pairState.submitted && (
-                    <p className="text-[11px] text-muted-foreground">{t("battle.tapToAnalyze")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("tapToAnalyze")}</p>
                   )}
                 </div>
               </div>
