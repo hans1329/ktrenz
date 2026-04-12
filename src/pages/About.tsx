@@ -143,13 +143,6 @@ const About = () => {
         type="website"
         jsonLd={jsonLd as any}
       />
-
-      {/* Additional JSON-LD for FAQ */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
       <div className="min-h-screen bg-background">
         <V3Header />
 
