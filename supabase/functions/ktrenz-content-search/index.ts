@@ -411,6 +411,7 @@ Deno.serve(async (req) => {
     }
     const YT_KEY = ytKeys[Math.floor(Math.random() * ytKeys.length)] || "";
 
+    console.log(`[TikTok] handle=${star.social_handles?.tiktok || 'none'}, secuid=${star.social_handles?.tiktok_secuid ? 'cached' : 'none'}`);
     // Parallel search all sources
     const [naverNewsRaw, naverBlogRaw, youtubeRaw, tiktokRaw, instagramRaw, redditRaw] = await Promise.all([
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "news", searchQuery, 15) : Promise.resolve([]),
