@@ -284,12 +284,7 @@ html {
   animation: caption-rotate-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes flipTop {
-  0% { transform: rotateX(0deg); }
-  100% { transform: rotateX(-90deg); }
-}
-
-@keyframes flipBottom {
-  0% { transform: rotateX(90deg); }
-  100% { transform: rotateX(0deg); }
+@keyframes slideDigitDown {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(0); }
 }
