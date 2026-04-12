@@ -8,6 +8,7 @@ import SamplePredictionCards from "@/components/about/SamplePredictionCards";
 import HeroSignalCanvas from "@/components/about/HeroSignalCanvas";
 import { useState } from "react";
 
+
 const FaqItem = ({ question, answer }: { question: string; answer: string }) => {
   const [open, setOpen] = useState(false);
   return (
