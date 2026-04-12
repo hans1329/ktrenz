@@ -1948,7 +1948,7 @@ export default function Battle() {
                     const isPicked = pairState?.pickedRunId === currentRun.id;
                     const isPickedInDrawer = pairState?.pickedRunId === currentRun.id;
 
-                    const betTitle = language === "ko" ? `${insightDrawer?.starName}의 트렌드가 내일 더 오를까?`
+                    const betTitle = language === "ko" ? `${insightDrawer?.starName}의 트렌드가 내일 더 유행할까?`
                       : language === "ja" ? `${insightDrawer?.starName}のトレンドは明日上がる？`
                       : language === "zh" ? `${insightDrawer?.starName}的趋势明天会上涨吗？`
                       : `Will ${insightDrawer?.starName}'s trend rise tomorrow?`;
