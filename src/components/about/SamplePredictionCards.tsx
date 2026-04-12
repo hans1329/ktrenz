@@ -190,7 +190,7 @@ const SamplePredictionCards = () => {
           <div className="flex">
             {/* Side A */}
             <div className="flex-1 p-2.5 space-y-1.5">
-              {pair.starA.items.slice(0, 3).map((item, i) => (
+              {(pair.starA.items || []).slice(0, 3).map((item, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   {item.thumbnail && (
                     <SmartImage
@@ -216,7 +216,7 @@ const SamplePredictionCards = () => {
 
             {/* Side B */}
             <div className="flex-1 p-2.5 space-y-1.5">
-              {pair.starB.items.slice(0, 3).map((item, i) => (
+              {(pair.starB.items || []).slice(0, 3).map((item, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   {item.thumbnail && (
                     <SmartImage
