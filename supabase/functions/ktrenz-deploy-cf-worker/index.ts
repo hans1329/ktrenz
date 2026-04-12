@@ -14,6 +14,13 @@ export default {
     if (url.pathname.startsWith('/report')) {
       // Strip /report prefix — Ghost slugs don't include it
       const ghostPath = url.pathname.replace(/^\\/report/, '') || '/';
+
+      // Ghost expects trailing slash on post slugs — redirect if missing
+      // (skip for files with extensions like .css, .js, .png, etc.)
+      if (ghostPath !== '/' && !ghostPath.endsWith('/') && !ghostPath.match(/\\.[a-z0-9]{2,5}$/i)) {
+        return Response.redirect(url.origin + '/report' + ghostPath + '/' + url.search, 301);
+      }
+
       const ghostUrl = 'http://ghost.ktrenz.com' + ghostPath + url.search;
 
       const ghostHeaders = new Headers({
@@ -28,8 +35,20 @@ export default {
       const response = await fetch(ghostUrl, {
         method: request.method,
         headers: ghostHeaders,
+        redirect: 'manual',
         body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
       });
+
+      // Handle Ghost redirects — rewrite Location to /report/...
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('Location') || '';
+        let newLocation = location;
+        // Rewrite ghost.ktrenz.com URLs
+        newLocation = newLocation.replace(/https?:\\/\\/ghost\\.ktrenz\\.com\\//g, url.origin + '/report/');
+        // Rewrite bare domain redirects from Ghost
+        newLocation = newLocation.replace(/^\\/((?!report)[^/])/, '/report/$1');
+        return Response.redirect(newLocation, response.status);
+      }
 
       const contentType = response.headers.get('Content-Type') || '';
       const newHeaders = new Headers(response.headers);
