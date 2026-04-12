@@ -205,12 +205,11 @@ async function searchTikTok(rapidApiKey: string, handle: string | null, secUid: 
     });
     if (!res.ok) { console.warn(`[TikTok] user/posts HTTP ${res.status}`); await res.text(); return []; }
     const text = await res.text();
-    console.log(`[TikTok] response length=${text.length}, keys=${Object.keys(JSON.parse(text || '{}') || {}).join(',')}`);
+    console.log(`[TikTok] response length=${text.length}`);
     if (!text || text.trim().length === 0) return [];
     let data: any;
     try { data = JSON.parse(text); } catch { return []; }
     const items = data?.itemList || data?.item_list || data?.data?.itemList || data?.data?.item_list || [];
-    console.log(`[TikTok] items count=${Array.isArray(items) ? items.length : 'not-array'}, topKeys=${Object.keys(data?.data || {}).slice(0,5).join(',')}`);
     if (!Array.isArray(items)) return [];
     return items.slice(0, count).filter((v: any) => v && v.id).map((v: any) => {
       const stats = v.stats || {};
