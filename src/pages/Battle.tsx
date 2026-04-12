@@ -1752,7 +1752,7 @@ export default function Battle() {
 
                 {/* Description */}
                 {(() => {
-                  const desc = drawerItem.description;
+                  let desc = drawerItem.description;
                   if (!desc) return null;
                   // Filter CSS code, template vars, or heavily garbled text
                   if (/^\.[\w_]+\s*\{/.test(desc.trim())) return null;
@@ -1762,6 +1762,14 @@ export default function Battle() {
                   // Check for garbled encoding: high ratio of replacement/control chars
                   const garbledCount = (desc.match(/[\x00-\x08\uFFFD]/g) || []).length;
                   if (garbledCount > 5) return null;
+                  // Strip news bylines: [서울=뉴시스]기자명 기자 = , (서울=연합뉴스) etc.
+                  desc = desc.replace(/[\[(\[]\s*\S+=\S+[\])\]]\s*\S+\s*기자\s*=\s*/g, "").trim();
+                  desc = desc.replace(/^\s*\S+\s+기자\s*=\s*/, "").trim();
+                  // Strip email addresses and DB prohibition notices
+                  desc = desc.replace(/\S+@\S+\.\S+/g, "").replace(/\*재판매\s*및\s*DB\s*금지/g, "").trim();
+                  // Strip photo credit lines: (사진 = xxx 제공) or (사진=xxx)
+                  desc = desc.replace(/\(사진\s*=?\s*[^)]*제공\)\s*\d{4}\.\d{2}\.\d{2}\.?/g, "").trim();
+                  if (!desc) return null;
                   const displayDesc = desc.length > 300 ? desc.slice(0, 300) + "…" : desc;
                   return (
                     <p className="text-sm text-muted-foreground leading-relaxed mb-2">
