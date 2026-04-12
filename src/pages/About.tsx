@@ -1,27 +1,50 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
-import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store, Ticket, Crosshair, Trophy, Headphones, Megaphone, Building2 } from "lucide-react";
+import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store, Ticket, Crosshair, Trophy, Headphones, Megaphone, Building2, HelpCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import SamplePredictionCards from "@/components/about/SamplePredictionCards";
 import HeroSignalCanvas from "@/components/about/HeroSignalCanvas";
+import { useState } from "react";
 
 const About = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const jsonLd = {
+  const faqs = [
+    { q: "about.faq1Q", a: "about.faq1A" },
+    { q: "about.faq2Q", a: "about.faq2A" },
+    { q: "about.faq3Q", a: "about.faq3A" },
+    { q: "about.faq4Q", a: "about.faq4A" },
+    { q: "about.faq5Q", a: "about.faq5A" },
+    { q: "about.faq6Q", a: "about.faq6A" },
+  ];
+
+  const faqJsonLd = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "KTrenZ",
-    url: "https://ktrenz.com",
-    description: "Real-time K-Pop trend intelligence platform — keyword-centric scoring, tracking & prediction with fan rewards.",
-    logo: "https://ktrenz.com/placeholder.svg",
-    sameAs: [],
-    foundingDate: "2025",
-    knowsAbout: ["K-Pop", "Trend Analysis", "Fan Intelligence", "Music Industry Analytics"],
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: t(f.q),
+      acceptedAnswer: { "@type": "Answer", text: t(f.a) },
+    })),
   };
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "KTrenZ",
+      url: "https://ktrenz.com",
+      description: "Real-time K-Pop trend intelligence platform — keyword-centric scoring, tracking & prediction with fan rewards.",
+      logo: "https://ktrenz.com/placeholder.svg",
+      sameAs: [],
+      foundingDate: "2025",
+      knowsAbout: ["K-Pop", "Trend Analysis", "Fan Intelligence", "Music Industry Analytics"],
+    },
+    faqJsonLd,
+  ];
 
 
   const sources = [
@@ -97,7 +120,13 @@ const About = () => {
         descriptionKo="KTrenZ는 600명 이상의 K-Pop 아티스트에서 뉴스, 소셜 미디어, 동영상 플랫폼의 트렌드 키워드를 감지하고 스코어링·등급 평가한 뒤, 팬이 다음 트렌드를 예측할 수 있게 합니다."
         path="/about"
         type="website"
-        jsonLd={jsonLd}
+        jsonLd={jsonLd as any}
+      />
+
+      {/* Additional JSON-LD for FAQ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       <div className="min-h-screen bg-background">
