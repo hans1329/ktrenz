@@ -360,8 +360,8 @@ const About = () => {
             {/* Key stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">
               {[
-                { value: "600+", labelKey: "about.stat1" },
-                { value: "7+", labelKey: "about.stat2" },
+                { value: "5,000+", labelKey: "about.stat1" },
+                { value: "10+", labelKey: "about.stat2" },
                 { value: "6", labelKey: "about.stat3" },
                 { value: "24/7", labelKey: "about.stat4" },
               ].map((stat) => (
