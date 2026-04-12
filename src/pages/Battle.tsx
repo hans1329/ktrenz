@@ -539,38 +539,39 @@ InstagramEmbed.displayName = "InstagramEmbed";
 
 /* ── Flip Timer ── */
 function FlipCard({ digit }: { digit: string }) {
-  const [cur, setCur] = useState(digit);
-  const [prev, setPrev] = useState(digit);
-  const [flipping, setFlipping] = useState(false);
+  const [display, setDisplay] = useState(digit);
+  const [sliding, setSliding] = useState(false);
+  const incomingRef = useRef(digit);
 
   useEffect(() => {
-    if (digit !== cur) {
-      setPrev(cur);
-      setFlipping(true);
+    if (digit !== display) {
+      incomingRef.current = digit;
+      setSliding(true);
       const t = setTimeout(() => {
-        setCur(digit);
-        setFlipping(false);
-      }, 350);
+        setDisplay(digit);
+        setSliding(false);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [digit]);
 
   return (
     <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card">
-      {/* Current digit */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{cur}</span>
+      {/* Current digit — slides out downward when changing */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
+        style={sliding ? { animation: "slideDigitOut 0.3s ease-in forwards" } : undefined}
+      >
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{display}</span>
       </div>
 
-      {/* Slide-down: new digit enters from top */}
-      {flipping && (
+      {/* New digit — slides in from top */}
+      {sliding && (
         <div
           className="absolute inset-0 flex items-center justify-center bg-card z-20"
-          style={{
-            animation: "slideDigitDown 0.35s ease-out forwards",
-          }}
+          style={{ animation: "slideDigitDown 0.3s ease-out forwards" }}
         >
-          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{digit}</span>
+          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{incomingRef.current}</span>
         </div>
       )}
     </div>
@@ -581,7 +582,7 @@ function FlipGroup({ value }: { value: string }) {
   return (
     <div className="flex gap-1">
       {value.split("").map((d, i) => (
-        <FlipCard key={`${value}-${i}`} digit={d} />
+        <FlipCard key={i} digit={d} />
       ))}
     </div>
   );
