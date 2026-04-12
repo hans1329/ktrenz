@@ -320,8 +320,13 @@ const About = () => {
         </section>
 
         {/* Footer */}
-        <footer className="py-8 px-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} KTrenZ. All rights reserved.
+        <footer className="py-8 px-4 text-center text-xs text-muted-foreground space-y-2">
+          <div className="flex items-center justify-center gap-3">
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+            <span>·</span>
+            <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          </div>
+          <p>© {new Date().getFullYear()} KTrenZ. All rights reserved.</p>
         </footer>
       </div>
     </>

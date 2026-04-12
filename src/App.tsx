@@ -66,6 +66,8 @@ import B2BRecommendations from "./pages/b2b/B2BRecommendations";
 import B2BActivation from "./pages/b2b/B2BActivation";
 import T2CategoryDetail from "./pages/T2CategoryDetail";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
 import Battle from "./pages/Battle";
@@ -112,6 +114,8 @@ const App = () => (
                 <Route path="/pd" element={<T2PitchDeck />} />
                 <Route path="/t2/grades" element={<T2TrendGrades />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/key" element={<ContentSearch />} />
                 
