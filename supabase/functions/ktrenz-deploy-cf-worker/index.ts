@@ -14,11 +14,11 @@ export default {
     if (url.pathname.startsWith('/report')) {
       // Strip /report prefix — Ghost slugs don't include it
       const ghostPath = url.pathname.replace(/^\\/report/, '') || '/';
-      const ghostUrl = 'http://168.144.100.36' + ghostPath + url.search;
+      const ghostUrl = 'http://ghost.ktrenz.com' + ghostPath + url.search;
       const response = await fetch(ghostUrl, {
         method: request.method,
         headers: new Headers({
-          'Host': '168.144.100.36',
+          'Host': 'ghost.ktrenz.com',
           'X-Forwarded-Host': 'ktrenz.com',
           'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '',
           'X-Forwarded-Proto': 'https',
@@ -86,6 +86,38 @@ async function deployWorker(accountId: string, apiToken: string, workerName: str
   }
 
   return await res.json();
+}
+
+async function ensureGhostDnsRecord(zoneId: string, apiToken: string) {
+  const listUrl = `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?type=A&name=ghost.ktrenz.com`;
+  const listRes = await fetch(listUrl, {
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+  });
+  const listData = await listRes.json();
+
+  if (listData.result?.length > 0) {
+    console.log("Ghost DNS record already exists");
+    return listData.result[0];
+  }
+
+  // Create DNS-only (not proxied) A record
+  const createRes = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "A",
+      name: "ghost",
+      content: "168.144.100.36",
+      proxied: false,
+      ttl: 1,
+    }),
+  });
+  if (!createRes.ok) {
+    const errBody = await createRes.text();
+    throw new Error(`DNS record create failed ${createRes.status}: ${errBody}`);
+  }
+  console.log("Ghost DNS record created");
+  return await createRes.json();
 }
 
 async function setWorkerRoute(zoneId: string, apiToken: string, workerName: string) {
@@ -161,6 +193,10 @@ Deno.serve(async (req) => {
     }
 
     const workerName = "ktrenz-report-proxy";
+
+    // Step 0: ghost.ktrenz.com DNS record must exist (created manually)
+    // DNS API token lacks permissions, so skip auto-creation
+    console.log("Assuming ghost.ktrenz.com DNS record exists...");
 
     // Step 1: Deploy worker script
     console.log("Deploying worker script...");
