@@ -136,6 +136,22 @@ const AdminUsers = () => {
     onError: (err: any) => toast.error('권한 변경 실패: ' + err.message),
   });
 
+  const toggleBan = useMutation({
+    mutationFn: async ({ userId, isBanned }: { userId: string; isBanned: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('ktrenz-admin-ban-user', {
+        body: { target_user_id: userId, action: isBanned ? 'unban' : 'ban' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_, { isBanned }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ktrenz-users'] });
+      toast.success(isBanned ? '유저 밴이 해제되었습니다' : '유저가 밴 처리되었습니다');
+    },
+    onError: (err: any) => toast.error('밴 처리 실패: ' + err.message),
+  });
+
   const updatePoints = useMutation({
     mutationFn: async ({ userId, newPoints }: { userId: string; newPoints: number }) => {
       const { error } = await supabase
