@@ -157,15 +157,19 @@ Deno.serve(async (req) => {
         const result = await callFunction(supabaseUrl, serviceKey, "settle-trend-vs", {});
         log.push(`Phase 3: Settlement: settled=${result.settled}, total=${result.total}`);
 
-        // 정산 완료 후 battle status 업데이트 (settle 함수에서도 하지만 확실하게)
-        const settlementComplete = result?.message === "No pending predictions"
-          || Number(result?.total || 0) === 0
-          || Number(result?.settled || 0) === Number(result?.total || 0);
+        // 어제 배틀의 예측이 모두 정산됐는지 확인 (settle 함수는 모든 pending을 처리하므로
+        // 오늘 예측이 pending이면 settled < total이 될 수 있음)
+        const { count: yesterdayPendingCount } = await sb
+          .from("b2_predictions")
+          .select("*", { count: "exact", head: true })
+          .eq("battle_date", yesterday)
+          .eq("status", "pending");
 
-        if (settlementComplete) {
+        if ((yesterdayPendingCount || 0) === 0) {
           await sb.from("ktrenz_b2_battles")
             .update({ status: "settled", settled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
             .eq("id", yesterdayBattle.id);
+          log.push(`Phase 3: Battle ${yesterday} marked as settled`);
         }
         // Phase 3.5: 키워드 추출 (정산 후 1회)
         const { count: kwCount } = await sb
