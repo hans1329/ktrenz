@@ -84,11 +84,11 @@ const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <WelcomeBonusManager />
         <LanguageProvider>
           <TooltipProvider>
             <Toaster />
             <PWAUpdatePrompt />
-            <WelcomeBonusManager />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Battle />} />
