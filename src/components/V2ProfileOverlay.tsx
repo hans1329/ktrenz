@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Settings, Globe, Ticket } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
+
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
 import {
@@ -26,7 +26,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const { user, profile, signOut, kPoints } = useAuth();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [showPointsDrawer, setShowPointsDrawer] = useState(false);
   const [showLangDrawer, setShowLangDrawer] = useState(false);
 
   // Prediction tickets
@@ -87,9 +86,8 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           <div>
             <div className="flex gap-2">
               {/* K·Trend Cashes */}
-              <button
-                onClick={() => setShowPointsDrawer(true)}
-                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left space-y-2"
+              <div
+                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2"
               >
                 <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   K·Cashes
@@ -100,7 +98,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                     {kPoints.toLocaleString()}
                   </p>
                 </div>
-              </button>
+              </div>
 
               {/* Prediction Tickets */}
               <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2">
@@ -168,7 +166,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
         </div>
       </DrawerContent>
     </Drawer>
-    <KPointsPurchaseDrawer open={showPointsDrawer} onOpenChange={setShowPointsDrawer} />
+    
     <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
