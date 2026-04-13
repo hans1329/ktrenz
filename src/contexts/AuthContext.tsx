@@ -36,8 +36,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
+  const welcomeBonusAmountRef = useRef(0);
   const queryClient = useQueryClient();
   const handledSignIns = useRef(new Set<string>());
+
+  const grantWelcomeBonus = async (uid: string): Promise<number> => {
+    try {
+      const { data: setting } = await supabase
+        .from('ktrenz_point_settings')
+        .select('points, is_enabled')
+        .eq('reward_type', 'welcome_bonus')
+        .maybeSingle();
+      if (!setting?.is_enabled || !setting.points) return 0;
+      const amount = setting.points;
+
+      // Check if already granted
+      const { data: existing } = await supabase
+        .from('ktrenz_point_transactions')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('reason', 'welcome_bonus')
+        .maybeSingle();
+      if (existing) return 0;
+
+      // Upsert points
+      await supabase
+        .from('ktrenz_user_points')
+        .upsert(
+          { user_id: uid, points: amount, lifetime_points: amount },
+          { onConflict: 'user_id' }
+        );
+
+      // Record transaction
+      await supabase
+        .from('ktrenz_point_transactions')
+        .insert({ user_id: uid, amount, reason: 'welcome_bonus', description: 'Welcome bonus' });
+
+      queryClient.invalidateQueries({ queryKey: ['ktrenz-points', uid] });
+      return amount;
+    } catch {
+      return 0;
+    }
+  };
 
   // Guard: once onAuthStateChange fires, skip the getSession fallback
   const resolvedByListener = useRef(false);
