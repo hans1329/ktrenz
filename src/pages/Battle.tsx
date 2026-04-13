@@ -1606,7 +1606,7 @@ export default function Battle() {
               const displayCount = tab.key === "live"
                 ? count
                 : tab.key === "settled"
-                ? settledHistoryPredictions.length
+                ? settledBattleResults.length
                 : myBetPredictions.length;
               return (
                 <button
