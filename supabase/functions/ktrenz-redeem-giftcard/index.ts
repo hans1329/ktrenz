@@ -86,8 +86,10 @@ Deno.serve(async (req) => {
         const errBody = await res.text();
         throw new Error(`Reloadly products API failed [${res.status}]: ${errBody}`);
       }
-      const allProducts = await res.json();
-      const spotifyProducts = (allProducts as any[]).filter((p: any) =>
+      const rawData = await res.json();
+      // Reloadly returns paginated object with `content` array, or a plain array
+      const productList: any[] = Array.isArray(rawData) ? rawData : (rawData.content ?? []);
+      const spotifyProducts = productList.filter((p: any) =>
         p.productName?.toLowerCase().includes("spotify") ||
         p.brand?.brandName?.toLowerCase().includes("spotify")
       );
