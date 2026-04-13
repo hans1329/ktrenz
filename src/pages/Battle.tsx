@@ -925,6 +925,8 @@ interface Prediction {
   opponentStarName: string;
   status: string;
   created_at: string;
+  battle_date?: string;
+  reward_amount?: number;
 }
 
 /* ── Simple in-memory cache ── */
@@ -971,6 +973,7 @@ export default function Battle() {
   const [confirmModal, setConfirmModal] = useState<{ starName: string; band: Band; reward: number } | null>(null);
   const [settlementResults, setSettlementResults] = useState<SettledPrediction[]>([]);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -1173,7 +1176,47 @@ export default function Battle() {
     setPredictions(restoredPredictions);
   }
 
-  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); }, [loadTickets]);
+  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); }, [loadTickets]);
+
+  // Auto-refresh every 60s to detect battle status changes
+  useEffect(() => {
+    const iv = setInterval(() => { battleCache.ts = 0; loadBattleData(); }, 60_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  async function loadHistoryPredictions() {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) return;
+    const { data: allPreds } = await supabase
+      .from("b2_predictions")
+      .select("id, picked_run_id, opponent_run_id, band, status, reward_amount, battle_date, created_at")
+      .eq("user_id", u.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!allPreds || allPreds.length === 0) { setHistoryPredictions([]); return; }
+    const runIds = [...new Set(allPreds.flatMap(p => [p.picked_run_id, p.opponent_run_id]))];
+    const allRuns: any[] = [];
+    for (let i = 0; i < runIds.length; i += 50) {
+      const { data: runs } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("id, star_id").in("id", runIds.slice(i, i + 50));
+      if (runs) allRuns.push(...runs);
+    }
+    const starIds = [...new Set(allRuns.map((r: any) => r.star_id))];
+    const { data: stars } = await (supabase.from("ktrenz_stars") as any)
+      .select("id, display_name").in("id", starIds);
+    const runToStar = new Map<string, string>();
+    allRuns.forEach((r: any) => {
+      const star = (stars || []).find((s: any) => s.id === r.star_id);
+      if (star) runToStar.set(r.id, star.display_name);
+    });
+    setHistoryPredictions(allPreds.map((p: any) => ({
+      id: p.id, pickedRunId: p.picked_run_id, opponentRunId: p.opponent_run_id,
+      band: p.band as Band, pickedStarName: runToStar.get(p.picked_run_id) || "Unknown",
+      opponentStarName: runToStar.get(p.opponent_run_id) || "Unknown",
+      status: p.status || "pending", created_at: p.created_at, battle_date: p.battle_date,
+      reward_amount: p.reward_amount,
+    })));
+  }
 
   // Load unseen settlement results on mount
   async function loadUnseenSettlements() {
