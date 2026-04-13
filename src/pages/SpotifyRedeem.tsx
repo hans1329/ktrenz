@@ -482,7 +482,7 @@ const SpotifyRedeem = () => {
                 <div>
                   <h2 className="font-bold text-foreground">{selectedProduct.productName}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {countryObj?.name} ({selectedCountry})
+                    {countryObj?.flag} {countryObj?.name[language as keyof typeof countryObj.name] || countryObj?.name.en} ({selectedCountry})
                   </p>
                 </div>
               </div>
