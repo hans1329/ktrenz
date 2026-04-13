@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -2212,10 +2213,12 @@ export default function Battle() {
         language={language}
       />
       {/* First Analyzer Bonus Modal */}
-      {showFirstAnalyzerModal && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowFirstAnalyzerModal(false)}>
-          <div className="mx-6 w-full max-w-sm rounded-2xl bg-card p-6 text-center shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+      <Dialog open={showFirstAnalyzerModal} onOpenChange={setShowFirstAnalyzerModal}>
+        <DialogContent className="max-w-sm rounded-2xl text-center mx-auto">
+          <DialogTitle className="sr-only">First Analyzer Bonus</DialogTitle>
+          <DialogDescription className="sr-only">You earned a bonus for being the first to analyze this trend</DialogDescription>
+          <div className="flex flex-col items-center pt-2">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-8 w-8 text-primary" />
             </div>
             <h3 className="mb-2 text-lg font-bold text-foreground">
@@ -2232,9 +2235,8 @@ export default function Battle() {
               OK
             </Button>
           </div>
-        </div>,
-        document.body
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
