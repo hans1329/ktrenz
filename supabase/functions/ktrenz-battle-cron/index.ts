@@ -1,6 +1,6 @@
 // ktrenz-battle-cron: 배틀 파이프라인 일일 자동화 오케스트레이터
 // pg_cron에서 3분마다 호출 — 현재 시간+DB 상태를 보고 한 단계씩 진행
-// 순서: 어제 close → 어제 round2 → 어제 settle → 오늘 prescore → 오늘 autobatch
+// 순서: 어제 close → 어제 round2 → 어제 settle → 오늘 prescore → 오늘 autobatch → 오늘 open
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -22,7 +22,7 @@ function getKSTDates() {
 
 /** Edge function 호출 헬퍼 */
 async function callFunction(
-  supabaseUrl: string, serviceKey: string, fnName: string, body: any
+  supabaseUrl: string, serviceKey: string, fnName: string, body: any,
 ): Promise<any> {
   const res = await fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
     method: "POST",
@@ -33,6 +33,18 @@ async function callFunction(
     body: JSON.stringify(body),
   });
   return await res.json();
+}
+
+function isAfterKSTTime(kstHour: number, kstMin: number, targetHour: number, targetMin = 0) {
+  return kstHour > targetHour || (kstHour === targetHour && kstMin >= targetMin);
+}
+
+function hasExpectedRound1Runs(round1Count: number, totalPairs: number | null | undefined) {
+  const expectedRuns = Number(totalPairs || 0) * 2;
+  if (expectedRuns > 0) {
+    return round1Count >= expectedRuns;
+  }
+  return round1Count > 0;
 }
 
 Deno.serve(async (req) => {
@@ -69,25 +81,39 @@ Deno.serve(async (req) => {
       .select("status, batch_id")
       .limit(500);
 
-    const queuePending = (queueItems || []).filter((q: any) => q.status === "pending").length;
-    const queueBatchId = queueItems?.[0]?.batch_id || null;
-    const queueBusy = queuePending > 0;
+    const activeQueueItems = (queueItems || []).filter((q: any) => q.status === "pending" || q.status === "running");
+    const queueActive = activeQueueItems.length;
+    const queueBatchId = activeQueueItems[0]?.batch_id || null;
+    const queueBusy = queueActive > 0;
 
     // ═══════════════════════════════════════════════════════════
     // PHASE 1: 어제 배팅 마감 (00:00 KST 이후)
+    // collecting에 멈춘 battle도 round 1 데이터가 완성되어 있으면 회복 후 closed 처리
     // ═══════════════════════════════════════════════════════════
-    if (yesterdayBattle?.status === "open") {
-      await sb.from("ktrenz_b2_battles")
-        .update({ status: "closed", updated_at: new Date().toISOString() })
-        .eq("id", yesterdayBattle.id);
-      log.push(`Phase 1: Closed yesterday's betting (${yesterday})`);
-      return respond(log);
+    if (yesterdayBattle && (yesterdayBattle.status === "open" || yesterdayBattle.status === "collecting")) {
+      const { count: yesterdayRound1Count } = await sb
+        .from("ktrenz_b2_runs")
+        .select("*", { count: "exact", head: true })
+        .eq("batch_id", yesterdayBatchId)
+        .eq("search_round", 1);
+
+      const recoveredFromCollecting =
+        yesterdayBattle.status === "collecting" &&
+        hasExpectedRound1Runs(yesterdayRound1Count || 0, yesterdayBattle.total_pairs);
+
+      if (yesterdayBattle.status === "open" || recoveredFromCollecting) {
+        await sb.from("ktrenz_b2_battles")
+          .update({ status: "closed", updated_at: new Date().toISOString() })
+          .eq("id", yesterdayBattle.id);
+        log.push(`Phase 1: Closed yesterday's betting (${yesterday})${recoveredFromCollecting ? " [recovered stale collecting battle]" : ""}`);
+        return respond(log);
+      }
     }
 
     // ═══════════════════════════════════════════════════════════
     // PHASE 2: 어제 Round 2 수집 (09:30+ KST)
     // ═══════════════════════════════════════════════════════════
-    if (yesterdayBattle?.status === "closed" && kstHour >= 9 && (kstHour > 9 || kstMin >= 30)) {
+    if (yesterdayBattle?.status === "closed" && isAfterKSTTime(kstHour, kstMin, 9, 30)) {
       // Round 2 큐가 아직 안 만들어졌으면 시작
       if (!queueBusy || queueBatchId !== yesterdayBatchId) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
@@ -183,7 +209,7 @@ Deno.serve(async (req) => {
       // ═══════════════════════════════════════════════════════════
       // PHASE 5: 오늘 Autobatch 시작 (09:30+ KST, prescore 완료 후)
       // ═══════════════════════════════════════════════════════════
-      if (prescoreComplete && kstHour >= 9 && (kstHour > 9 || kstMin >= 30)) {
+      if (prescoreComplete && isAfterKSTTime(kstHour, kstMin, 9, 30)) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
           action: "start",
           batch_id: todayBatchId,
@@ -209,9 +235,34 @@ Deno.serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
+    // PHASE 6.5: 오늘 배팅 오픈 (12:00+ KST, round 1 데이터 완성 후)
+    // 큐가 비워졌더라도 round 1 run 수가 충분하면 open 처리
+    // ═══════════════════════════════════════════════════════════
+    if (todayBattle?.status === "collecting" && isAfterKSTTime(kstHour, kstMin, 12, 0)) {
+      const { count: todayRound1Count } = await sb
+        .from("ktrenz_b2_runs")
+        .select("*", { count: "exact", head: true })
+        .eq("batch_id", todayBatchId)
+        .eq("search_round", 1);
+
+      const expectedTodayRuns = Number(todayBattle.total_pairs || 0) * 2;
+      if (hasExpectedRound1Runs(todayRound1Count || 0, todayBattle.total_pairs)) {
+        await sb.from("ktrenz_b2_battles")
+          .update({ status: "open", updated_at: new Date().toISOString() })
+          .eq("id", todayBattle.id)
+          .eq("status", "collecting");
+        log.push(`Phase 6.5: Opened today's betting (${today})`);
+        return respond(log);
+      }
+
+      log.push(`Phase 6.5: Waiting for full round 1 data before opening (${todayRound1Count || 0}/${expectedTodayRuns || 0})`);
+      return respond(log);
+    }
+
+    // ═══════════════════════════════════════════════════════════
     // IDLE — 할 일 없음
     // ═══════════════════════════════════════════════════════════
-    log.push(`Idle: KST=${kstHour}:${String(kstMin).padStart(2, "0")}, today=${todayBattle?.status || "none"}, yesterday=${yesterdayBattle?.status || "none"}`);
+    log.push(`Idle: KST=${kstHour}:${String(kstMin).padStart(2, "0")}, today=${todayBattle?.status || "none"}, yesterday=${yesterdayBattle?.status || "none"}, queue_active=${queueActive}, queue_batch=${queueBatchId || "none"}`);
     return respond(log);
 
   } catch (err) {
