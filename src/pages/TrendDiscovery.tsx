@@ -5,6 +5,7 @@ import DiscoverLeaderboard from "@/components/discover/DiscoverLeaderboard";
 import DiscoverBattleStatus from "@/components/discover/DiscoverBattleStatus";
 import DiscoverUserRankings from "@/components/discover/DiscoverUserRankings";
 import DiscoverHotContent from "@/components/discover/DiscoverHotContent";
+import HeaderTicketSlot from "@/components/HeaderTicketSlot";
 
 const TrendDiscovery = () => {
   return (
@@ -18,7 +19,7 @@ const TrendDiscovery = () => {
       />
 
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
-        <V3Header />
+        <V3Header rightSlot={<HeaderTicketSlot />} />
       </div>
 
       <div className="pb-24 pt-[4rem]">
