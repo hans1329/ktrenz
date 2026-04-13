@@ -12,6 +12,7 @@ const BAND_THRESHOLDS: Record<string, { min: number; reward: number }> = {
   rising: { min: 30, reward: 300 },
   surge: { min: 80, reward: 1000 },
 };
+const CONSOLATION_REWARD = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
