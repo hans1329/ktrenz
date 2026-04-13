@@ -1,6 +1,5 @@
 import { createPortal } from "react-dom";
-import { Trophy, TrendingUp, TrendingDown, Minus, Sprout, Flame, Rocket } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, Minus, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Band = "steady" | "rising" | "surge";
@@ -24,155 +23,146 @@ interface SettlementResultsModalProps {
   language: string;
 }
 
-const BAND_META: Record<Band, { icon: typeof Sprout; iconColor: string; label: Record<string, string>; threshold: number }> = {
-  steady: { icon: Sprout, iconColor: "text-emerald-500", label: { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" }, threshold: 15 },
-  rising: { icon: Flame, iconColor: "text-orange-500", label: { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" }, threshold: 30 },
-  surge: { icon: Rocket, iconColor: "text-red-500", label: { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" }, threshold: 80 },
+const BAND_LABEL: Record<Band, Record<string, string>> = {
+  steady: { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" },
+  rising: { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
+  surge: { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" },
 };
 
-function getResultReason(result: SettledPrediction, lang: string): string {
-  const pg = result.picked_growth ?? 0;
-  const og = result.opponent_growth ?? 0;
-  const band = BAND_META[result.band];
-  const threshold = band.threshold;
-  const bandName = band.label[lang] || band.label.en;
-
-  if (result.status === "won") {
-    if (lang === "ko") return `${result.picked_star_name} +${pg}%로 상대 +${og}%를 넘고, ${bandName}(${threshold}%+) 달성!`;
-    if (lang === "ja") return `${result.picked_star_name} +${pg}%で相手 +${og}%を上回り、${bandName}(${threshold}%+)達成！`;
-    if (lang === "zh") return `${result.picked_star_name} +${pg}%超过对手 +${og}%，达到${bandName}(${threshold}%+)！`;
-    return `${result.picked_star_name} grew +${pg}% vs +${og}%, hitting ${bandName} (${threshold}%+)!`;
-  }
-
-  // Lost reasons
-  const pickedWonVs = pg > og;
-  const bandMatched = pg >= threshold;
-
-  if (!pickedWonVs && !bandMatched) {
-    if (lang === "ko") return `성장률 +${pg}%로 상대 +${og}%보다 낮고, ${bandName}(${threshold}%+) 미달`;
-    if (lang === "ja") return `成長率 +${pg}%で相手 +${og}%より低く、${bandName}(${threshold}%+)未達`;
-    if (lang === "zh") return `增长率 +${pg}%低于对手 +${og}%，未达${bandName}(${threshold}%+)`;
-    return `Grew +${pg}% vs opponent's +${og}%, missed ${bandName} (${threshold}%+)`;
-  }
-  if (!pickedWonVs) {
-    if (lang === "ko") return `${bandName} 달성했으나, 상대 +${og}%가 더 높음`;
-    if (lang === "ja") return `${bandName}達成も、相手 +${og}%が上回った`;
-    if (lang === "zh") return `达到${bandName}，但对手 +${og}%更高`;
-    return `Hit ${bandName}, but opponent grew more (+${og}%)`;
-  }
-  // pickedWonVs but !bandMatched
-  if (lang === "ko") return `상대보다 높지만 +${pg}%로 ${bandName}(${threshold}%+) 미달`;
-  if (lang === "ja") return `相手より高いが +${pg}%で${bandName}(${threshold}%+)未達`;
-  if (lang === "zh") return `超过对手但 +${pg}%未达${bandName}(${threshold}%+)`;
-  return `Outgrew opponent, but +${pg}% missed ${bandName} threshold (${threshold}%+)`;
-}
+const i18n = (lang: string, key: string) => {
+  const map: Record<string, Record<string, string>> = {
+    title: { en: "Battle Results", ko: "배틀 결과", ja: "バトル結果", zh: "战斗结果" },
+    gotIt: { en: "Got it", ko: "확인", ja: "確認", zh: "确认" },
+    correct: { en: "Correct", ko: "적중", ja: "的中", zh: "命中" },
+    missed: { en: "Missed", ko: "미적중", ja: "不的中", zh: "未命中" },
+    earned: { en: "Earned", ko: "획득", ja: "獲得", zh: "获得" },
+    of: { en: "of", ko: "/", ja: "/", zh: "/" },
+    win: { en: "WIN", ko: "WIN", ja: "WIN", zh: "WIN" },
+  };
+  return map[key]?.[lang] || map[key]?.en || key;
+};
 
 const SettlementResultsModal = ({ open, onClose, results, language }: SettlementResultsModalProps) => {
   if (!open || results.length === 0) return null;
-  const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
+  const lang = (["ko", "ja", "zh"].includes(language)) ? language : "en";
 
-  const totalReward = results.reduce((sum, r) => sum + (r.reward_amount || 0), 0);
   const wins = results.filter(r => r.status === "won");
-
-  const title = lang === "ko" ? "배틀 결과 발표! 🏆"
-    : lang === "ja" ? "バトル結果発表！🏆"
-    : lang === "zh" ? "战斗结果公布！🏆"
-    : "Battle Results! 🏆";
-
-  const summaryText = lang === "ko"
-    ? `${results.length}건 중 ${wins.length}건 적중`
-    : lang === "ja" ? `${results.length}件中${wins.length}件的中`
-    : lang === "zh" ? `${results.length}场中${wins.length}场命中`
-    : `${wins.length} of ${results.length} correct`;
-
-  const rewardText = lang === "ko" ? "획득 보상" : lang === "ja" ? "獲得報酬" : lang === "zh" ? "获得奖励" : "Earned";
-  const closeLabel = lang === "ko" ? "확인" : lang === "ja" ? "確認" : lang === "zh" ? "确认" : "Got it";
-
-  const winLabel = lang === "ko" ? "적중" : lang === "ja" ? "的中" : lang === "zh" ? "命中" : "Correct";
-  const loseLabel = lang === "ko" ? "미적중" : lang === "ja" ? "不的中" : lang === "zh" ? "未命中" : "Missed";
-
-  const renderResult = (result: SettledPrediction) => {
-    const band = BAND_META[result.band];
-    const BandIcon = band?.icon || Sprout;
-    const won = result.status === "won";
-    const reason = getResultReason(result, lang);
-
-    return (
-      <div
-        key={result.id}
-        className={cn(
-          "rounded-xl border p-3.5 space-y-2.5",
-          won ? "border-emerald-500/30 bg-emerald-500/[0.04]" : "border-red-500/20 bg-red-500/[0.03]"
-        )}
-      >
-        {/* Status badge centered */}
-        <div className="flex justify-center">
-          <span className={cn(
-            "text-[11px] font-bold px-3 py-0.5 rounded-full",
-            won ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"
-          )}>
-            {won ? `✅ ${winLabel}` : `❌ ${loseLabel}`}
-          </span>
-        </div>
-
-        {/* Artists side by side */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-col items-start min-w-0 flex-1">
-            <span className="text-sm font-bold text-primary truncate w-full">{result.picked_star_name}</span>
-            <GrowthBadge value={result.picked_growth} />
-          </div>
-          <span className="text-[10px] text-muted-foreground shrink-0">vs</span>
-          <div className="flex flex-col items-end min-w-0 flex-1">
-            <span className="text-sm font-bold text-muted-foreground truncate w-full text-right">{result.opponent_star_name}</span>
-            <GrowthBadge value={result.opponent_growth} />
-          </div>
-        </div>
-
-        {/* Reason */}
-        <p className="text-[11px] text-muted-foreground leading-snug text-center">{reason}</p>
-
-        {/* Band + Reward */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <BandIcon className={cn("w-3.5 h-3.5", band?.iconColor)} />
-            <span className="text-[11px] text-muted-foreground">
-              {band?.label[lang] || band?.label.en}
-            </span>
-          </div>
-          {won && result.reward_amount > 0 && (
-            <span className="text-xs font-bold text-primary">+{result.reward_amount} 💎</span>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const totalReward = results.reduce((sum, r) => sum + (r.reward_amount || 0), 0);
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="mx-4 w-full max-w-sm rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[85dvh] flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 text-center shrink-0">
-          <div className="w-14 h-14 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-            <Trophy className="w-7 h-7 text-primary" />
-          </div>
-          <h2 className="text-lg font-bold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{summaryText}</p>
-          {totalReward > 0 && (
-            <div className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-3 py-1">
-              <span className="text-xs text-muted-foreground">{rewardText}</span>
-              <span className="text-sm font-bold text-primary">+{totalReward.toLocaleString()} 💎</span>
+    <div
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full sm:mx-4 sm:max-w-sm rounded-t-3xl sm:rounded-3xl bg-background border border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 max-h-[88dvh] flex flex-col">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+        </div>
+
+        {/* Compact header */}
+        <div className="px-5 pt-4 pb-3 text-center space-y-2">
+          <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
+            {i18n(lang, "title")}
+          </p>
+
+          {/* Score ring */}
+          <div className="flex items-center justify-center gap-6">
+            <div className="relative w-20 h-20">
+              <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="hsl(var(--muted))" strokeWidth="2.5" />
+                <circle
+                  cx="18" cy="18" r="15.5" fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(wins.length / results.length) * 97.4} 97.4`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-black text-foreground leading-none">{wins.length}</span>
+                <span className="text-[10px] text-muted-foreground">{i18n(lang, "of")} {results.length}</span>
+              </div>
             </div>
-          )}
+
+            {totalReward > 0 && (
+              <div className="text-left">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{i18n(lang, "earned")}</p>
+                <p className="text-xl font-black text-foreground">+{totalReward.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">💎 K-Point</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Results list */}
-        <div className="p-4 space-y-2.5 overflow-y-auto flex-1">
-          {results.map(renderResult)}
+        {/* Divider */}
+        <div className="h-px bg-border mx-5" />
+
+        {/* Results */}
+        <div className="p-4 space-y-2 overflow-y-auto flex-1">
+          {results.map((r) => {
+            const won = r.status === "won";
+            const pg = r.picked_growth ?? 0;
+            const og = r.opponent_growth ?? 0;
+            const bandLabel = BAND_LABEL[r.band]?.[lang] || BAND_LABEL[r.band]?.en;
+
+            return (
+              <div
+                key={r.id}
+                className={cn(
+                  "rounded-2xl border p-3 flex items-center gap-3 transition-colors",
+                  won ? "border-primary/20 bg-primary/[0.03]" : "border-border bg-muted/30"
+                )}
+              >
+                {/* Win/Lose icon */}
+                <div className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                  won ? "bg-primary/10" : "bg-muted"
+                )}>
+                  {won
+                    ? <Check className="w-4.5 h-4.5 text-primary" strokeWidth={3} />
+                    : <X className="w-4.5 h-4.5 text-muted-foreground" strokeWidth={2.5} />
+                  }
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("text-sm font-bold truncate", won ? "text-foreground" : "text-muted-foreground")}>
+                      {r.picked_star_name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/60 shrink-0">vs</span>
+                    <span className="text-xs text-muted-foreground truncate">{r.opponent_star_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <GrowthPill value={pg} highlight={won} />
+                    <span className="text-[10px] text-muted-foreground/40">vs</span>
+                    <GrowthPill value={og} highlight={false} />
+                    <span className="text-[10px] text-muted-foreground/60 ml-auto">{bandLabel}</span>
+                  </div>
+                </div>
+
+                {/* Reward */}
+                <div className="shrink-0 text-right">
+                  {won && r.reward_amount > 0 ? (
+                    <span className="text-sm font-black text-primary">+{r.reward_amount}💎</span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">{i18n(lang, "missed")}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Close */}
-        <div className="p-4 pt-0 shrink-0">
-          <Button onClick={onClose} className="w-full" size="sm">{closeLabel}</Button>
+        {/* CTA */}
+        <div className="p-4 pt-2 shrink-0">
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97]"
+          >
+            {i18n(lang, "gotIt")}
+          </button>
         </div>
       </div>
     </div>,
@@ -180,15 +170,15 @@ const SettlementResultsModal = ({ open, onClose, results, language }: Settlement
   );
 };
 
-function GrowthBadge({ value }: { value: number | null }) {
-  if (value === null || value === undefined) return <span className="text-[10px] text-muted-foreground">–</span>;
+function GrowthPill({ value, highlight }: { value: number; highlight: boolean }) {
   const positive = value > 0;
+  const Icon = positive ? TrendingUp : value < 0 ? TrendingDown : Minus;
   return (
     <span className={cn(
-      "text-[11px] font-bold flex items-center gap-0.5",
-      positive ? "text-emerald-500" : value < 0 ? "text-red-500" : "text-muted-foreground"
+      "inline-flex items-center gap-0.5 text-[11px] font-semibold",
+      highlight && positive ? "text-primary" : positive ? "text-emerald-500" : value < 0 ? "text-red-400" : "text-muted-foreground"
     )}>
-      {positive ? <TrendingUp className="w-3 h-3" /> : value < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+      <Icon className="w-3 h-3" />
       {positive ? "+" : ""}{value}%
     </span>
   );
