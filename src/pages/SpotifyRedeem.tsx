@@ -361,9 +361,27 @@ const SpotifyRedeem = () => {
                 <p className="text-sm text-muted-foreground">{l("loadingProducts")}</p>
               </div>
             ) : !products || products.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
+              <div className="text-center py-12 space-y-4">
                 <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
                 <p className="text-sm text-muted-foreground">{l("noProducts")}</p>
+                {selectedCountry !== "US" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      {L_extra.noProductsTip[language] || L_extra.noProductsTip.en}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCountry("US");
+                        saveCountry("US");
+                      }}
+                      className="gap-2"
+                    >
+                      🇺🇸 {L_extra.tryUS[language] || L_extra.tryUS.en}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
