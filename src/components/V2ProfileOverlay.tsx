@@ -132,7 +132,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                     </span>
                   </p>
                 </div>
-              </div>
               </button>
             <p className="text-[10px] text-muted-foreground text-right mt-1">
               {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up for more tickets!"}
