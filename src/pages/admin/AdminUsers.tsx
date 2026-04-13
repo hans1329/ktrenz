@@ -80,10 +80,10 @@ const AdminUsers = () => {
         msgCountMap.set(m.user_id, (msgCountMap.get(m.user_id) || 0) + 1);
       });
 
-      const emailMap = new Map<string, { email: string; created_at: string }>();
+      const emailMap = new Map<string, { email: string; created_at: string; banned_until: string | null }>();
       const emailData = Array.isArray(emailsRes.data) ? emailsRes.data : [];
       emailData.forEach((e: any) => {
-        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at });
+        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at, banned_until: e.banned_until });
       });
 
       return logins.map((l): KtrenzUser => {
