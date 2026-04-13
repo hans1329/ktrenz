@@ -11,7 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import TicketInfoPopup from "@/components/TicketInfoPopup";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
-import { getLevelInfo, getTierForLevel } from "@/lib/levelUtils";
+import { getLevelInfo } from "@/lib/levelUtils";
 import { Progress } from "@/components/ui/progress";
 import {
   Drawer,
