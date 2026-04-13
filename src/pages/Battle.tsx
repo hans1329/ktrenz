@@ -1539,10 +1539,10 @@ export default function Battle() {
 
       <div className="pt-16 pb-24 space-y-5">
         {/* Hero background + Title + Flip Timer */}
-        <div className="relative text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[120%] max-w-[600px] aspect-square -z-10 pointer-events-none">
-            <img src={battleHeroBg} alt="" className="w-full h-full object-contain opacity-25 blur-[2px]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-muted/30" />
+        <div className="relative text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4 overflow-visible">
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[90%] max-w-[420px] aspect-square z-0 pointer-events-none">
+            <img src={battleHeroBg} alt="" className="w-full h-full object-contain opacity-20 blur-[1px]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/10 to-muted/30" />
           </div>
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
             {t("pickWinner")}
