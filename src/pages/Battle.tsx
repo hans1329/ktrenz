@@ -1187,11 +1187,12 @@ export default function Battle() {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser && validPairs.length > 0) {
       const allRunIds = validPairs.flatMap(p => p.runs.map(r => r.id));
+      const battleDate = latestBattle?.battle_date || new Date().toISOString().slice(0, 10);
       const { data: existingPreds } = await supabase
         .from("b2_predictions")
         .select("picked_run_id, opponent_run_id, band, status, settled_at")
         .eq("user_id", currentUser.id)
-        .in("picked_run_id", allRunIds);
+        .eq("battle_date", battleDate);
 
       if (existingPreds && existingPreds.length > 0) {
         const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
