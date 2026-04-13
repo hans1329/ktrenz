@@ -75,8 +75,8 @@ const DiscoverUserRankings = () => {
 
   const mostActive = [...users].sort((a, b) => b.total_bets - a.total_bets).slice(0, 5);
   const highestWinRate = [...users]
-    .filter((u) => u.total_bets >= 2)
-    .sort((a, b) => b.win_rate - a.win_rate || b.total_bets - a.total_bets)
+    .filter((u) => u.total_bets >= 2 && u.wins > 0)
+    .sort((a, b) => b.win_rate - a.win_rate || b.wins - a.wins)
     .slice(0, 5);
 
   return (
