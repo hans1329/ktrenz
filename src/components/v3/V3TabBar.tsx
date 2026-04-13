@@ -135,9 +135,15 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
               // Profile center button
               return (
                 <button key={tab.id} onClick={handleProfileClick} className="flex-1 flex items-center justify-center -mt-3 relative">
-                   <div className="w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center bg-black">
-                      <img src={profile?.avatar_url || getDefaultAvatar(user?.id)} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
-                   </div>
+                   {user ? (
+                     <div className="w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center bg-black">
+                       <img src={profile?.avatar_url || getDefaultAvatar(user.id)} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                     </div>
+                   ) : (
+                     <div className="w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center bg-[hsl(220,10%,97%)]">
+                       <User className="w-7 h-7 text-muted-foreground" />
+                     </div>
+                   )}
                 </button>
               );
             }
