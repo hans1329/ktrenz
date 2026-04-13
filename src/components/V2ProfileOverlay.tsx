@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Settings, Globe, Ticket } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+import TicketInfoPopup from "@/components/TicketInfoPopup";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
 import {
@@ -133,6 +134,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                   </p>
                 </div>
               </button>
+            </div>
             <p className="text-[10px] text-muted-foreground text-right mt-1">
               {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up for more tickets!"}
             </p>
@@ -170,6 +172,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     
+    <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={ticketInfo?.remaining ?? 0} total={ticketInfo?.total ?? 3} />
     <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
