@@ -245,7 +245,7 @@ const SpotifyRedeem = () => {
 
   const kcashCost = selectedDenom ? selectedDenom * KCASH_PER_USD : 0;
   const canAfford = kPoints >= kcashCost;
-  const countryObj = COUNTRIES.find((c) => c.code === selectedCountry);
+  const countryObj = availableCountries?.find((c) => c.code === selectedCountry);
 
   const copyCode = () => {
     if (resultCode) {
