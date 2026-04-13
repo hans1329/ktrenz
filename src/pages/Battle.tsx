@@ -493,7 +493,7 @@ function FlipCard({ digit }: { digit: string }) {
   }, [digit]);
 
   return (
-    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card/50 backdrop-blur-sm">
+    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card/70 backdrop-blur-sm">
       {/* Current digit — slides out downward when changing */}
       <div
         className="absolute inset-0 flex items-center justify-center"
