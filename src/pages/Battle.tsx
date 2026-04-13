@@ -1519,7 +1519,7 @@ export default function Battle() {
 
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="relative min-h-screen bg-muted/30">
       <SEO
         title="KTrenZ – K-Pop Content Battle"
         titleKo="KTrenZ – K-Pop 콘텐츠 배틀"
