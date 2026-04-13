@@ -493,7 +493,7 @@ function FlipCard({ digit }: { digit: string }) {
   }, [digit]);
 
   return (
-    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card">
+    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card/50 backdrop-blur-sm">
       {/* Current digit — slides out downward when changing */}
       <div
         className="absolute inset-0 flex items-center justify-center"
@@ -505,7 +505,7 @@ function FlipCard({ digit }: { digit: string }) {
       {/* New digit — slides in from top */}
       {sliding && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-card z-20"
+          className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-20"
           style={{ animation: "slideDigitDown 0.3s ease-out forwards" }}
         >
           <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{incomingRef.current}</span>
