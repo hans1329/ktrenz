@@ -3650,6 +3650,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_giftcard_orders: {
+        Row: {
+          country_code: string
+          created_at: string
+          currency_code: string
+          denomination: number
+          error_message: string | null
+          fulfilled_at: string | null
+          id: string
+          kcash_cost: number
+          pin_code: string | null
+          product_id: number
+          product_name: string
+          reloadly_transaction_id: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          denomination: number
+          error_message?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          kcash_cost: number
+          pin_code?: string | null
+          product_id: number
+          product_name: string
+          reloadly_transaction_id?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          denomination?: number
+          error_message?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          kcash_cost?: number
+          pin_code?: string | null
+          product_id?: number
+          product_name?: string
+          reloadly_transaction_id?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_guard_logs: {
         Row: {
           action: string
