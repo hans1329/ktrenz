@@ -591,7 +591,7 @@ function FlipTimer() {
   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
 
   return (
-    <div className="flex flex-col items-center gap-1.5 my-0 py-[24px]">
+    <div className="flex flex-col items-center gap-1.5 my-0 py-[10px]">
       <span className={cn("text-[11px] font-bold tracking-wider uppercase", PHASE_COLORS[phase])}>
         {PHASE_LABELS[phase][lang]}
       </span>
