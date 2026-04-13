@@ -23,6 +23,7 @@ interface AuthContextValue {
   isModerator: boolean;
   showWelcomeBonus: boolean;
   setShowWelcomeBonus: (v: boolean) => void;
+  welcomeBonusAmount: number;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -135,7 +136,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const now = Date.now();
           if (now - createdAt < 60_000) {
             localStorage.setItem(seenKey, '1');
-            setTimeout(() => setShowWelcomeBonus(true), 500);
+            // Grant welcome bonus points
+            grantWelcomeBonus(uid).then((amount) => {
+              if (amount > 0) {
+                welcomeBonusAmountRef.current = amount;
+                setTimeout(() => setShowWelcomeBonus(true), 500);
+              }
+            });
           } else {
             localStorage.setItem(seenKey, '1');
           }
