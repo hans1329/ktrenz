@@ -1870,47 +1870,24 @@ export default function Battle() {
           </div>
         )}
 
-        {/* Empty state for filter */}
-        {/* Settled tab: show history predictions */}
-        {battleFilter === "settled" && settledHistoryPredictions.length > 0 && (
-          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-            {settledHistoryPredictions.map((pred, i) => (
-              <div key={pred.id || i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                  </p>
-                </div>
-                <Badge variant={pred.status === "won" ? "default" : "outline"} className={cn("ml-2 shrink-0", pred.status === "won" && "bg-primary")}>
-                  {t(pred.status === "won" ? "won" : "lost")}
-                </Badge>
-              </div>
-            ))}
+        {/* Empty states */}
+        {battleFilter === "myBets" && myBetPredictions.length === 0 && (
+          <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
+            {t("noBattlesYet")}
           </div>
         )}
-
-        {((battleFilter === "myBets" && myBetPredictions.length === 0) || (
-          battleFilter !== "myBets" &&
-          battlePairs.every((_, idx) => {
-            const s = getPairState(idx);
-            const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
-            if (battleFilter === "live") return s.submitted && p?.status !== "pending";
-            if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
-            return false;
-          }) &&
-          !(battleFilter === "settled" && settledHistoryPredictions.length > 0)
-        )) && (
+        {battleFilter === "settled" && settledBattleResults.length === 0 && (
           <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
-            {battleFilter === "settled"
-              ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
-              : battleFilter === "myBets"
-              ? (language === "ko" ? "참여한 배틀이 없습니다" : "No battles joined yet")
-              : (language === "ko" ? "라이브 배틀이 없습니다" : "No live battles")}
+            {t("noSettled")}
+          </div>
+        )}
+        {battleFilter === "live" && battlePairs.every((_, idx) => {
+          const s = getPairState(idx);
+          const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
+          return s.submitted && p?.status !== "pending";
+        }) && (
+          <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
+            {t("allDone")}
           </div>
         )}
 
