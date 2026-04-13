@@ -974,6 +974,7 @@ export default function Battle() {
   const [settlementResults, setSettlementResults] = useState<SettledPrediction[]>([]);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
+  const [showFirstAnalyzerModal, setShowFirstAnalyzerModal] = useState(false);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -1022,6 +1023,9 @@ export default function Battle() {
       if (error) throw error;
       if (data?.insight_data) {
         setInsightData(prev => ({ ...prev, [key]: data.insight_data }));
+      }
+      if (data?.first_analyzer) {
+        setShowFirstAnalyzerModal(true);
       }
     } catch (e) {
       console.error("Insight generation failed:", e);
@@ -2207,6 +2211,29 @@ export default function Battle() {
         results={settlementResults}
         language={language}
       />
+      {/* First Analyzer Bonus Modal */}
+      {showFirstAnalyzerModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowFirstAnalyzerModal(false)}>
+          <div className="mx-6 w-full max-w-sm rounded-2xl bg-card p-6 text-center shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="mb-2 text-lg font-bold text-foreground">
+              {globalT("battle.firstAnalyzerTitle")}
+            </h3>
+            <p className="mb-5 text-sm text-muted-foreground">
+              {globalT("battle.firstAnalyzerDesc")}
+            </p>
+            <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-4 py-2 text-lg font-bold text-primary">
+              <Gift className="h-5 w-5" />
+              +30 K-Cashes
+            </div>
+            <Button className="w-full" onClick={() => setShowFirstAnalyzerModal(false)}>
+              OK
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
