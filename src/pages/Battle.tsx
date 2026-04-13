@@ -1538,8 +1538,8 @@ export default function Battle() {
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
       {/* Full-width hero background */}
-      <div className="absolute top-16 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-        <img src={battleHeroBg} alt="" className="w-full h-full object-cover opacity-30" />
+      <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
+        <img src={battleHeroBg} alt="" className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/20 to-muted/30" />
       </div>
 
