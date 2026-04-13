@@ -36,7 +36,16 @@ import TicketInfoPopup from "@/components/TicketInfoPopup";
 import { cn } from "@/lib/utils";
 import battleHeroBg from "@/assets/battle-hero-bg.jpg";
 
-
+// Preload hero background image
+if (typeof window !== 'undefined') {
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = battleHeroBg;
+  if (!document.head.querySelector(`link[href="${battleHeroBg}"]`)) {
+    document.head.appendChild(link);
+  }
+}
 
 interface B2Item {
   id: string;
