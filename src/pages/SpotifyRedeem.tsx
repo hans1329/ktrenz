@@ -313,40 +313,26 @@ const SpotifyRedeem = () => {
               <p className="text-xs text-muted-foreground">{l("selectCountryDesc")}</p>
             </div>
 
-            {countriesLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">{l("loadingProducts")}</p>
-              </div>
-            ) : !availableCountries || availableCountries.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">{l("noProducts")}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {availableCountries.map((c) => (
-                  <button
-                    key={c.code}
-                    onClick={() => handleCountrySelect(c.code)}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card",
-                      "hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
-                    )}
-                  >
-                    {c.flagUrl ? (
-                      <img src={c.flagUrl} alt={c.code} className="w-7 h-5 rounded-sm object-cover" />
-                    ) : (
-                      <span className="text-xl">🌐</span>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.code}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              {COUNTRIES.map((c) => (
+                <button
+                  key={c.code}
+                  onClick={() => handleCountrySelect(c.code)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card",
+                    "hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
+                  )}
+                >
+                  <span className="text-2xl">{c.flag}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {c.name[language as keyof typeof c.name] || c.name.en}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{c.code}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
