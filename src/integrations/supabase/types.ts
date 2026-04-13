@@ -5275,6 +5275,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_user_preferences: {
+        Row: {
+          country_code: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_velocity_profile_summary: {
         Row: {
           avg_peak_day_offset: number | null
