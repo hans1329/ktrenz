@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
       const won = pickedWonVs && bandMatched;
       const status = won ? "won" : "lost";
-      const reward = won ? (bandConfig?.reward ?? 0) : 0;
+      const reward = won ? (bandConfig?.reward ?? 0) : CONSOLATION_REWARD;
 
       const { error: updateErr } = await sb
         .from("b2_predictions")
@@ -153,12 +153,13 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Award points if won
-      if (won && reward > 0) {
+      // Award points: win reward or consolation
+      if (reward > 0) {
+        const reason = won ? `battle_win_${pred.band}` : "battle_consolation";
         await sb.rpc("ktrenz_add_points" as any, {
           _user_id: pred.user_id,
           _amount: reward,
-          _reason: `battle_win_${pred.band}`,
+          _reason: reason,
         }).catch(() => {});
       }
 
