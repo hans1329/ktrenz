@@ -1514,7 +1514,7 @@ export default function Battle() {
           </button>
         } />
       </div>
-      <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} />
+      <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
       <div className="pt-16 pb-24 space-y-5">
         {/* Title + Flip Timer */}
