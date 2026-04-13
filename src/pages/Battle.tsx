@@ -36,7 +36,16 @@ import TicketInfoPopup from "@/components/TicketInfoPopup";
 import { cn } from "@/lib/utils";
 import battleHeroBg from "@/assets/battle-hero-bg.jpg";
 
-
+// Preload hero background image
+if (typeof window !== 'undefined') {
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = battleHeroBg;
+  if (!document.head.querySelector(`link[href="${battleHeroBg}"]`)) {
+    document.head.appendChild(link);
+  }
+}
 
 interface B2Item {
   id: string;
@@ -1470,7 +1479,7 @@ export default function Battle() {
     return (
       <div className="relative min-h-screen overflow-hidden">
         {/* Full-screen splash background */}
-        <img src={battleHeroBg} alt="" className="absolute inset-0 w-full h-full object-cover brightness-[0.35]" />
+        <img src={battleHeroBg} alt="" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover brightness-[0.35]" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen -mt-12">
@@ -1541,8 +1550,8 @@ export default function Battle() {
 
       {/* Full-width hero background */}
       <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-        <img src={battleHeroBg} alt="" className="w-full h-full object-cover brightness-[0.3]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+        <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.3]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent from-60% via-background/60 via-85% to-background" />
       </div>
 
       <div className="relative z-10 pt-16 pb-24 space-y-5">
