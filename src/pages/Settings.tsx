@@ -5,6 +5,7 @@ import { LANGUAGES } from "@/i18n/translations";
 import SEO from "@/components/SEO";
 
 import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User, Check } from "lucide-react";
+import { getDefaultAvatar } from "@/lib/defaultAvatar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -199,10 +200,7 @@ title: "앱 설정",
               <div className="flex items-center gap-4">
                 <label className="relative cursor-pointer group">
                   <Avatar className="w-16 h-16 border-2 border-border">
-                    <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                      {profile?.username?.[0]?.toUpperCase() || "U"}
-                    </AvatarFallback>
+                    <AvatarImage src={profile?.avatar_url || getDefaultAvatar(user?.id)} />
                   </Avatar>
                   <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
