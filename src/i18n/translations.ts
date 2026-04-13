@@ -905,6 +905,11 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.allDone": { en: "All battles done for today!", ko: "오늘의 배틀을 모두 완료했습니다!", ja: "今日のバトルは全て完了！", zh: "今天的对战已全部完成！" },
   "battle.markHot": { en: "Mark as Hot", ko: "Hot 표시", ja: "Hot マーク", zh: "标记为Hot" },
   "battle.joined": { en: "Joined", ko: "참여완료", ja: "参加済み", zh: "已参与" },
+  "battle.settledTab": { en: "Settled", ko: "정산완료", ja: "精算済", zh: "已结算" },
+  "battle.noSettled": { en: "No settled battles yet", ko: "정산된 배틀이 없습니다", ja: "精算済のバトルはまだありません", zh: "暂无已结算的对战" },
+  "battle.growth": { en: "Growth", ko: "성장률", ja: "成長率", zh: "增长率" },
+  "battle.winner": { en: "Winner", ko: "승자", ja: "勝者", zh: "胜者" },
+  "battle.draw": { en: "Draw", ko: "무승부", ja: "引き分け", zh: "平局" },
 
   // ── Discover ──
   "discover.trendLeaderboard": { en: "Trend Leaderboard", ko: "트렌드 리더보드", ja: "トレンドリーダーボード", zh: "趋势排行榜" },
