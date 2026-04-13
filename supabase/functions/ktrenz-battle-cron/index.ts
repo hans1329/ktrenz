@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
     const queueActive = activeQueueItems.length;
     const queueBatchId = activeQueueItems[0]?.batch_id || null;
     const queueBusy = queueActive > 0;
+    const yesterdayQueueItems = (queueItems || []).filter((q: any) => q.batch_id === yesterdayBatchId);
+    const yesterdayQueueHasItems = yesterdayQueueItems.length > 0;
 
     // ═══════════════════════════════════════════════════════════
     // PHASE 1: 어제 배팅 마감 (05:00 KST 이후)
@@ -120,9 +122,6 @@ Deno.serve(async (req) => {
         .eq("batch_id", yesterdayBatchId)
         .eq("search_round", 2);
 
-      const expectedRound2Runs = Number(yesterdayBattle.total_pairs || 0) * 2;
-      const round2Complete = hasExpectedRuns(yesterdayRound2Count || 0, yesterdayBattle.total_pairs);
-
       if (queueBusy && queueBatchId === yesterdayBatchId) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
           action: "process_next",
@@ -132,17 +131,12 @@ Deno.serve(async (req) => {
         return respond(log);
       }
 
-      if (!queueBusy && (yesterdayRound2Count || 0) === 0) {
+      if (!yesterdayQueueHasItems && (yesterdayRound2Count || 0) === 0) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
           action: "start_round2",
           prev_batch_id: yesterdayBatchId,
         });
         log.push(`Phase 2: Started round 2 for ${yesterday}: queued=${result.queued}`);
-        return respond(log);
-      }
-
-      if (!round2Complete) {
-        log.push(`Phase 2: Waiting for complete round 2 data (${yesterdayRound2Count || 0}/${expectedRound2Runs || 0})`);
         return respond(log);
       }
     }
@@ -158,10 +152,7 @@ Deno.serve(async (req) => {
         .eq("batch_id", yesterdayBatchId)
         .eq("search_round", 2);
 
-      const expectedRound2Runs = Number(yesterdayBattle.total_pairs || 0) * 2;
-      const round2Complete = hasExpectedRuns(r2Count || 0, yesterdayBattle.total_pairs);
-
-      if (round2Complete) {
+      if ((r2Count || 0) > 0) {
         // Round 2 수집 완료 → 정산
         const result = await callFunction(supabaseUrl, serviceKey, "settle-trend-vs", {});
         log.push(`Phase 3: Settlement: settled=${result.settled}, total=${result.total}`);
@@ -192,11 +183,6 @@ Deno.serve(async (req) => {
           log.push(`Phase 3.5: Keywords already extracted for ${today} (${kwCount})`);
         }
 
-        return respond(log);
-      }
-
-      if ((r2Count || 0) > 0) {
-        log.push(`Phase 3: Waiting for full round 2 data before settlement (${r2Count || 0}/${expectedRound2Runs || 0})`);
         return respond(log);
       }
     }

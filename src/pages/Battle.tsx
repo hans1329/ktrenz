@@ -1192,7 +1192,7 @@ export default function Battle() {
 
   // Auto-refresh every 60s to detect battle status changes
   useEffect(() => {
-    const iv = setInterval(() => { battleCache.ts = 0; loadBattleData(); }, 60_000);
+    const iv = setInterval(() => { battleCache.ts = 0; loadBattleData(); loadHistoryPredictions(); }, 60_000);
     return () => clearInterval(iv);
   }, []);
 
