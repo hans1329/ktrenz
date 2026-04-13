@@ -13,6 +13,7 @@ interface KtrenzUser {
   user_id: string;
   email: string | null;
   signed_up_at: string | null;
+  banned_until: string | null;
   username: string | null;
   display_name: string | null;
   profile_avatar: string | null;
