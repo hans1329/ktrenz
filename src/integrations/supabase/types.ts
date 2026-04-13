@@ -10467,6 +10467,7 @@ export type Database = {
         Args: { badge_id_param: string; entry_id_param: string }
         Returns: boolean
       }
+      grant_welcome_bonus: { Args: { _user_id: string }; Returns: number }
       handle_comment_vote: {
         Args: {
           comment_id_param: string
