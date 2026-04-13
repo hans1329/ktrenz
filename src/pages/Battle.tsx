@@ -1099,25 +1099,29 @@ export default function Battle() {
       return;
     }
 
-    // Determine the active batch_id from the latest battle record
-    const { data: latestBattle } = await (supabase
+    // Determine the active batch_id – try latest battle first, fall back if insufficient runs
+    const { data: recentBattles } = await (supabase
       .from("ktrenz_b2_battles") as any)
       .select("batch_id, battle_date, status")
       .order("battle_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(3);
 
-    const activeBatchId = latestBattle?.batch_id;
+    let latestBattle: any = null;
+    let runsData: any[] | null = null;
 
-    let runsQuery = (supabase.from("ktrenz_b2_runs") as any)
-      .select("id, star_id, content_score, counts, created_at, batch_id")
-      .order("created_at", { ascending: false });
+    for (const battle of (recentBattles || [])) {
+      const { data: candidateRuns } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("id, star_id, content_score, counts, created_at, batch_id")
+        .eq("batch_id", battle.batch_id)
+        .order("created_at", { ascending: false })
+        .limit(40);
 
-    if (activeBatchId) {
-      runsQuery = runsQuery.eq("batch_id", activeBatchId);
+      if (candidateRuns && candidateRuns.length >= 2) {
+        latestBattle = battle;
+        runsData = candidateRuns;
+        break;
+      }
     }
-
-    const { data: runsData } = await runsQuery.limit(40);
 
     if (!runsData || runsData.length < 2) {
       setLoading(false);
