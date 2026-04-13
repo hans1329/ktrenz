@@ -235,10 +235,10 @@ Deno.serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PHASE 6.5: 오늘 배팅 오픈 (12:00+ KST, round 1 데이터 완성 후)
+    // PHASE 6.5: 오늘 배팅 오픈 (10:00+ KST, round 1 데이터 완성 후)
     // 큐가 비워졌더라도 round 1 run 수가 충분하면 open 처리
     // ═══════════════════════════════════════════════════════════
-    if (todayBattle?.status === "collecting" && isAfterKSTTime(kstHour, kstMin, 12, 0)) {
+    if (todayBattle?.status === "collecting" && isAfterKSTTime(kstHour, kstMin, 10, 0)) {
       const { count: todayRound1Count } = await sb
         .from("ktrenz_b2_runs")
         .select("*", { count: "exact", head: true })
