@@ -10529,6 +10529,7 @@ export type Database = {
       ktrenz_admin_user_emails: {
         Args: { _user_ids: string[] }
         Returns: {
+          banned_until: string
           created_at: string
           email: string
           user_id: string

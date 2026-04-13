@@ -13,6 +13,7 @@ interface KtrenzUser {
   user_id: string;
   email: string | null;
   signed_up_at: string | null;
+  banned_until: string | null;
   username: string | null;
   display_name: string | null;
   profile_avatar: string | null;
@@ -79,10 +80,10 @@ const AdminUsers = () => {
         msgCountMap.set(m.user_id, (msgCountMap.get(m.user_id) || 0) + 1);
       });
 
-      const emailMap = new Map<string, { email: string; created_at: string }>();
+      const emailMap = new Map<string, { email: string; created_at: string; banned_until: string | null }>();
       const emailData = Array.isArray(emailsRes.data) ? emailsRes.data : [];
       emailData.forEach((e: any) => {
-        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at });
+        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at, banned_until: e.banned_until });
       });
 
       return logins.map((l): KtrenzUser => {
@@ -94,6 +95,7 @@ const AdminUsers = () => {
           user_id: l.user_id,
           email: authInfo?.email ?? null,
           signed_up_at: authInfo?.created_at ?? null,
+          banned_until: authInfo?.banned_until ?? null,
           username: profile?.username ?? null,
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
@@ -132,6 +134,22 @@ const AdminUsers = () => {
       toast.success(isAdmin ? '어드민 권한이 해제되었습니다' : '어드민 권한이 부여되었습니다');
     },
     onError: (err: any) => toast.error('권한 변경 실패: ' + err.message),
+  });
+
+  const toggleBan = useMutation({
+    mutationFn: async ({ userId, isBanned }: { userId: string; isBanned: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('ktrenz-admin-ban-user', {
+        body: { target_user_id: userId, action: isBanned ? 'unban' : 'ban' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_, { isBanned }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ktrenz-users'] });
+      toast.success(isBanned ? '유저 밴이 해제되었습니다' : '유저가 밴 처리되었습니다');
+    },
+    onError: (err: any) => toast.error('밴 처리 실패: ' + err.message),
   });
 
   const updatePoints = useMutation({
@@ -194,6 +212,7 @@ const AdminUsers = () => {
               <TableHead className="text-right">채팅</TableHead>
               <TableHead className="text-right">로그인</TableHead>
               <TableHead>최근 접속</TableHead>
+              <TableHead className="text-center">밴</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -201,6 +220,7 @@ const AdminUsers = () => {
               const isAdmin = u.role === 'admin';
               const isMod = u.role === 'moderator';
               const isEditing = editingUserId === u.user_id;
+              const isBanned = u.banned_until && new Date(u.banned_until) > new Date();
               return (
                 <TableRow key={u.user_id}>
                   <TableCell>
@@ -214,6 +234,7 @@ const AdminUsers = () => {
                           <p className="font-medium text-sm">{u.display_name || u.username || 'Unknown'}</p>
                           {isAdmin && <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4">Admin</Badge>}
                           {isMod && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">Mod</Badge>}
+                          {isBanned && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">Banned</Badge>}
                         </div>
                         {u.username && <p className="text-xs text-muted-foreground">@{u.username}</p>}
                       </div>
@@ -297,12 +318,29 @@ const AdminUsers = () => {
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.agent_msg_count}</TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.login_count}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(u.last_login_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant={isBanned ? 'outline' : 'destructive'}
+                      size="sm"
+                      className="h-7 text-[11px] gap-1"
+                      disabled={toggleBan.isPending}
+                      onClick={() => {
+                        const action = isBanned ? '언밴' : '밴';
+                        if (confirm(`${u.display_name || u.username || u.email || u.user_id}을(를) ${action} 처리하시겠습니까?`)) {
+                          toggleBan.mutate({ userId: u.user_id, isBanned: !!isBanned });
+                        }
+                      }}
+                    >
+                      {isBanned ? <UserCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                      {isBanned ? '언밴' : '밴'}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
               </TableRow>
             )}
           </TableBody>
