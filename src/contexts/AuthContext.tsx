@@ -193,10 +193,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }, AUTH_LOADING_TIMEOUT_MS);
 
+    // 4) Capacitor deep link listener for OAuth callback
+    let deepLinkCleanup: (() => void) | undefined;
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/app').then(({ App }) => {
+        App.addListener('appUrlOpen', async ({ url }) => {
+          // ktrenz://login-callback#access_token=...&refresh_token=...
+          if (url.includes('login-callback')) {
+            const hashPart = url.split('#')[1];
+            if (hashPart) {
+              const params = new URLSearchParams(hashPart);
+              const accessToken = params.get('access_token');
+              const refreshToken = params.get('refresh_token');
+              if (accessToken && refreshToken) {
+                await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+              }
+            }
+            // Close the in-app browser
+            import('@capacitor/browser').then(({ Browser }) => Browser.close()).catch(() => {});
+          }
+        });
+        deepLinkCleanup = () => App.removeAllListeners();
+      });
+    }
+
     return () => {
       mounted = false;
       clearTimeout(timeoutId);
       subscription.unsubscribe();
+      deepLinkCleanup?.();
     };
   }, [queryClient]);
 
