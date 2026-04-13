@@ -2,7 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Bell, Loader2, LogIn, Trophy, Clock, Flame, Sprout, Rocket, Gem } from "lucide-react";
+import { Bell, Loader2, LogIn, Trophy, Clock, Flame, Sprout, Rocket, Gem } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import V3Header from "@/components/v3/V3Header";
+import HeaderTicketSlot from "@/components/HeaderTicketSlot";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -131,18 +134,11 @@ const Notifications = () => {
     <div className="min-h-[100dvh] bg-background">
       <SEO title="Alerts – KTrenZ" description="Battle predictions and results" path="/notifications" />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center h-14 px-4 gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <Bell className="w-5 h-5 text-primary" />
-          <h1 className="text-base font-bold text-foreground">{t("notif.title")}</h1>
-        </div>
-      </header>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card">
+        <V3Header rightSlot={<HeaderTicketSlot />} />
+      </div>
 
-      <div className="px-4 py-4 space-y-6 pb-24 max-w-lg mx-auto">
+      <div className="px-4 py-4 space-y-6 pb-24 pt-[4.5rem] max-w-lg mx-auto">
 
         {/* ── Pending Predictions ── */}
         <section>
