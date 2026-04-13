@@ -975,6 +975,7 @@ export default function Battle() {
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
   const [showFirstAnalyzerModal, setShowFirstAnalyzerModal] = useState(false);
+  const [settledBattleResults, setSettledBattleResults] = useState<{ starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[]>([]);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
