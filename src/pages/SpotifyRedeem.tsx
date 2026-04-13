@@ -19,25 +19,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-/* ── Supported Countries ── */
-const COUNTRIES = [
-  { code: "US", flag: "🇺🇸", name: { en: "United States", ko: "미국", ja: "アメリカ", zh: "美国" } },
-  { code: "KR", flag: "🇰🇷", name: { en: "South Korea", ko: "한국", ja: "韓国", zh: "韩国" } },
-  { code: "JP", flag: "🇯🇵", name: { en: "Japan", ko: "일본", ja: "日本", zh: "日本" } },
-  { code: "GB", flag: "🇬🇧", name: { en: "United Kingdom", ko: "영국", ja: "イギリス", zh: "英国" } },
-  { code: "DE", flag: "🇩🇪", name: { en: "Germany", ko: "독일", ja: "ドイツ", zh: "德国" } },
-  { code: "FR", flag: "🇫🇷", name: { en: "France", ko: "프랑스", ja: "フランス", zh: "法国" } },
-  { code: "AU", flag: "🇦🇺", name: { en: "Australia", ko: "호주", ja: "オーストラリア", zh: "澳大利亚" } },
-  { code: "CA", flag: "🇨🇦", name: { en: "Canada", ko: "캐나다", ja: "カナダ", zh: "加拿大" } },
-  { code: "BR", flag: "🇧🇷", name: { en: "Brazil", ko: "브라질", ja: "ブラジル", zh: "巴西" } },
-  { code: "IN", flag: "🇮🇳", name: { en: "India", ko: "인도", ja: "インド", zh: "印度" } },
-  { code: "ID", flag: "🇮🇩", name: { en: "Indonesia", ko: "인도네시아", ja: "インドネシア", zh: "印度尼西亚" } },
-  { code: "TH", flag: "🇹🇭", name: { en: "Thailand", ko: "태국", ja: "タイ", zh: "泰国" } },
-  { code: "PH", flag: "🇵🇭", name: { en: "Philippines", ko: "필리핀", ja: "フィリピン", zh: "菲律宾" } },
-  { code: "MX", flag: "🇲🇽", name: { en: "Mexico", ko: "멕시코", ja: "メキシコ", zh: "墨西哥" } },
-  { code: "SG", flag: "🇸🇬", name: { en: "Singapore", ko: "싱가포르", ja: "シンガポール", zh: "新加坡" } },
-  { code: "TW", flag: "🇹🇼", name: { en: "Taiwan", ko: "대만", ja: "台湾", zh: "台湾" } },
-];
+/* ── Duration mapping (approximate Spotify Premium months per USD value) ── */
+const DURATION_MAP: Record<number, { en: string; ko: string; ja: string; zh: string }> = {
+  10: { en: "~1 month", ko: "약 1개월", ja: "約1ヶ月", zh: "约1个月" },
+  25: { en: "~2 months", ko: "약 2개월", ja: "約2ヶ月", zh: "约2个月" },
+  30: { en: "~3 months", ko: "약 3개월", ja: "約3ヶ月", zh: "约3个月" },
+  50: { en: "~5 months", ko: "약 5개월", ja: "約5ヶ月", zh: "约5个月" },
+  60: { en: "~6 months", ko: "약 6개월", ja: "約6ヶ月", zh: "约6个月" },
+  100: { en: "~10 months", ko: "약 10개월", ja: "約10ヶ月", zh: "约10个月" },
+};
+const getDuration = (d: number, lang: string) => {
+  const exact = DURATION_MAP[d];
+  if (exact) return exact[lang as keyof typeof exact] || exact.en;
+  // Approximate: ~$10/month for Spotify Premium
+  const months = Math.round(d / 10);
+  const labels: Record<string, string> = {
+    en: `~${months} month${months > 1 ? "s" : ""}`,
+    ko: `약 ${months}개월`,
+    ja: `約${months}ヶ月`,
+    zh: `约${months}个月`,
+  };
+  return labels[lang] || labels.en;
+};
 
 const KCASH_PER_USD = 1000;
 
