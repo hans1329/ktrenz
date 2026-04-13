@@ -253,8 +253,8 @@ const Notifications = () => {
                           <BandIcon className={cn("w-3 h-3", bandColor)} />
                           <span className="text-[10px] text-muted-foreground">{bandLabel}</span>
                         </div>
-                        {won && (r.reward_amount ?? 0) > 0 && (
-                          <span className="text-xs font-bold text-primary flex items-center gap-0.5">
+                        {(r.reward_amount ?? 0) > 0 && (
+                          <span className={cn("text-xs font-bold flex items-center gap-0.5", won ? "text-primary" : "text-muted-foreground")}>
                             +{r.reward_amount} <Gem className="w-3 h-3" />
                           </span>
                         )}
