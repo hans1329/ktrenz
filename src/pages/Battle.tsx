@@ -1676,24 +1676,24 @@ export default function Battle() {
                       <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center">
                           {/* Star A */}
-                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.04]")}>
-                            <p className={cn("text-sm font-bold truncate", aWins ? "text-primary" : "text-foreground")}>{pair.starA}</p>
-                            <p className={cn("text-lg font-black mt-0.5", pair.growthA > 0 ? (aWins ? "text-primary" : "text-emerald-500") : pair.growthA < 0 ? "text-red-400" : "text-muted-foreground")}>
+                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.03]")}>
+                            <p className={cn("text-sm font-bold truncate", aWins ? "text-foreground" : "text-muted-foreground")}>{pair.starA}</p>
+                            <p className={cn("text-lg font-black mt-0.5", aWins ? "text-foreground" : "text-muted-foreground")}>
                               {pair.growthA > 0 ? "+" : ""}{pair.growthA}%
                             </p>
-                            {aWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                            {aWins && <span className="text-[10px] font-bold text-primary">▲ {t("winner")}</span>}
                           </div>
                           {/* VS */}
                           <div className="px-2 text-center">
-                            <span className="text-xs font-bold text-purple-500">VS</span>
+                            <span className="text-[10px] font-bold text-muted-foreground/40">VS</span>
                           </div>
                           {/* Star B */}
-                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.04]")}>
-                            <p className={cn("text-sm font-bold truncate", bWins ? "text-primary" : "text-foreground")}>{pair.starB}</p>
-                            <p className={cn("text-lg font-black mt-0.5", pair.growthB > 0 ? (bWins ? "text-primary" : "text-emerald-500") : pair.growthB < 0 ? "text-red-400" : "text-muted-foreground")}>
+                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.03]")}>
+                            <p className={cn("text-sm font-bold truncate", bWins ? "text-foreground" : "text-muted-foreground")}>{pair.starB}</p>
+                            <p className={cn("text-lg font-black mt-0.5", bWins ? "text-foreground" : "text-muted-foreground")}>
                               {pair.growthB > 0 ? "+" : ""}{pair.growthB}%
                             </p>
-                            {bWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                            {bWins && <span className="text-[10px] font-bold text-primary">▲ {t("winner")}</span>}
                           </div>
                         </div>
                         {draw && <p className="text-center text-[10px] text-muted-foreground pb-2">{t("draw")}</p>}
