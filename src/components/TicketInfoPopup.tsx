@@ -1,9 +1,13 @@
-import { createPortal } from "react-dom";
 import { Ticket } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { LEVEL_TIERS, getLevelInfo } from "@/lib/levelUtils";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TicketInfoPopupProps {
   open: boolean;
@@ -15,7 +19,6 @@ interface TicketInfoPopupProps {
 
 const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: TicketInfoPopupProps) => {
   const { language } = useLanguage();
-  if (!open) return null;
 
   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
   const title = lang === "ko" ? "예측 티켓" : lang === "ja" ? "予測チケット" : lang === "zh" ? "预测票" : "Prediction Tickets";
@@ -32,10 +35,11 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
 
   const lvl = getLevelInfo(totalPoints ?? 0);
 
-  return createPortal(
-    <>
-      <div className="fixed inset-0 z-[100] bg-black/40" onClick={onClose} />
-      <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(320px,90vw)] bg-card rounded-2xl p-5 shadow-xl space-y-4">
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-[320px] rounded-2xl p-5 gap-4 [&>button]:hidden">
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Ticket className="w-5 h-5 text-primary" />
@@ -54,16 +58,14 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
             <span className="text-right">{dailyLabel}</span>
           </div>
           {LEVEL_TIERS.map((t, i) => {
-            const isCurrentTier = lvl.level >= t.minLevel && lvl.level <= t.maxLevel;
+            const isCurrentTier = lvl.tier === t.id;
             return (
               <div key={i} className={cn(
                 "grid grid-cols-3 px-3 py-2 text-xs",
                 isCurrentTier ? "bg-primary/5 font-bold text-primary" : "text-foreground"
               )}>
-                <span>{t.tier[lang]}</span>
-                <span className="text-center text-muted-foreground">
-                  {t.maxLevel >= 999 ? `Lv.${t.minLevel}+` : `Lv.${t.minLevel}–${t.maxLevel}`}
-                </span>
+                <span>{t.name[lang]}</span>
+                <span className="text-center text-muted-foreground">{t.levelRange}</span>
                 <span className="text-right">{t.tickets}🎫</span>
               </div>
             );
@@ -72,24 +74,28 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
 
         {/* XP Progress */}
         {totalPoints !== undefined && (
-          <div className="space-y-1.5 px-0.5">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-foreground">
-                Lv.{lvl.level}
+                {lvl.tierName[lang]} · {lvl.totalXp.toLocaleString()} XP
               </span>
               <span className="text-[10px] text-muted-foreground">
-                {lvl.currentXp} / {lvl.xpForNextLevel} XP
+                {lvl.nextTierPoints !== null
+                  ? `${lang === "ko" ? "다음 등급까지" : "Next tier"} ${(lvl.nextTierPoints - lvl.totalXp).toLocaleString()} XP`
+                  : (lang === "ko" ? "최고 등급" : "Max tier")}
               </span>
             </div>
-            <Progress value={lvl.progress} className="h-1.5" />
+            {lvl.nextTierPoints !== null && (
+              <Progress value={lvl.tierProgress} className="h-1.5" />
+            )}
             <p className="text-[10px] text-muted-foreground">
               {lang === "ko"
-                ? "예측·배틀 참여로 경험치를 얻고, 레벨이 오르면 티켓이 늘어납니다."
+                ? "예측·배틀 참여로 경험치를 얻고, 등급이 오르면 티켓이 늘어납니다."
                 : lang === "ja"
-                ? "予測やバトルに参加してXPを獲得し、レベルが上がるとチケットが増えます。"
+                ? "予測やバトルに参加してXPを獲得し、ランクが上がるとチケットが増えます。"
                 : lang === "zh"
                 ? "参与预测和对战获取经验值，升级后可获得更多票。"
-                : "Earn XP through predictions & battles. Higher levels unlock more tickets."}
+                : "Earn XP through predictions & battles. Higher tiers unlock more tickets."}
             </p>
           </div>
         )}
@@ -99,9 +105,8 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
         <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
           {closeText}
         </button>
-      </div>
-    </>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 };
 

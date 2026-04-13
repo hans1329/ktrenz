@@ -83,11 +83,10 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 </p>
                 {(() => {
                   const lvl = getLevelInfo(profile?.total_points ?? 0);
-                  const tier = getTierForLevel(lvl.level);
                   const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
                   return (
                     <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
-                      Lv.{lvl.level} · {tier.tier[lang]}
+                      {lvl.tierName[lang]}
                     </span>
                   );
                 })()}
@@ -101,9 +100,9 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 const lvl = getLevelInfo(profile?.total_points ?? 0);
                 return (
                   <div className="flex items-center gap-2 mt-1.5">
-                    <Progress value={lvl.progress} className="h-1.5 flex-1" />
+                    <Progress value={lvl.tierProgress} className="h-1.5 flex-1" />
                     <span className="text-[10px] text-muted-foreground shrink-0">
-                      {lvl.currentXp}/{lvl.xpForNextLevel}
+                      {lvl.totalXp.toLocaleString()} XP
                     </span>
                   </div>
                 );
