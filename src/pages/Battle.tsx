@@ -980,7 +980,8 @@ export default function Battle() {
   const totalTickets = ticketInfo?.total ?? 3;
   const myBetMap = new Map<string, Prediction>();
   [...predictions, ...historyPredictions].forEach((pred) => {
-    myBetMap.set(`${pred.pickedRunId}:${pred.opponentRunId}:${pred.band}`, pred);
+    const key = `${pred.id || `${pred.pickedRunId}:${pred.opponentRunId}:${pred.band}:${pred.battle_date || ''}`}`;
+    if (!myBetMap.has(key)) myBetMap.set(key, pred);
   });
   const myBetPredictions = Array.from(myBetMap.values()).sort((a, b) =>
     new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
