@@ -70,6 +70,58 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // ── List countries with Spotify products ──
+    if (action === "list_countries") {
+      const token = await getReloadlyToken();
+      const res = await fetch(
+        `${RELOADLY_API_URL}/products?productName=Spotify&includeFixed=true&includeRange=true&size=200`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/com.reloadly.giftcards-v1+json",
+          },
+        }
+      );
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Reloadly products API failed [${res.status}]: ${errBody}`);
+      }
+      const allProducts = await res.json();
+      const spotifyProducts = (allProducts as any[]).filter((p: any) =>
+        p.productName?.toLowerCase().includes("spotify") ||
+        p.brand?.brandName?.toLowerCase().includes("spotify")
+      );
+
+      // Group by country
+      const countryMap: Record<string, any> = {};
+      for (const p of spotifyProducts) {
+        const iso = p.country?.isoName;
+        if (!iso) continue;
+        if (!countryMap[iso]) {
+          countryMap[iso] = {
+            code: iso,
+            name: p.country.name,
+            flagUrl: p.country.flagUrl,
+            products: [],
+          };
+        }
+        countryMap[iso].products.push({
+          productId: p.productId,
+          productName: p.productName,
+          denominationType: p.denominationType,
+          fixedRecipientDenominations: p.fixedRecipientDenominations ?? [],
+          minRecipientDenomination: p.minRecipientDenomination,
+          maxRecipientDenomination: p.maxRecipientDenomination,
+          recipientCurrencyCode: p.recipientCurrencyCode,
+          senderCurrencyCode: p.senderCurrencyCode,
+        });
+      }
+
+      return new Response(JSON.stringify({ countries: Object.values(countryMap) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── List available products ──
     if (action === "list_products") {
       const { country_code = "US" } = body;
