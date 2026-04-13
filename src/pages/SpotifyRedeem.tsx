@@ -118,7 +118,22 @@ const SpotifyRedeem = () => {
   const [selectedProduct, setSelectedProduct] = useState<ReloadlyProduct | null>(null);
   const [selectedDenom, setSelectedDenom] = useState<number | null>(null);
   const [resultCode, setResultCode] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  /* ── Fetch available countries with Spotify products ── */
+  const { data: availableCountries, isLoading: countriesLoading } = useQuery({
+    queryKey: ["spotify-countries"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-redeem-giftcard", {
+        body: { action: "list_countries" },
+      });
+      if (error) throw error;
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.error) throw new Error(parsed.error);
+      return (parsed.countries ?? []) as SpotifyCountry[];
+    },
+    enabled: !!user,
+    retry: 1,
+    staleTime: 10 * 60 * 1000,
+  });
 
   /* ── Load saved country from DB ── */
   const { data: savedPref } = useQuery({
