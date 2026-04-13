@@ -119,7 +119,7 @@ const App = () => (
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/key" element={<ContentSearch />} />
-                
+                <Route path="/redeem/spotify" element={<SpotifyRedeem />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
