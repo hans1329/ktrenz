@@ -219,6 +219,8 @@ const AdminUsers = () => {
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{u.email || '—'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{u.signed_up_at ? new Date(u.signed_up_at).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {u.agent_avatar && (
