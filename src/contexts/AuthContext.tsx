@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,9 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/** Loading timeout – if auth state isn't resolved within 5 s, force loading=false */
+const AUTH_LOADING_TIMEOUT_MS = 5_000;
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -34,6 +37,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
   const queryClient = useQueryClient();
   const handledSignIns = useRef(new Set<string>());
+
+  // Guard: once onAuthStateChange fires, skip the getSession fallback
+  const resolvedByListener = useRef(false);
 
   const { data: profile = null } = useQuery({
     queryKey: ['profile', user?.id],
@@ -66,6 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     staleTime: 1000 * 60 * 2,
   });
 
+  // ── Core auth initialisation ──────────────────────────────────
   useEffect(() => {
     let mounted = true;
 
@@ -82,7 +89,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .then(() => {
           supabase.rpc('increment_ktrenz_login_count' as any, { _user_id: uid });
         });
-
 
       try {
         const lang = navigator.language || 'en';
@@ -110,9 +116,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch {}
     };
 
+    // 1) Set up listener FIRST so we catch INITIAL_SESSION
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
+      resolvedByListener.current = true;
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
       setLoading(false);
@@ -120,13 +128,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (event === 'SIGNED_IN' && nextSession?.user?.id) {
         recordSignedInSideEffects(nextSession.user.id);
 
-        // Show welcome bonus for first-time signup
         const uid = nextSession.user.id;
         const seenKey = `ktrenz-welcome-bonus-seen-${uid}`;
         if (!localStorage.getItem(seenKey)) {
           const createdAt = new Date(nextSession.user.created_at).getTime();
           const now = Date.now();
-          // Only show if account was created within last 60 seconds
           if (now - createdAt < 60_000) {
             localStorage.setItem(seenKey, '1');
             setTimeout(() => setShowWelcomeBonus(true), 500);
@@ -142,28 +148,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
+    // 2) getSession as fallback only if listener hasn't fired yet
     supabase.auth
       .getSession()
       .then(({ data: { session: currentSession } }) => {
-        if (!mounted) return;
+        if (!mounted || resolvedByListener.current) return;
         setSession(currentSession ?? null);
         setUser(currentSession?.user ?? null);
         setLoading(false);
       })
       .catch(() => {
-        if (!mounted) return;
+        if (!mounted || resolvedByListener.current) return;
         setSession(null);
         setUser(null);
         setLoading(false);
       });
 
+    // 3) Loading timeout – never stay on spinner forever
+    const timeoutId = setTimeout(() => {
+      if (!mounted) return;
+      setLoading(false);
+    }, AUTH_LOADING_TIMEOUT_MS);
+
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [queryClient]);
 
-  const signOut = async () => {
+  // ── Visibility-based session refresh ──────────────────────────
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Tab came back – re-validate the session silently
+      supabase.auth.getSession().then(({ data: { session: refreshed } }) => {
+        setSession(refreshed ?? null);
+        setUser(refreshed?.user ?? null);
+        // If the session expired while the tab was hidden, clear queries
+        if (!refreshed) {
+          queryClient.clear();
+        }
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [queryClient]);
+
+  const signOut = useCallback(async () => {
     setUser(null);
     setSession(null);
     handledSignIns.current.clear();
@@ -172,7 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
     } catch {}
     window.location.href = '/';
-  };
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
@@ -185,7 +218,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isModerator: false,
     showWelcomeBonus,
     setShowWelcomeBonus,
-  }), [user, session, profile, loading, kPoints, showWelcomeBonus]);
+  }), [user, session, profile, loading, signOut, kPoints, showWelcomeBonus]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
