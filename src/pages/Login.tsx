@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import kTrenzLogo from "@/assets/logo_nd.webp";
@@ -36,13 +37,35 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
-    });
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
-      setLoading(false);
+
+    if (Capacitor.isNativePlatform()) {
+      // Native app: open in-app browser, redirect back via custom scheme
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: "ktrenz://login-callback",
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) {
+        toast({ title: "Login failed", description: error.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      if (data?.url) {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: data.url, windowName: "_self" });
+      }
+    } else {
+      // Web: normal redirect
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/` },
+      });
+      if (error) {
+        toast({ title: "Login failed", description: error.message, variant: "destructive" });
+        setLoading(false);
+      }
     }
   };
 
