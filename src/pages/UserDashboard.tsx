@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
+import V3Header from "@/components/v3/V3Header";
+import HeaderTicketSlot from "@/components/HeaderTicketSlot";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -129,14 +131,9 @@ const UserDashboard = () => {
     <div className="min-h-[100dvh] bg-background">
       <SEO title="My Activity – KTrenZ" description="Your battle activity and results" path="/dashboard" />
       
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center h-14 px-4 max-w-screen-lg mx-auto">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-foreground">{t("dash.title")}</h1>
-        </div>
-      </header>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card">
+        <V3Header rightSlot={<HeaderTicketSlot />} />
+      </div>
 
       {!user ? (
         <div className="flex-1 flex items-center justify-center min-h-[calc(100dvh-3.5rem-6rem)] px-4">
