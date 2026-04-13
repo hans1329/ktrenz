@@ -1468,24 +1468,26 @@ export default function Battle() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 -mt-24">
+      <div className="relative min-h-screen overflow-hidden">
+        {/* Full-screen splash background */}
+        <img src={battleHeroBg} alt="" className="absolute inset-0 w-full h-full object-cover brightness-[0.35]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
+
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen -mt-12">
           {/* Sword & Shield clash animation */}
-          <div className="relative w-24 h-24 mb-2">
-            {/* Left sword */}
+          <div className="relative w-24 h-24 mb-4">
             <span className="absolute text-3xl animate-[swordLeft_1.2s_ease-in-out_infinite]" style={{ left: 0, top: '50%', transform: 'translateY(-50%)' }}>
               ⚔️
             </span>
-            {/* Right shield */}
             <span className="absolute text-3xl animate-[shieldRight_1.2s_ease-in-out_infinite]" style={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}>
               🛡️
             </span>
-            {/* Clash spark */}
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl animate-[clashSpark_1.2s_ease-in-out_infinite]">
               💥
             </span>
           </div>
-          <div className="w-48 h-2 rounded-full overflow-hidden bg-muted">
+          <h2 className="text-xl font-bold text-white mb-3 tracking-tight">{t("pickWinner")}</h2>
+          <div className="w-48 h-2 rounded-full overflow-hidden bg-white/20">
             <div
               className="h-full rounded-full"
               style={{
@@ -1495,7 +1497,7 @@ export default function Battle() {
               }}
             />
           </div>
-          <p className="text-muted-foreground text-sm">{t("loading")}</p>
+          <p className="text-white/70 text-sm mt-3">{t("loading")}</p>
         </div>
         <style>{`
           @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
