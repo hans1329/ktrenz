@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Settings, Globe, Ticket } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+import TicketInfoPopup from "@/components/TicketInfoPopup";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
 import {
@@ -27,6 +28,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [showLangDrawer, setShowLangDrawer] = useState(false);
+  const [showTicketInfo, setShowTicketInfo] = useState(false);
 
   // Prediction tickets
   const { data: ticketInfo, refetch: refetchTickets } = useQuery({
@@ -101,7 +103,10 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Prediction Tickets */}
-              <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2">
+              <button
+                onClick={() => setShowTicketInfo(true)}
+                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left space-y-2"
+              >
                 <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                 </p>
@@ -128,7 +133,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                     </span>
                   </p>
                 </div>
-              </div>
+              </button>
             </div>
             <p className="text-[10px] text-muted-foreground text-right mt-1">
               {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up for more tickets!"}
@@ -167,6 +172,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     
+    <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={ticketInfo?.remaining ?? 0} total={ticketInfo?.total ?? 3} />
     <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
