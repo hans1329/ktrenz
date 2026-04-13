@@ -1598,9 +1598,8 @@ export default function Battle() {
           // Filter logic
           const state = getPairState(pairIdx);
           const pred = predictions.find(p => p.pickedRunId === state.pickedRunId);
-          if (battleFilter === "myBets") return null;
+          if (battleFilter === "myBets" || battleFilter === "settled") return null;
           if (battleFilter === "live" && state.submitted && pred?.status !== "pending") return null;
-          if (battleFilter === "settled" && (!state.submitted || pred?.status === "pending")) return null;
 
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
