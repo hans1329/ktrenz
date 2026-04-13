@@ -32,6 +32,7 @@ import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
 import { toast } from "@/hooks/use-toast";
 import SettlementResultsModal, { type SettledPrediction } from "@/components/battle/SettlementResultsModal";
+import TicketInfoPopup from "@/components/TicketInfoPopup";
 import { cn } from "@/lib/utils";
 
 /* ── Ticket Info Popup ── */
