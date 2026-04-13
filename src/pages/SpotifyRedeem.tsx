@@ -124,12 +124,15 @@ const SpotifyRedeem = () => {
     enabled: !!user,
   });
 
+  const [countryInitialized, setCountryInitialized] = useState(false);
+
   useEffect(() => {
-    if (savedPref && !selectedCountry) {
+    if (savedPref && !countryInitialized) {
       setSelectedCountry(savedPref);
       setStep("products");
+      setCountryInitialized(true);
     }
-  }, [savedPref, selectedCountry]);
+  }, [savedPref, countryInitialized]);
 
   /* ── Save country to DB ── */
   const saveCountry = async (code: string) => {
