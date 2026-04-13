@@ -126,6 +126,7 @@ interface B2Run {
   content_score: number;
   counts: any;
   created_at: string;
+  batch_id?: string;
   star?: { display_name: string; name_ko: string; image_url?: string | null };
 }
 
