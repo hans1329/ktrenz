@@ -79,12 +79,21 @@ const AdminUsers = () => {
         msgCountMap.set(m.user_id, (msgCountMap.get(m.user_id) || 0) + 1);
       });
 
+      const emailMap = new Map<string, { email: string; created_at: string }>();
+      const emailData = Array.isArray(emailsRes.data) ? emailsRes.data : [];
+      emailData.forEach((e: any) => {
+        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at });
+      });
+
       return logins.map((l): KtrenzUser => {
         const profile = profileMap.get(l.user_id);
         const agent = agentMap.get(l.user_id);
         const pts = pointsMap.get(l.user_id);
+        const authInfo = emailMap.get(l.user_id);
         return {
           user_id: l.user_id,
+          email: authInfo?.email ?? null,
+          signed_up_at: authInfo?.created_at ?? null,
           username: profile?.username ?? null,
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
