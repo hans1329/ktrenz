@@ -1,7 +1,10 @@
 /**
  * Level/tier utilities based on the DB `levels` table.
  * Tiers: 1=Beginner(0+), 2=Explorer(500+), 3=Analyst(3000+), 4=Expert(10000+)
- * `total_points` in profiles determines the tier.
+ * 
+ * Fine-grained level: each level requires (level * 50) XP to advance.
+ * Cumulative: Lv.N threshold = 50 * N*(N-1)/2
+ * Lv.1=0, Lv.2=50, Lv.3=150, Lv.4=300, Lv.5=500, Lv.6=750, ...
  */
 
 type LangKey = "en" | "ko" | "ja" | "zh";
@@ -21,27 +24,46 @@ export const LEVEL_TIERS: TierDef[] = [
   { id: 4, name: { en: "Expert", ko: "전문가", ja: "専門家", zh: "专家" }, requiredPoints: 10000, tickets: 10, levelRange: "Lv.31+" },
 ];
 
+/** Cumulative XP needed to reach a given level */
+function cumulativeXpForLevel(level: number): number {
+  // Lv.N threshold = 50 * N*(N-1)/2
+  return 50 * level * (level - 1) / 2;
+}
+
 export interface LevelInfo {
-  tier: number;            // 1–4 (maps to DB levels.id / profiles.current_level)
+  tier: number;
   tierName: Record<LangKey, string>;
+  level: number;             // fine-grained level (1, 2, 3, ... )
   totalXp: number;
+  currentLevelXp: number;    // XP earned within current level
+  xpForNextLevel: number;    // XP needed for next level
+  levelProgress: number;     // 0–100 within current level
   tickets: number;
-  nextTierPoints: number | null;  // null if max tier
-  tierProgress: number;    // 0–100
+  nextTierPoints: number | null;
+  tierProgress: number;
 }
 
 export function getLevelInfo(totalPoints: number): LevelInfo {
   const tp = Math.max(0, totalPoints);
 
-  // Find current tier (highest tier whose requiredPoints <= tp)
+  // Fine-grained level
+  let level = 1;
+  while (cumulativeXpForLevel(level + 1) <= tp) {
+    level++;
+  }
+  const currentThreshold = cumulativeXpForLevel(level);
+  const nextThreshold = cumulativeXpForLevel(level + 1);
+  const currentLevelXp = tp - currentThreshold;
+  const xpForNextLevel = nextThreshold - currentThreshold; // = 50 * level
+  const levelProgress = Math.min(100, Math.round((currentLevelXp / xpForNextLevel) * 100));
+
+  // Tier
   let currentTier = LEVEL_TIERS[0];
   for (const t of LEVEL_TIERS) {
     if (tp >= t.requiredPoints) currentTier = t;
   }
-
   const currentIdx = LEVEL_TIERS.indexOf(currentTier);
   const nextTier = currentIdx < LEVEL_TIERS.length - 1 ? LEVEL_TIERS[currentIdx + 1] : null;
-
   const tierProgress = nextTier
     ? Math.min(100, Math.round(((tp - currentTier.requiredPoints) / (nextTier.requiredPoints - currentTier.requiredPoints)) * 100))
     : 100;
@@ -49,7 +71,11 @@ export function getLevelInfo(totalPoints: number): LevelInfo {
   return {
     tier: currentTier.id,
     tierName: currentTier.name,
+    level,
     totalXp: tp,
+    currentLevelXp,
+    xpForNextLevel,
+    levelProgress,
     tickets: currentTier.tickets,
     nextTierPoints: nextTier?.requiredPoints ?? null,
     tierProgress,

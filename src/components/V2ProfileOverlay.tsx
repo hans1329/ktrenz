@@ -77,34 +77,35 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-foreground truncate">
-                  {profile?.display_name || profile?.username || "User"}
-                </p>
-                {(() => {
-                  const lvl = getLevelInfo(profile?.total_points ?? 0);
-                  const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
-                  return (
-                    <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
-                      {lvl.tierName[lang]}
-                    </span>
-                  );
-                })()}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-sm text-muted-foreground truncate">
-                  @{profile?.username || "user"}
-                </p>
-              </div>
               {(() => {
                 const lvl = getLevelInfo(profile?.total_points ?? 0);
+                const lang = (language === "ko" || language === "ja" || language === "zh") ? language : "en";
                 return (
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <Progress value={lvl.tierProgress} className="h-1.5 flex-1" />
-                    <span className="text-[10px] text-muted-foreground shrink-0">
-                      {lvl.totalXp.toLocaleString()} XP
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-foreground truncate">
+                        {profile?.display_name || profile?.username || "User"}
+                      </p>
+                      <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
+                        {lvl.tierName[lang]} · Lv.{lvl.level}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate mt-0.5">
+                      @{profile?.username || "user"}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="text-[10px] font-semibold text-primary shrink-0">
+                        {lvl.level}
+                      </span>
+                      <Progress value={lvl.levelProgress} className="h-1.5 flex-1" />
+                      <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
+                        {lvl.level + 1}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 text-right">
+                      {lvl.currentLevelXp} / {lvl.xpForNextLevel} XP
+                    </p>
+                  </>
                 );
               })()}
             </div>

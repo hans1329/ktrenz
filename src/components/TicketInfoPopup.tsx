@@ -77,7 +77,7 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-foreground">
-                {lvl.tierName[lang]} · {lvl.totalXp.toLocaleString()} XP
+                Lv.{lvl.level} · {lvl.tierName[lang]}
               </span>
               <span className="text-[10px] text-muted-foreground">
                 {lvl.nextTierPoints !== null
@@ -85,9 +85,14 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
                   : (lang === "ko" ? "최고 등급" : "Max tier")}
               </span>
             </div>
-            {lvl.nextTierPoints !== null && (
-              <Progress value={lvl.tierProgress} className="h-1.5" />
-            )}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-primary shrink-0">{lvl.level}</span>
+              <Progress value={lvl.levelProgress} className="h-1.5 flex-1" />
+              <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{lvl.level + 1}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-right">
+              {lvl.currentLevelXp} / {lvl.xpForNextLevel} XP
+            </p>
             <p className="text-[10px] text-muted-foreground">
               {lang === "ko"
                 ? "예측·배틀 참여로 경험치를 얻고, 등급이 오르면 티켓이 늘어납니다."
