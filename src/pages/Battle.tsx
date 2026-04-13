@@ -1524,6 +1524,10 @@ export default function Battle() {
                 if (tab.key === "settled") return state.submitted && predictions.find(p => p.pickedRunId === state.pickedRunId)?.status !== "pending";
                 return state.submitted;
               }).length;
+              const histCount = tab.key === "settled"
+                ? historyPredictions.filter(p => p.status === "won" || p.status === "lost").length
+                : tab.key === "myBets" ? historyPredictions.length : 0;
+              const displayCount = Math.max(count, histCount);
               return (
                 <button
                   key={tab.key}
@@ -1536,6 +1540,7 @@ export default function Battle() {
                   )}
                 >
                   {tab.label} {count > 0 && <span className="ml-0.5 opacity-70">{count}</span>}
+                  {displayCount > 0 && count === 0 && <span className="ml-0.5 opacity-70">{displayCount}</span>}
                 </button>
               );
             })}
@@ -1543,7 +1548,7 @@ export default function Battle() {
         </div>
 
         {/* My Bets tab: show history at top */}
-        {battleFilter === "myBets" && predictions.length > 0 && (
+        {battleFilter === "myBets" && (predictions.length > 0 || historyPredictions.length > 0) && (
           <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5 mb-4">
             <div className="pb-2">
               <button
@@ -1553,20 +1558,23 @@ export default function Battle() {
                 <span className="flex items-center gap-2">
                   <Trophy className="w-4 h-4 text-primary" />
                   {t("historyTab")} ({predictions.length})
+                  {historyPredictions.length > predictions.length && ` / ${historyPredictions.length} total`}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`} />
               </button>
 
               {showHistory && (
                 <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                  {predictions.map((pred, i) => (
+                  {(historyPredictions.length > 0 ? historyPredictions : predictions).map((pred, i) => (
                     <div key={i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground truncate">
                           {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
                         </p>
                         <p className="text-xs text-muted-foreground">
+                          {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
                           {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                          {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
                         </p>
                       </div>
                       <Badge variant="outline" className="ml-2 shrink-0">
@@ -1746,6 +1754,29 @@ export default function Battle() {
         )}
 
         {/* Empty state for filter */}
+        {/* Settled tab: show history predictions */}
+        {battleFilter === "settled" && historyPredictions.filter(p => p.status === "won" || p.status === "lost").length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
+            {historyPredictions.filter(p => p.status === "won" || p.status === "lost").map((pred, i) => (
+              <div key={pred.id || i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
+                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
+                  </p>
+                </div>
+                <Badge variant={pred.status === "won" ? "default" : "outline"} className={cn("ml-2 shrink-0", pred.status === "won" && "bg-primary")}>
+                  {t(pred.status === "won" ? "won" : "lost")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
         {battlePairs.every((_, idx) => {
           const s = getPairState(idx);
           const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
@@ -1753,7 +1784,7 @@ export default function Battle() {
           if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
           if (battleFilter === "myBets") return !s.submitted;
           return false;
-        }) && (
+        }) && !(battleFilter === "settled" && historyPredictions.some(p => p.status === "won" || p.status === "lost")) && (
           <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
             {battleFilter === "settled"
               ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
