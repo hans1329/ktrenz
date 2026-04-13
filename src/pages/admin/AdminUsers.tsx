@@ -318,6 +318,23 @@ const AdminUsers = () => {
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.agent_msg_count}</TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.login_count}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(u.last_login_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant={isBanned ? 'outline' : 'destructive'}
+                      size="sm"
+                      className="h-7 text-[11px] gap-1"
+                      disabled={toggleBan.isPending}
+                      onClick={() => {
+                        const action = isBanned ? '언밴' : '밴';
+                        if (confirm(`${u.display_name || u.username || u.email || u.user_id}을(를) ${action} 처리하시겠습니까?`)) {
+                          toggleBan.mutate({ userId: u.user_id, isBanned: !!isBanned });
+                        }
+                      }}
+                    >
+                      {isBanned ? <UserCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                      {isBanned ? '언밴' : '밴'}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}
