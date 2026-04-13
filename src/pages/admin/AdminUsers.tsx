@@ -95,6 +95,7 @@ const AdminUsers = () => {
           user_id: l.user_id,
           email: authInfo?.email ?? null,
           signed_up_at: authInfo?.created_at ?? null,
+          banned_until: authInfo?.banned_until ?? null,
           username: profile?.username ?? null,
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
