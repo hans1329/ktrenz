@@ -10540,6 +10540,15 @@ export type Database = {
         Args: { p_amount: number; p_user_id: string }
         Returns: undefined
       }
+      ktrenz_prediction_leaderboard: {
+        Args: never
+        Returns: {
+          losses: number
+          total_bets: number
+          user_id: string
+          wins: number
+        }[]
+      }
       ktrenz_purchase_agent_messages: {
         Args: { _bundle: number; _user_id: string }
         Returns: Json

@@ -22,22 +22,10 @@ const DiscoverUserRankings = () => {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["discover-user-rankings"],
     queryFn: async () => {
-      const { data: predictions } = await supabase
-        .from("b2_predictions")
-        .select("user_id, status");
+      const { data: leaderboard } = await supabase.rpc("ktrenz_prediction_leaderboard" as any);
+      if (!leaderboard?.length) return [];
 
-      if (!predictions?.length) return [];
-
-      const statsMap = new Map<string, { total: number; wins: number; losses: number }>();
-      for (const p of predictions) {
-        const existing = statsMap.get(p.user_id) || { total: 0, wins: 0, losses: 0 };
-        existing.total++;
-        if (p.status === "won") existing.wins++;
-        if (p.status === "lost") existing.losses++;
-        statsMap.set(p.user_id, existing);
-      }
-
-      const userIds = [...statsMap.keys()];
+      const userIds = (leaderboard as any[]).map((r: any) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url, username")
@@ -45,22 +33,21 @@ const DiscoverUserRankings = () => {
 
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-      return userIds
-        .map((uid) => {
-          const s = statsMap.get(uid)!;
-          const pr = profileMap.get(uid);
-          return {
-            user_id: uid,
-            display_name: pr?.display_name || pr?.username || "Anonymous",
-            avatar_url: pr?.avatar_url || null,
-            username: pr?.username || null,
-            total_bets: s.total,
-            wins: s.wins,
-            losses: s.losses,
-            win_rate: s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0,
-          } as UserStat;
-        })
-        .sort((a, b) => b.total_bets - a.total_bets);
+      return (leaderboard as any[]).map((r: any) => {
+        const pr = profileMap.get(r.user_id);
+        const total = Number(r.total_bets);
+        const wins = Number(r.wins);
+        return {
+          user_id: r.user_id,
+          display_name: pr?.display_name || pr?.username || "Anonymous",
+          avatar_url: pr?.avatar_url || null,
+          username: pr?.username || null,
+          total_bets: total,
+          wins,
+          losses: Number(r.losses),
+          win_rate: total > 0 ? Math.round((wins / total) * 100) : 0,
+        } as UserStat;
+      });
     },
     staleTime: 1000 * 60 * 5,
   });
