@@ -85,6 +85,35 @@ const L: Record<string, Record<string, string>> = {
   remaining: { en: "remaining to goal", ko: "목표까지 남은 캐쉬", ja: "目標まであと", zh: "距目标还差" },
 };
 
+const L_extra: Record<string, Record<string, string>> = {
+  noProductsTip: { en: "Spotify gift cards are not available in this country. You can use a US gift card instead — it works with any Spotify account.", ko: "이 국가에서는 Spotify 기프트카드를 사용할 수 없습니다. 대신 US 기프트카드를 사용하세요 — 모든 Spotify 계정에서 사용 가능합니다.", ja: "この国ではSpotifyギフトカードが利用できません。代わりにUSギフトカードをお使いください。", zh: "此国家不提供Spotify礼品卡。您可以使用美国礼品卡。" },
+  tryUS: { en: "Browse US Gift Cards", ko: "US 기프트카드 보기", ja: "USギフトカードを見る", zh: "查看美国礼品卡" },
+};
+
+/* ── Hardcoded country list for user selection ── */
+const COUNTRIES = [
+  { code: "US", flag: "🇺🇸", name: { en: "United States", ko: "미국", ja: "アメリカ", zh: "美国" } },
+  { code: "KR", flag: "🇰🇷", name: { en: "South Korea", ko: "한국", ja: "韓国", zh: "韩国" } },
+  { code: "JP", flag: "🇯🇵", name: { en: "Japan", ko: "일본", ja: "日本", zh: "日本" } },
+  { code: "GB", flag: "🇬🇧", name: { en: "United Kingdom", ko: "영국", ja: "イギリス", zh: "英国" } },
+  { code: "DE", flag: "🇩🇪", name: { en: "Germany", ko: "독일", ja: "ドイツ", zh: "德国" } },
+  { code: "FR", flag: "🇫🇷", name: { en: "France", ko: "프랑스", ja: "フランス", zh: "法国" } },
+  { code: "AU", flag: "🇦🇺", name: { en: "Australia", ko: "호주", ja: "オーストラリア", zh: "澳大利亚" } },
+  { code: "CA", flag: "🇨🇦", name: { en: "Canada", ko: "캐나다", ja: "カナダ", zh: "加拿大" } },
+  { code: "BR", flag: "🇧🇷", name: { en: "Brazil", ko: "브라질", ja: "ブラジル", zh: "巴西" } },
+  { code: "IN", flag: "🇮🇳", name: { en: "India", ko: "인도", ja: "インド", zh: "印度" } },
+  { code: "ID", flag: "🇮🇩", name: { en: "Indonesia", ko: "인도네시아", ja: "インドネシア", zh: "印度尼西亚" } },
+  { code: "TH", flag: "🇹🇭", name: { en: "Thailand", ko: "태국", ja: "タイ", zh: "泰国" } },
+  { code: "PH", flag: "🇵🇭", name: { en: "Philippines", ko: "필리핀", ja: "フィリピン", zh: "菲律宾" } },
+  { code: "MX", flag: "🇲🇽", name: { en: "Mexico", ko: "멕시코", ja: "メキシコ", zh: "墨西哥" } },
+  { code: "SG", flag: "🇸🇬", name: { en: "Singapore", ko: "싱가포르", ja: "シンガポール", zh: "新加坡" } },
+  { code: "TW", flag: "🇹🇼", name: { en: "Taiwan", ko: "대만", ja: "台湾", zh: "台湾" } },
+  { code: "IT", flag: "🇮🇹", name: { en: "Italy", ko: "이탈리아", ja: "イタリア", zh: "意大利" } },
+  { code: "ES", flag: "🇪🇸", name: { en: "Spain", ko: "스페인", ja: "スペイン", zh: "西班牙" } },
+  { code: "NL", flag: "🇳🇱", name: { en: "Netherlands", ko: "네덜란드", ja: "オランダ", zh: "荷兰" } },
+  { code: "SE", flag: "🇸🇪", name: { en: "Sweden", ko: "스웨덴", ja: "スウェーデン", zh: "瑞典" } },
+];
+
 type Step = "country" | "products" | "confirm" | "success";
 
 interface ReloadlyProduct {
@@ -97,13 +126,6 @@ interface ReloadlyProduct {
   maxRecipientDenomination?: number;
   recipientCurrencyCode?: string;
   senderCurrencyCode?: string;
-}
-
-interface SpotifyCountry {
-  code: string;
-  name: string;
-  flagUrl: string;
-  products: ReloadlyProduct[];
 }
 
 const SpotifyRedeem = () => {
@@ -120,22 +142,6 @@ const SpotifyRedeem = () => {
   const [resultCode, setResultCode] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  /* ── Fetch available countries with Spotify products ── */
-  const { data: availableCountries, isLoading: countriesLoading } = useQuery({
-    queryKey: ["spotify-countries"],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-redeem-giftcard", {
-        body: { action: "list_countries" },
-      });
-      if (error) throw error;
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) throw new Error(parsed.error);
-      return (parsed.countries ?? []) as SpotifyCountry[];
-    },
-    enabled: !!user,
-    retry: 1,
-    staleTime: 10 * 60 * 1000,
-  });
 
   /* ── Load saved country from DB ── */
   const { data: savedPref } = useQuery({
@@ -245,7 +251,7 @@ const SpotifyRedeem = () => {
 
   const kcashCost = selectedDenom ? selectedDenom * KCASH_PER_USD : 0;
   const canAfford = kPoints >= kcashCost;
-  const countryObj = availableCountries?.find((c) => c.code === selectedCountry);
+  const countryObj = COUNTRIES.find((c) => c.code === selectedCountry);
 
   const copyCode = () => {
     if (resultCode) {
@@ -307,40 +313,26 @@ const SpotifyRedeem = () => {
               <p className="text-xs text-muted-foreground">{l("selectCountryDesc")}</p>
             </div>
 
-            {countriesLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">{l("loadingProducts")}</p>
-              </div>
-            ) : !availableCountries || availableCountries.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">{l("noProducts")}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {availableCountries.map((c) => (
-                  <button
-                    key={c.code}
-                    onClick={() => handleCountrySelect(c.code)}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card",
-                      "hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
-                    )}
-                  >
-                    {c.flagUrl ? (
-                      <img src={c.flagUrl} alt={c.code} className="w-7 h-5 rounded-sm object-cover" />
-                    ) : (
-                      <span className="text-xl">🌐</span>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.code}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              {COUNTRIES.map((c) => (
+                <button
+                  key={c.code}
+                  onClick={() => handleCountrySelect(c.code)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card",
+                    "hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
+                  )}
+                >
+                  <span className="text-2xl">{c.flag}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {c.name[language as keyof typeof c.name] || c.name.en}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{c.code}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -350,13 +342,9 @@ const SpotifyRedeem = () => {
             {/* Country badge */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {countryObj?.flagUrl ? (
-                  <img src={countryObj.flagUrl} alt={countryObj.code} className="w-6 h-4 rounded-sm object-cover" />
-                ) : (
-                  <span className="text-xl">🌐</span>
-                )}
+                <span className="text-xl">{countryObj?.flag}</span>
                 <span className="text-sm font-medium text-foreground">
-                  {countryObj?.name}
+                  {countryObj?.name[language as keyof typeof countryObj.name] || countryObj?.name.en}
                 </span>
               </div>
               <button
@@ -373,9 +361,27 @@ const SpotifyRedeem = () => {
                 <p className="text-sm text-muted-foreground">{l("loadingProducts")}</p>
               </div>
             ) : !products || products.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
+              <div className="text-center py-12 space-y-4">
                 <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
                 <p className="text-sm text-muted-foreground">{l("noProducts")}</p>
+                {selectedCountry !== "US" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      {L_extra.noProductsTip[language] || L_extra.noProductsTip.en}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCountry("US");
+                        saveCountry("US");
+                      }}
+                      className="gap-2"
+                    >
+                      🇺🇸 {L_extra.tryUS[language] || L_extra.tryUS.en}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
@@ -494,7 +500,7 @@ const SpotifyRedeem = () => {
                 <div>
                   <h2 className="font-bold text-foreground">{selectedProduct.productName}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {countryObj?.name} ({selectedCountry})
+                    {countryObj?.flag} {countryObj?.name[language as keyof typeof countryObj.name] || countryObj?.name.en} ({selectedCountry})
                   </p>
                 </div>
               </div>
