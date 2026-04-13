@@ -1519,7 +1519,7 @@ export default function Battle() {
 
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="relative min-h-screen bg-muted/30">
       <SEO
         title="KTrenZ – K-Pop Content Battle"
         titleKo="KTrenZ – K-Pop 콘텐츠 배틀"
@@ -1537,13 +1537,15 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      <div className="pt-16 pb-24 space-y-5">
-        {/* Hero background + Title + Flip Timer */}
-        <div className="relative text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4 overflow-visible">
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[90%] max-w-[420px] aspect-square z-0 pointer-events-none">
-            <img src={battleHeroBg} alt="" className="w-full h-full object-contain opacity-20 blur-[1px]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/10 to-muted/30" />
-          </div>
+      {/* Full-width hero background */}
+      <div className="absolute top-14 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
+        <img src={battleHeroBg} alt="" className="w-full h-full object-cover opacity-15" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/20 to-muted/30" />
+      </div>
+
+      <div className="relative z-10 pt-16 pb-24 space-y-5">
+        {/* Title + Flip Timer */}
+        <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
             {t("pickWinner")}
           </h2>
