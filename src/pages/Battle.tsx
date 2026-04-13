@@ -1448,7 +1448,7 @@ export default function Battle() {
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 -mt-24">
           {/* Sword & Shield clash animation */}
           <div className="relative w-24 h-24 mb-2">
             {/* Left sword */}
