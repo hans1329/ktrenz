@@ -6,7 +6,6 @@ import { Bell, Loader2, LogIn, Trophy, Clock, Flame, Sprout, Rocket, Gem } from 
 import { Button } from "@/components/ui/button";
 import V3Header from "@/components/v3/V3Header";
 import HeaderTicketSlot from "@/components/HeaderTicketSlot";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
