@@ -1626,38 +1626,85 @@ export default function Battle() {
           </div>
         </div>
 
-        {/* My Bets tab: show all joined predictions */}
-        {(battleFilter === "myBets" || battleFilter === "settled") && (() => {
-          const listToShow = battleFilter === "settled" ? settledHistoryPredictions : myBetPredictions;
-          if (listToShow.length === 0) return null;
-          return (
-            <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-              <div className="flex items-center gap-2 pb-1">
-                <Trophy className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">
-                  {battleFilter === "settled" ? t("settledTab") : t("historyTab")} ({listToShow.length})
-                </span>
-              </div>
-              {listToShow.map((pred, i) => (
-                <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                      {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                      {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="ml-2 shrink-0">
-                    {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
-                  </Badge>
-                </div>
-              ))}
+        {/* My Bets tab */}
+        {battleFilter === "myBets" && myBetPredictions.length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
+            <div className="flex items-center gap-2 pb-1">
+              <Trophy className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">
+                {t("historyTab")} ({myBetPredictions.length})
+              </span>
             </div>
-          );
-        })()}
+            {myBetPredictions.map((pred, i) => (
+              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
+                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
+                  </p>
+                </div>
+                <Badge variant="outline" className="ml-2 shrink-0">
+                  {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Settled tab: all battle pair results */}
+        {battleFilter === "settled" && settledBattleResults.length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-3 mb-4">
+            {(() => {
+              const grouped = new Map<string, typeof settledBattleResults>();
+              settledBattleResults.forEach(r => {
+                const arr = grouped.get(r.battleDate) || [];
+                arr.push(r);
+                grouped.set(r.battleDate, arr);
+              });
+              return Array.from(grouped.entries()).map(([date, pairs]) => (
+                <div key={date} className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{date}</p>
+                  {pairs.map((pair, i) => {
+                    const aWins = pair.growthA > pair.growthB;
+                    const bWins = pair.growthB > pair.growthA;
+                    const draw = pair.growthA === pair.growthB;
+                    return (
+                      <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+                          {/* Star A */}
+                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.04]")}>
+                            <p className={cn("text-sm font-bold truncate", aWins ? "text-primary" : "text-foreground")}>{pair.starA}</p>
+                            <p className={cn("text-lg font-black mt-0.5", pair.growthA > 0 ? (aWins ? "text-primary" : "text-emerald-500") : pair.growthA < 0 ? "text-red-400" : "text-muted-foreground")}>
+                              {pair.growthA > 0 ? "+" : ""}{pair.growthA}%
+                            </p>
+                            {aWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                          </div>
+                          {/* VS */}
+                          <div className="px-2 text-center">
+                            <span className="text-xs font-bold text-purple-500">VS</span>
+                          </div>
+                          {/* Star B */}
+                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.04]")}>
+                            <p className={cn("text-sm font-bold truncate", bWins ? "text-primary" : "text-foreground")}>{pair.starB}</p>
+                            <p className={cn("text-lg font-black mt-0.5", pair.growthB > 0 ? (bWins ? "text-primary" : "text-emerald-500") : pair.growthB < 0 ? "text-red-400" : "text-muted-foreground")}>
+                              {pair.growthB > 0 ? "+" : ""}{pair.growthB}%
+                            </p>
+                            {bWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                          </div>
+                        </div>
+                        {draw && <p className="text-center text-[10px] text-muted-foreground pb-2">{t("draw")}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </div>
+        )}
 
         {/* Filtered battle pairs */}
         {battlePairs.map((pair, pairIdx) => {
