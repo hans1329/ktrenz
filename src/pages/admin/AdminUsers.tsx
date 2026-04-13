@@ -234,7 +234,7 @@ const AdminUsers = () => {
                           <p className="font-medium text-sm">{u.display_name || u.username || 'Unknown'}</p>
                           {isAdmin && <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4">Admin</Badge>}
                           {isMod && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">Mod</Badge>}
-                        </div>
+                          {isBanned && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">Banned</Badge>}
                         {u.username && <p className="text-xs text-muted-foreground">@{u.username}</p>}
                       </div>
                     </div>
