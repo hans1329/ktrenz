@@ -7,44 +7,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    var webViewObserver: Timer?
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Disable WebView scroll bounce after a short delay to ensure the WebView is loaded
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.disableWebViewBounce()
+        // Repeatedly try to find and configure the WebView until successful
+        webViewObserver = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self = self, let rootVC = self.window?.rootViewController else { return }
+            if let webView = self.findWebView(in: rootVC.view) {
+                webView.scrollView.bounces = false
+                webView.scrollView.alwaysBounceVertical = false
+                webView.scrollView.alwaysBounceHorizontal = false
+                webView.scrollView.contentInsetAdjustmentBehavior = .never
+                webView.scrollView.isScrollEnabled = false
+
+                // Re-enable scrolling once content is loaded
+                let js = """
+                (function() {
+                    // Signal native side to re-enable scroll after loading completes
+                    window.addEventListener('load', function() {
+                        setTimeout(function() {
+                            window.webkit.messageHandlers.scrollReady.postMessage('ready');
+                        }, 3000);
+                    });
+                })();
+                """
+                let userScript = WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+                webView.configuration.userContentController.addUserScript(userScript)
+                webView.configuration.userContentController.add(self, name: "scrollReady")
+
+                timer.invalidate()
+                self.webViewObserver = nil
+            }
         }
         return true
-    }
-
-    private func disableWebViewBounce() {
-        guard let rootVC = window?.rootViewController else { return }
-        if let webView = findWebView(in: rootVC.view) {
-            webView.scrollView.bounces = false
-            webView.scrollView.alwaysBounceVertical = false
-            webView.scrollView.alwaysBounceHorizontal = false
-            webView.scrollView.contentInsetAdjustmentBehavior = .never
-
-            // Inject CSS via WKUserScript so it runs on every page load
-            let css = "html, body { overscroll-behavior: none !important; } #root { overscroll-behavior: none !important; }"
-            let js = """
-            var style = document.createElement('style');
-            style.textContent = '\(css)';
-            document.head.appendChild(style);
-            document.addEventListener('touchmove', function(e) {
-                var el = e.target;
-                while (el && el !== document.body) {
-                    var style = window.getComputedStyle(el);
-                    if (style.overflow === 'auto' || style.overflow === 'scroll' ||
-                        style.overflowY === 'auto' || style.overflowY === 'scroll') {
-                        if (el.scrollHeight > el.clientHeight) return;
-                    }
-                    el = el.parentElement;
-                }
-                e.preventDefault();
-            }, { passive: false });
-            """
-            let userScript = WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
-            webView.configuration.userContentController.addUserScript(userScript)
-        }
     }
 
     private func findWebView(in view: UIView) -> WKWebView? {
@@ -81,6 +76,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+}
+
+extension AppDelegate: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "scrollReady" {
+            // Loading finished, re-enable scrolling
+            if let rootVC = window?.rootViewController, let webView = findWebView(in: rootVC.view) {
+                webView.scrollView.isScrollEnabled = true
+                webView.scrollView.bounces = false
+            }
+        }
+    }
+}
+
+extension AppDelegate {
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call

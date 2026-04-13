@@ -1,0 +1,15 @@
+{
+	"appId": "com.ktrenz.app",
+	"appName": "KTrenZ",
+	"webDir": "dist",
+	"server": {
+		"url": "https://ktrenz.lovable.app",
+		"cleartext": true
+	},
+	"ios": {
+		"contentInset": "never",
+		"preferredContentMode": "mobile",
+		"scheme": "KTrenZ"
+	},
+	"packageClassList": []
+}
