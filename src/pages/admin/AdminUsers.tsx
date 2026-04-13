@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, ShieldCheck, ShieldOff, Pencil, Check, X } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldOff, Pencil, Check, X, Ban, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface KtrenzUser {
