@@ -85,6 +85,35 @@ const L: Record<string, Record<string, string>> = {
   remaining: { en: "remaining to goal", ko: "목표까지 남은 캐쉬", ja: "目標まであと", zh: "距目标还差" },
 };
 
+const L_extra: Record<string, Record<string, string>> = {
+  noProductsTip: { en: "Spotify gift cards are not available in this country. You can use a US gift card instead — it works with any Spotify account.", ko: "이 국가에서는 Spotify 기프트카드를 사용할 수 없습니다. 대신 US 기프트카드를 사용하세요 — 모든 Spotify 계정에서 사용 가능합니다.", ja: "この国ではSpotifyギフトカードが利用できません。代わりにUSギフトカードをお使いください。", zh: "此国家不提供Spotify礼品卡。您可以使用美国礼品卡。" },
+  tryUS: { en: "Browse US Gift Cards", ko: "US 기프트카드 보기", ja: "USギフトカードを見る", zh: "查看美国礼品卡" },
+};
+
+/* ── Hardcoded country list for user selection ── */
+const COUNTRIES = [
+  { code: "US", flag: "🇺🇸", name: { en: "United States", ko: "미국", ja: "アメリカ", zh: "美国" } },
+  { code: "KR", flag: "🇰🇷", name: { en: "South Korea", ko: "한국", ja: "韓国", zh: "韩国" } },
+  { code: "JP", flag: "🇯🇵", name: { en: "Japan", ko: "일본", ja: "日本", zh: "日本" } },
+  { code: "GB", flag: "🇬🇧", name: { en: "United Kingdom", ko: "영국", ja: "イギリス", zh: "英国" } },
+  { code: "DE", flag: "🇩🇪", name: { en: "Germany", ko: "독일", ja: "ドイツ", zh: "德国" } },
+  { code: "FR", flag: "🇫🇷", name: { en: "France", ko: "프랑스", ja: "フランス", zh: "法国" } },
+  { code: "AU", flag: "🇦🇺", name: { en: "Australia", ko: "호주", ja: "オーストラリア", zh: "澳大利亚" } },
+  { code: "CA", flag: "🇨🇦", name: { en: "Canada", ko: "캐나다", ja: "カナダ", zh: "加拿大" } },
+  { code: "BR", flag: "🇧🇷", name: { en: "Brazil", ko: "브라질", ja: "ブラジル", zh: "巴西" } },
+  { code: "IN", flag: "🇮🇳", name: { en: "India", ko: "인도", ja: "インド", zh: "印度" } },
+  { code: "ID", flag: "🇮🇩", name: { en: "Indonesia", ko: "인도네시아", ja: "インドネシア", zh: "印度尼西亚" } },
+  { code: "TH", flag: "🇹🇭", name: { en: "Thailand", ko: "태국", ja: "タイ", zh: "泰国" } },
+  { code: "PH", flag: "🇵🇭", name: { en: "Philippines", ko: "필리핀", ja: "フィリピン", zh: "菲律宾" } },
+  { code: "MX", flag: "🇲🇽", name: { en: "Mexico", ko: "멕시코", ja: "メキシコ", zh: "墨西哥" } },
+  { code: "SG", flag: "🇸🇬", name: { en: "Singapore", ko: "싱가포르", ja: "シンガポール", zh: "新加坡" } },
+  { code: "TW", flag: "🇹🇼", name: { en: "Taiwan", ko: "대만", ja: "台湾", zh: "台湾" } },
+  { code: "IT", flag: "🇮🇹", name: { en: "Italy", ko: "이탈리아", ja: "イタリア", zh: "意大利" } },
+  { code: "ES", flag: "🇪🇸", name: { en: "Spain", ko: "스페인", ja: "スペイン", zh: "西班牙" } },
+  { code: "NL", flag: "🇳🇱", name: { en: "Netherlands", ko: "네덜란드", ja: "オランダ", zh: "荷兰" } },
+  { code: "SE", flag: "🇸🇪", name: { en: "Sweden", ko: "스웨덴", ja: "スウェーデン", zh: "瑞典" } },
+];
+
 type Step = "country" | "products" | "confirm" | "success";
 
 interface ReloadlyProduct {
@@ -97,13 +126,6 @@ interface ReloadlyProduct {
   maxRecipientDenomination?: number;
   recipientCurrencyCode?: string;
   senderCurrencyCode?: string;
-}
-
-interface SpotifyCountry {
-  code: string;
-  name: string;
-  flagUrl: string;
-  products: ReloadlyProduct[];
 }
 
 const SpotifyRedeem = () => {
