@@ -34,6 +34,7 @@ import { toast } from "@/hooks/use-toast";
 import SettlementResultsModal, { type SettledPrediction } from "@/components/battle/SettlementResultsModal";
 import TicketInfoPopup from "@/components/TicketInfoPopup";
 import { cn } from "@/lib/utils";
+import battleHeroBg from "@/assets/battle-hero-bg.jpg";
 
 
 
@@ -1537,8 +1538,12 @@ export default function Battle() {
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
       <div className="pt-16 pb-24 space-y-5">
-        {/* Title + Flip Timer */}
-        <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
+        {/* Hero background + Title + Flip Timer */}
+        <div className="relative text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[120%] max-w-[600px] aspect-square -z-10 pointer-events-none">
+            <img src={battleHeroBg} alt="" className="w-full h-full object-contain opacity-25 blur-[2px]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-muted/30" />
+          </div>
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
             {t("pickWinner")}
           </h2>
