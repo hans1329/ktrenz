@@ -117,7 +117,8 @@ const SpotifyRedeem = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ReloadlyProduct | null>(null);
   const [selectedDenom, setSelectedDenom] = useState<number | null>(null);
-  const [resultCode, setResultCode] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
   /* ── Fetch available countries with Spotify products ── */
   const { data: availableCountries, isLoading: countriesLoading } = useQuery({
     queryKey: ["spotify-countries"],
