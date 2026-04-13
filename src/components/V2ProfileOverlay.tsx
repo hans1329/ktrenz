@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Settings, Globe, Ticket } from "lucide-react";
+import { getDefaultAvatar } from "@/lib/defaultAvatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 import TicketInfoPopup from "@/components/TicketInfoPopup";
@@ -71,10 +72,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           {/* Profile */}
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12 border-2 border-border">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-base font-semibold">
-                {profile?.username?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
+              <AvatarImage src={profile?.avatar_url || getDefaultAvatar(user?.id)} />
             </Avatar>
             <div className="flex-1 min-w-0">
               {(() => {
