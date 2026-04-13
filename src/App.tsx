@@ -72,6 +72,7 @@ import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
 import Battle from "./pages/Battle";
 import TrendDiscovery from "./pages/TrendDiscovery";
+import SpotifyRedeem from "./pages/SpotifyRedeem";
 
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -118,7 +119,7 @@ const App = () => (
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/key" element={<ContentSearch />} />
-                
+                <Route path="/redeem/spotify" element={<SpotifyRedeem />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />

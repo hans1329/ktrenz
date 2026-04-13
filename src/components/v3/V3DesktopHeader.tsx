@@ -62,7 +62,14 @@ const SpotifyGoalPopupDesktop = ({ open, onClose, kPoints }: { open: boolean; on
         <p className="text-xs text-muted-foreground leading-relaxed">
           Earn K-Cash by completing daily missions, predictions, and battles. Reach the goal to redeem a Spotify Premium subscription coupon!
         </p>
-        <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
+        <button
+          onClick={() => { onClose(); window.location.href = "/redeem/spotify"; }}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: "hsl(142, 71%, 45%)" }}
+        >
+          Go to Redeem Page
+        </button>
+        <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
           Close
         </button>
       </div>
