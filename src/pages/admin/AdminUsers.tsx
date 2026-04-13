@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 
 interface KtrenzUser {
   user_id: string;
+  email: string | null;
+  signed_up_at: string | null;
   username: string | null;
   display_name: string | null;
   profile_avatar: string | null;
@@ -42,13 +44,14 @@ const AdminUsers = () => {
 
       const userIds = logins.map(l => l.user_id);
 
-      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes, slotsRes] = await Promise.all([
+      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes, slotsRes, emailsRes] = await Promise.all([
         supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds),
         supabase.from('ktrenz_agent_profiles').select('user_id, avatar_url').in('user_id', userIds),
         supabase.from('ktrenz_user_points').select('user_id, points, lifetime_points').in('user_id', userIds),
         supabase.from('ktrenz_fan_agent_messages').select('user_id').in('user_id', userIds),
         supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
         (supabase as any).from('ktrenz_agent_slots').select('user_id, artist_name, is_active').in('user_id', userIds),
+        supabase.rpc('ktrenz_admin_user_emails' as any, { _user_ids: userIds }),
       ]);
 
       const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
@@ -76,12 +79,21 @@ const AdminUsers = () => {
         msgCountMap.set(m.user_id, (msgCountMap.get(m.user_id) || 0) + 1);
       });
 
+      const emailMap = new Map<string, { email: string; created_at: string }>();
+      const emailData = Array.isArray(emailsRes.data) ? emailsRes.data : [];
+      emailData.forEach((e: any) => {
+        emailMap.set(e.user_id, { email: e.email, created_at: e.created_at });
+      });
+
       return logins.map((l): KtrenzUser => {
         const profile = profileMap.get(l.user_id);
         const agent = agentMap.get(l.user_id);
         const pts = pointsMap.get(l.user_id);
+        const authInfo = emailMap.get(l.user_id);
         return {
           user_id: l.user_id,
+          email: authInfo?.email ?? null,
+          signed_up_at: authInfo?.created_at ?? null,
           username: profile?.username ?? null,
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
@@ -174,6 +186,8 @@ const AdminUsers = () => {
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>이메일</TableHead>
+              <TableHead>가입일</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead className="text-center">Role</TableHead>
               <TableHead className="text-right">K-Tokens</TableHead>
@@ -205,6 +219,8 @@ const AdminUsers = () => {
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{u.email || '—'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{u.signed_up_at ? new Date(u.signed_up_at).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {u.agent_avatar && (
@@ -286,7 +302,7 @@ const AdminUsers = () => {
             })}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
               </TableRow>
             )}
           </TableBody>
