@@ -1561,31 +1561,37 @@ export default function Battle() {
         </div>
 
         {/* My Bets tab: show all joined predictions */}
-        {battleFilter === "myBets" && myBetPredictions.length > 0 && (
-          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-            <div className="flex items-center gap-2 pb-1">
-              <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground">{t("historyTab")} ({myBetPredictions.length})</span>
-            </div>
-            {myBetPredictions.map((pred, i) => (
-              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                  </p>
-                </div>
-                <Badge variant="outline" className="ml-2 shrink-0">
-                  {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
-                </Badge>
+        {(battleFilter === "myBets" || battleFilter === "settled") && (() => {
+          const listToShow = battleFilter === "settled" ? settledHistoryPredictions : myBetPredictions;
+          if (listToShow.length === 0) return null;
+          return (
+            <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
+              <div className="flex items-center gap-2 pb-1">
+                <Trophy className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  {battleFilter === "settled" ? t("settledTab") : t("historyTab")} ({listToShow.length})
+                </span>
               </div>
-            ))}
-          </div>
-        )}
+              {listToShow.map((pred, i) => (
+                <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
+                      {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                      {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="ml-2 shrink-0">
+                    {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Filtered battle pairs */}
         {battlePairs.map((pair, pairIdx) => {
