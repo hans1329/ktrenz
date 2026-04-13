@@ -879,7 +879,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.instruction": { en: "Pick the artist you think will grow more, then predict their growth band. The tighter the band, the bigger the reward!", ko: "더 성장할 아티스트를 선택한 후, 성장 구간을 예측하세요. 구간이 좁을수록 보상이 커집니다!", ja: "成長すると思うアーティストを選び、成長幅を予測しましょう。幅が狭いほど報酬が大きくなります！", zh: "选择你认为增长更快的艺人，然后预测增长区间。区间越窄，奖励越大！" },
   "battle.nextSettlement": { en: "Next settlement in", ko: "다음 정산까지", ja: "次の精算まで", zh: "距下次结算" },
   "battle.contentScore": { en: "Score", ko: "점수", ja: "スコア", zh: "分数" },
-  "battle.pickWinner": { en: "Which trend will rise tomorrow?", ko: "어떤 트렌드가 내일 더 유행할까요?", ja: "明日はどちらのトレンドが伸びる？", zh: "明天哪个趋势会更火？" },
+  "battle.pickWinner": { en: "Which trend will rise tomorrow?", ko: "어떤  K · 트렌드가 내일 더 유행할까요?", ja: "明日はどちらのトレンドが伸びる？", zh: "明天哪个趋势会更火？" },
   "battle.predictGrowth": { en: "Your Trend Prediction", ko: "당신의 트렌드 예측", ja: "あなたのトレンド予測", zh: "你的趋势预测" },
   "battle.bandSteady": { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" },
   "battle.bandRising": { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
