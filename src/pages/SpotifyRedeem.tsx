@@ -96,6 +96,14 @@ interface ReloadlyProduct {
   minRecipientDenomination?: number;
   maxRecipientDenomination?: number;
   recipientCurrencyCode?: string;
+  senderCurrencyCode?: string;
+}
+
+interface SpotifyCountry {
+  code: string;
+  name: string;
+  flagUrl: string;
+  products: ReloadlyProduct[];
 }
 
 const SpotifyRedeem = () => {
