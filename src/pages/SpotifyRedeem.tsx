@@ -414,6 +414,9 @@ const SpotifyRedeem = () => {
                                 <span className="text-sm font-bold text-foreground">
                                   ${d}
                                 </span>
+                                <span className="text-[10px] font-medium text-primary">
+                                  {getDuration(d, language)}
+                                </span>
                                 <span className="text-[10px] text-muted-foreground">
                                   {cost.toLocaleString()} K-Cash
                                 </span>
