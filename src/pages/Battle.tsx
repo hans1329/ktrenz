@@ -974,6 +974,7 @@ export default function Battle() {
   const [settlementResults, setSettlementResults] = useState<SettledPrediction[]>([]);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
+  const [showFirstAnalyzerModal, setShowFirstAnalyzerModal] = useState(false);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -1022,6 +1023,9 @@ export default function Battle() {
       if (error) throw error;
       if (data?.insight_data) {
         setInsightData(prev => ({ ...prev, [key]: data.insight_data }));
+      }
+      if (data?.first_analyzer) {
+        setShowFirstAnalyzerModal(true);
       }
     } catch (e) {
       console.error("Insight generation failed:", e);
