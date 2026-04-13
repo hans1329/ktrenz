@@ -2212,8 +2212,8 @@ export default function Battle() {
         language={language}
       />
       {/* First Analyzer Bonus Modal */}
-      {showFirstAnalyzerModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowFirstAnalyzerModal(false)}>
+      {showFirstAnalyzerModal && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowFirstAnalyzerModal(false)}>
           <div className="mx-6 w-full max-w-sm rounded-2xl bg-card p-6 text-center shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Sparkles className="h-8 w-8 text-primary" />
@@ -2232,7 +2232,8 @@ export default function Battle() {
               OK
             </Button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
