@@ -1058,7 +1058,8 @@ export default function Battle() {
     const { data: candidateRuns } = await (supabase.from("ktrenz_b2_runs") as any)
       .select("id, star_id, content_score, counts, created_at, batch_id")
       .eq("batch_id", batchId)
-      .order("created_at", { ascending: false })
+      .eq("search_round", 1)
+      .order("content_score", { ascending: false })
       .limit(40);
 
     if (!candidateRuns || candidateRuns.length < 2) return [];
