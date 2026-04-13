@@ -1232,7 +1232,71 @@ export default function Battle() {
     })));
   }
 
-  // Load unseen settlement results on mount
+  async function loadSettledBattleResults() {
+    // Get recent settled battles
+    const { data: settledBattles } = await (supabase.from("ktrenz_b2_battles") as any)
+      .select("batch_id, battle_date, status")
+      .eq("status", "settled")
+      .order("battle_date", { ascending: false })
+      .limit(3);
+    if (!settledBattles?.length) { setSettledBattleResults([]); return; }
+
+    const results: { starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[] = [];
+
+    for (const battle of settledBattles) {
+      // Get R1 runs
+      const { data: r1Runs } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("id, star_id, content_score")
+        .eq("batch_id", battle.batch_id)
+        .eq("search_round", 1)
+        .order("content_score", { ascending: false })
+        .limit(40);
+      if (!r1Runs?.length) continue;
+
+      // Dedupe by star
+      const starBest = new Map<string, any>();
+      r1Runs.forEach((r: any) => { if (!starBest.has(r.star_id)) starBest.set(r.star_id, r); });
+      const bestRuns = Array.from(starBest.values()).sort((a: any, b: any) => b.content_score - a.content_score);
+
+      // Get R2 runs
+      const { data: r2Runs } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("star_id, content_score")
+        .eq("batch_id", battle.batch_id)
+        .eq("search_round", 2)
+        .limit(100);
+
+      const r2Map = new Map<string, number>();
+      (r2Runs || []).forEach((r: any) => {
+        const existing = r2Map.get(r.star_id);
+        if (!existing || r.content_score > existing) r2Map.set(r.star_id, r.content_score);
+      });
+
+      // Get star names
+      const starIds = bestRuns.map((r: any) => r.star_id);
+      const { data: stars } = await supabase.from("ktrenz_stars").select("id, display_name").in("id", starIds);
+      const starNameMap = new Map((stars || []).map((s: any) => [s.id, s.display_name]));
+
+      // Build pairs (same logic as buildBattlePairsForBatch)
+      for (let i = 0; i + 1 < bestRuns.length; i += 2) {
+        const a = bestRuns[i];
+        const b = bestRuns[i + 1];
+        const r1A = a.content_score;
+        const r1B = b.content_score;
+        const r2A = r2Map.get(a.star_id) ?? r1A;
+        const r2B = r2Map.get(b.star_id) ?? r1B;
+        const growthA = r1A > 0 ? Math.round(((r2A - r1A) / r1A) * 100) : 0;
+        const growthB = r1B > 0 ? Math.round(((r2B - r1B) / r1B) * 100) : 0;
+        results.push({
+          starA: starNameMap.get(a.star_id) || "Unknown",
+          starB: starNameMap.get(b.star_id) || "Unknown",
+          growthA, growthB,
+          battleDate: battle.battle_date,
+        });
+      }
+    }
+    setSettledBattleResults(results);
+  }
+
   async function loadUnseenSettlements() {
     const { data: { user: u } } = await supabase.auth.getUser();
     if (!u) return;
