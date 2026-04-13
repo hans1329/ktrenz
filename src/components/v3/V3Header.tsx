@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/logo_nd.webp";
 import ktrenzMobileLogo from "@/assets/logo_nd.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 
@@ -85,6 +86,7 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
 const SpotifyGoalBar = () => {
   const { kPoints } = useAuth();
   const progress = Math.min((kPoints / SPOTIFY_GOAL) * 100, 100);
+  const isFull = progress >= 100;
   const [showPopup, setShowPopup] = useState(false);
 
   return (
@@ -93,12 +95,15 @@ const SpotifyGoalBar = () => {
         onClick={() => setShowPopup(true)}
         className="flex items-center gap-1.5 px-0.5 py-1 active:opacity-60 transition-opacity"
       >
-        <div className="w-5 h-5 shrink-0">{SPOTIFY_SVG}</div>
-        <div className="w-8 h-3.5 rounded-full bg-muted overflow-hidden">
+        <div className={cn("w-5 h-5 shrink-0", isFull && "animate-[pulse_2s_ease-in-out_infinite]")}>{SPOTIFY_SVG}</div>
+        <div className="w-8 h-3.5 rounded-full bg-muted overflow-hidden relative">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
           />
+          {isFull && (
+            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-sm">✓</span>
+          )}
         </div>
       </button>
       <SpotifyGoalPopup open={showPopup} onClose={() => setShowPopup(false)} kPoints={kPoints} />
