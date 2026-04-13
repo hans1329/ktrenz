@@ -66,7 +66,7 @@ const TicketInfoPopup = ({ open, onClose, remaining, total, totalPoints }: Ticke
               )}>
                 <span>{t.name[lang]}</span>
                 <span className="text-center text-muted-foreground">{t.levelRange}</span>
-                <span className="text-right">{t.tickets}🎫</span>
+                <span className="text-right flex items-center justify-end gap-0.5">{t.tickets}<Ticket className="w-3 h-3 inline" /></span>
               </div>
             );
           })}
