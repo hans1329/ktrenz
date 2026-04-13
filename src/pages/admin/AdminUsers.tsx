@@ -44,13 +44,14 @@ const AdminUsers = () => {
 
       const userIds = logins.map(l => l.user_id);
 
-      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes, slotsRes] = await Promise.all([
+      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes, slotsRes, emailsRes] = await Promise.all([
         supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds),
         supabase.from('ktrenz_agent_profiles').select('user_id, avatar_url').in('user_id', userIds),
         supabase.from('ktrenz_user_points').select('user_id, points, lifetime_points').in('user_id', userIds),
         supabase.from('ktrenz_fan_agent_messages').select('user_id').in('user_id', userIds),
         supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
         (supabase as any).from('ktrenz_agent_slots').select('user_id, artist_name, is_active').in('user_id', userIds),
+        supabase.rpc('ktrenz_admin_user_emails' as any, { _user_ids: userIds }),
       ]);
 
       const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
