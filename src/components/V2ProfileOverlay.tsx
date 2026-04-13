@@ -73,7 +73,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12 border-2 border-border">
               <AvatarImage src={profile?.avatar_url || getDefaultAvatar(user?.id)} />
-              </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               {(() => {
