@@ -569,7 +569,6 @@ const PHASE_COLORS: Record<TimerPhase, string> = {
   closing: "text-white/90",
   results: "text-white/90",
   opening: "text-white/90",
-  opening: "text-muted-foreground/60",
 };
 
 function FlipTimer() {
