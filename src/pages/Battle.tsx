@@ -593,7 +593,7 @@ function FlipTimer() {
 
   return (
     <div className="flex flex-col items-center gap-1.5 my-0 py-[10px]">
-      <span className={cn("text-[11px] font-bold tracking-wider uppercase", PHASE_COLORS[phase])}>
+      <span className={cn("text-[11px] font-bold tracking-wider uppercase text-white/90", PHASE_COLORS[phase])}>
         {PHASE_LABELS[phase][lang]}
       </span>
       <div className="flex items-center justify-center gap-2.5 sm:gap-4">
@@ -1539,14 +1539,14 @@ export default function Battle() {
 
       {/* Full-width hero background */}
       <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-        <img src={battleHeroBg} alt="" className="w-full h-full object-cover brightness-50" />
+        <img src={battleHeroBg} alt="" className="w-full h-full object-cover brightness-[0.3]" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background" />
       </div>
 
       <div className="relative z-10 pt-16 pb-24 space-y-5">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
-          <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
+          <h2 className="text-xl text-white tracking-tight font-sans font-bold sm:text-3xl text-center">
             {t("pickWinner")}
           </h2>
           <FlipTimer />
