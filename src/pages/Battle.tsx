@@ -1333,6 +1333,26 @@ export default function Battle() {
 
     await restoreSubmittedState(validPairs, battleCache.battleDate);
 
+    // Preload first thumbnail of each run to prevent layout shift
+    const imagesToPreload = validPairs.flatMap(p =>
+      p.runs.map(r => {
+        const items = p.items[r.id] || [];
+        return items[0]?.thumbnail || r.star?.image_url || null;
+      })
+    ).filter(Boolean) as string[];
+
+    if (imagesToPreload.length > 0) {
+      await Promise.allSettled(
+        imagesToPreload.map(src => new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = src;
+          setTimeout(resolve, 3000); // max 3s wait
+        }))
+      );
+    }
+
     setLoading(false);
    } catch (err) {
     console.error("loadBattleData error:", err);
