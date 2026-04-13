@@ -499,7 +499,7 @@ function FlipCard({ digit }: { digit: string }) {
         className="absolute inset-0 flex items-center justify-center"
         style={sliding ? { animation: "slideDigitOut 0.3s ease-in forwards" } : undefined}
       >
-        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{display}</span>
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">{display}</span>
       </div>
 
       {/* New digit — slides in from top */}
@@ -508,7 +508,7 @@ function FlipCard({ digit }: { digit: string }) {
           className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-20"
           style={{ animation: "slideDigitDown 0.3s ease-out forwards" }}
         >
-          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{incomingRef.current}</span>
+          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">{incomingRef.current}</span>
         </div>
       )}
     </div>
@@ -598,9 +598,9 @@ function FlipTimer() {
       </span>
       <div className="flex items-center justify-center gap-2.5 sm:gap-4">
         <FlipGroup value={pad(time.h)} />
-        <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+        <span className="text-2xl font-bold text-white/70">:</span>
         <FlipGroup value={pad(time.m)} />
-        <span className="text-2xl font-bold text-muted-foreground/60">:</span>
+        <span className="text-2xl font-bold text-white/70">:</span>
         <FlipGroup value={pad(time.s)} />
       </div>
     </div>
