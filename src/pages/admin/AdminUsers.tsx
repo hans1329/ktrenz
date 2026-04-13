@@ -212,6 +212,7 @@ const AdminUsers = () => {
               <TableHead className="text-right">채팅</TableHead>
               <TableHead className="text-right">로그인</TableHead>
               <TableHead>최근 접속</TableHead>
+              <TableHead className="text-center">밴</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -219,6 +220,7 @@ const AdminUsers = () => {
               const isAdmin = u.role === 'admin';
               const isMod = u.role === 'moderator';
               const isEditing = editingUserId === u.user_id;
+              const isBanned = u.banned_until && new Date(u.banned_until) > new Date();
               return (
                 <TableRow key={u.user_id}>
                   <TableCell>
