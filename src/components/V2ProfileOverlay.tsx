@@ -27,6 +27,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [showLangDrawer, setShowLangDrawer] = useState(false);
+  const [showTicketInfo, setShowTicketInfo] = useState(false);
 
   // Prediction tickets
   const { data: ticketInfo, refetch: refetchTickets } = useQuery({
@@ -101,7 +102,10 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Prediction Tickets */}
-              <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2">
+              <button
+                onClick={() => setShowTicketInfo(true)}
+                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left space-y-2"
+              >
                 <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                 </p>
@@ -129,7 +133,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                   </p>
                 </div>
               </div>
-            </div>
+              </button>
             <p className="text-[10px] text-muted-foreground text-right mt-1">
               {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up for more tickets!"}
             </p>
