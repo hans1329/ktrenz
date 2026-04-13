@@ -499,16 +499,16 @@ function FlipCard({ digit }: { digit: string }) {
         className="absolute inset-0 flex items-center justify-center"
         style={sliding ? { animation: "slideDigitOut 0.3s ease-in forwards" } : undefined}
       >
-        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">{display}</span>
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{display}</span>
       </div>
 
       {/* New digit — slides in from top */}
       {sliding && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-20"
+          className="absolute inset-0 flex items-center justify-center z-20"
           style={{ animation: "slideDigitDown 0.3s ease-out forwards" }}
         >
-          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">{incomingRef.current}</span>
+          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground">{incomingRef.current}</span>
         </div>
       )}
     </div>
