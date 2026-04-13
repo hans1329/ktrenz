@@ -74,7 +74,14 @@ const SpotifyGoalPopup = ({ open, onClose, kPoints }: { open: boolean; onClose: 
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           {howText}
         </p>
-        <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors">
+        <button
+          onClick={() => { onClose(); window.location.href = "/redeem/spotify"; }}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: "hsl(142, 71%, 45%)" }}
+        >
+          {language === "ko" ? "교환 페이지로 이동" : language === "ja" ? "交換ページへ" : language === "zh" ? "前往兑换页面" : "Go to Redeem Page"}
+        </button>
+        <button onClick={onClose} className="w-full py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
           {closeText}
         </button>
       </div>

@@ -72,6 +72,7 @@ import KeywordInfluence from "./pages/KeywordInfluence";
 import ContentSearch from "./pages/ContentSearch";
 import Battle from "./pages/Battle";
 import TrendDiscovery from "./pages/TrendDiscovery";
+import SpotifyRedeem from "./pages/SpotifyRedeem";
 
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";

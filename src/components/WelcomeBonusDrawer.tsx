@@ -53,6 +53,12 @@ const LABELS: Record<string, Record<string, string>> = {
     ja: "予測を始める",
     zh: "开始预测",
   },
+  redeem: {
+    en: "Redeem Spotify Premium",
+    ko: "Spotify Premium 교환하기",
+    ja: "Spotify Premium 交換",
+    zh: "兑换 Spotify Premium",
+  },
 };
 
 interface WelcomeBonusDrawerProps {
@@ -140,13 +146,24 @@ const WelcomeBonusDrawer = ({ open, onOpenChange }: WelcomeBonusDrawerProps) => 
         </div>
 
         {/* CTA */}
-        <div className="px-6 pt-4 pb-6">
+        <div className="px-6 pt-4 pb-2">
           <Button
             onClick={() => onOpenChange(false)}
             className="w-full rounded-xl h-11 text-sm font-semibold"
           >
             {l("cta")}
           </Button>
+        </div>
+
+        {/* Spotify Redeem */}
+        <div className="px-6 pb-6">
+          <button
+            onClick={() => { onOpenChange(false); window.location.href = "/redeem/spotify"; }}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+            style={{ backgroundColor: "hsl(142, 71%, 45%)" }}
+          >
+            🎵 {l("redeem")}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
