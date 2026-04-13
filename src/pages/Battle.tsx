@@ -598,7 +598,7 @@ function getTimerPhase(): { phase: TimerPhase; targetUtc: Date } {
   const utcM = now.getUTCMinutes();
   const utcTotal = utcH * 60 + utcM;
 
-  // UTC 15:00 = KST 00:00 betting deadline
+  // UTC 20:00 = KST 05:00 betting deadline
   // UTC 00:30 = KST 09:30 settlement / results
   // UTC 03:00 = KST 12:00 new battle open
 
@@ -614,12 +614,12 @@ function getTimerPhase(): { phase: TimerPhase; targetUtc: Date } {
     const target = new Date(today); target.setUTCHours(3, 0, 0, 0);
     return { phase: "opening", targetUtc: target };
   }
-  if (utcTotal < 900) {
-    // 03:00–15:00 UTC → closing phase, count to 15:00
-    const target = new Date(today); target.setUTCHours(15, 0, 0, 0);
+  if (utcTotal < 1200) {
+    // 03:00–20:00 UTC → closing phase, count to 20:00 (KST 12:00–05:00)
+    const target = new Date(today); target.setUTCHours(20, 0, 0, 0);
     return { phase: "closing", targetUtc: target };
   }
-  // 15:00+ UTC → results phase, count to tomorrow 00:30
+  // 20:00+ UTC → results phase, count to tomorrow 00:30
   const target = new Date(today); target.setUTCDate(target.getUTCDate() + 1); target.setUTCHours(0, 30, 0, 0);
   return { phase: "results", targetUtc: target };
 }

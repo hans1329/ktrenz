@@ -87,10 +87,10 @@ Deno.serve(async (req) => {
     const queueBusy = queueActive > 0;
 
     // ═══════════════════════════════════════════════════════════
-    // PHASE 1: 어제 배팅 마감 (00:00 KST 이후)
+    // PHASE 1: 어제 배팅 마감 (05:00 KST 이후)
     // collecting에 멈춘 battle도 round 1 데이터가 완성되어 있으면 회복 후 closed 처리
     // ═══════════════════════════════════════════════════════════
-    if (yesterdayBattle && (yesterdayBattle.status === "open" || yesterdayBattle.status === "collecting")) {
+    if (kstHour >= 5 && yesterdayBattle && (yesterdayBattle.status === "open" || yesterdayBattle.status === "collecting")) {
       const { count: yesterdayRound1Count } = await sb
         .from("ktrenz_b2_runs")
         .select("*", { count: "exact", head: true })
