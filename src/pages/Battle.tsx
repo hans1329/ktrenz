@@ -1551,7 +1551,7 @@ export default function Battle() {
       {/* Full-width hero background */}
       <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
         <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.3]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent from-60% via-background/60 via-85% to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 from-0% via-black/50 via-70% to-background" />
       </div>
 
       <div className="relative z-10 pt-16 pb-24 space-y-5">
@@ -1587,8 +1587,8 @@ export default function Battle() {
                   className={cn(
                     "px-3.5 py-2 text-xs font-semibold transition-all border-b-2",
                     battleFilter === tab.key
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-white text-white"
+                      : "border-transparent text-white/60 hover:text-white/90"
                   )}
                 >
                   {tab.label} {displayCount > 0 && <span className="ml-0.5 opacity-70">{displayCount}</span>}
