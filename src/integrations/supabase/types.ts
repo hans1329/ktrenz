@@ -10526,6 +10526,14 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      ktrenz_admin_user_emails: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          created_at: string
+          email: string
+          user_id: string
+        }[]
+      }
       ktrenz_calc_tier: { Args: { points: number }; Returns: number }
       ktrenz_check_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_cleanup_knowledge_cache: { Args: never; Returns: undefined }
