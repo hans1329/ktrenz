@@ -1190,7 +1190,7 @@ export default function Battle() {
     setPredictions(restoredPredictions);
   }
 
-  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); }, [loadTickets]);
+  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); loadSettledBattleResults(); }, [loadTickets]);
 
   // Auto-refresh every 60s to detect battle status changes
   useEffect(() => {
