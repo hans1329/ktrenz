@@ -260,17 +260,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (!nextItem) {
-        // Queue empty — update battle status
-        if (searchRound === 1) {
-          // Round 1 수집 완료 → battle status를 "open"으로 변경
-          const now = new Date();
-          const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-          await sb.from("ktrenz_b2_battles")
-            .update({ status: "open", updated_at: now.toISOString() })
-            .eq("battle_date", kstDate)
-            .eq("status", "collecting");
-        }
-
         return new Response(JSON.stringify({
           success: true,
           action: "process_next",
