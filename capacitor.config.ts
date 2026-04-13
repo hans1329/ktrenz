@@ -1,9 +1,18 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.cbee00deec2f4b15b164639ec232e9db',
+  appId: 'com.ktrenz.app',
   appName: 'KTrenZ',
-  webDir: 'dist'
+  webDir: 'dist',
+  server: {
+    url: 'https://ktrenz.lovable.app',
+    cleartext: true,
+  },
+  ios: {
+    contentInset: 'automatic',
+    preferredContentMode: 'mobile',
+    scheme: 'KTrenZ',
+  },
 };
 
 export default config;
