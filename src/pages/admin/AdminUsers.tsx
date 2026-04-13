@@ -186,6 +186,8 @@ const AdminUsers = () => {
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>이메일</TableHead>
+              <TableHead>가입일</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead className="text-center">Role</TableHead>
               <TableHead className="text-right">K-Tokens</TableHead>
