@@ -302,7 +302,7 @@ const AdminUsers = () => {
             })}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
               </TableRow>
             )}
           </TableBody>
