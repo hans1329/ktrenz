@@ -1550,8 +1550,8 @@ export default function Battle() {
 
       {/* Full-width hero background */}
       <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-        <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.3]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent from-40% via-black/40 via-75% to-background" />
+        <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.45]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent from-50% via-black/30 via-80% to-background" />
       </div>
 
       <div className="relative z-10 pt-16 pb-24 space-y-5">
