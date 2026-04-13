@@ -342,13 +342,9 @@ const SpotifyRedeem = () => {
             {/* Country badge */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {countryObj?.flagUrl ? (
-                  <img src={countryObj.flagUrl} alt={countryObj.code} className="w-6 h-4 rounded-sm object-cover" />
-                ) : (
-                  <span className="text-xl">🌐</span>
-                )}
+                <span className="text-xl">{countryObj?.flag}</span>
                 <span className="text-sm font-medium text-foreground">
-                  {countryObj?.name}
+                  {countryObj?.name[language as keyof typeof countryObj.name] || countryObj?.name.en}
                 </span>
               </div>
               <button
