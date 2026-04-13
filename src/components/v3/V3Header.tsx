@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/logo_nd.webp";
 import ktrenzMobileLogo from "@/assets/logo_nd.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 
