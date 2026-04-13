@@ -132,12 +132,7 @@ Deno.serve(async (req) => {
         return respond(log);
       }
 
-      if (queueBusy && queueBatchId !== yesterdayBatchId) {
-        log.push(`Phase 2: Waiting for active queue ${queueBatchId} before yesterday round 2 recovery`);
-        return respond(log);
-      }
-
-      if ((yesterdayRound2Count || 0) === 0) {
+      if (!queueBusy && (yesterdayRound2Count || 0) === 0) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
           action: "start_round2",
           prev_batch_id: yesterdayBatchId,
