@@ -145,7 +145,60 @@ Return JSON: { "headline": "...", "bullets": ["...", "..."], "lifestyle": [{"cat
       { onConflict: "run_id,star_id" }
     );
 
-    return new Response(JSON.stringify({ insight_text: insightText, insight_data: parsed }), {
+    // Award 30 K-Cashes to the first analyzer
+    let firstAnalyzer = false;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const anonClient = createClient(supabaseUrl, anonKey);
+      const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (user) {
+        const BONUS_AMOUNT = 30;
+        // Check if bonus was already given for this run+star combo
+        const { data: existingBonus } = await sb
+          .from("ktrenz_point_transactions")
+          .select("id")
+          .eq("reason", "first_trend_analysis")
+          .eq("metadata->>run_id", run_id)
+          .eq("metadata->>star_id", star_id)
+          .limit(1)
+          .maybeSingle();
+
+        if (!existingBonus) {
+          // Record transaction
+          await sb.from("ktrenz_point_transactions").insert({
+            user_id: user.id,
+            amount: BONUS_AMOUNT,
+            reason: "first_trend_analysis",
+            description: "First trend analysis bonus",
+            metadata: { run_id, star_id, star_name },
+          });
+          // Update balance
+          const { data: existing } = await sb
+            .from("ktrenz_user_points")
+            .select("points, lifetime_points")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (existing) {
+            await sb.from("ktrenz_user_points")
+              .update({
+                points: (existing.points || 0) + BONUS_AMOUNT,
+                lifetime_points: (existing.lifetime_points || 0) + BONUS_AMOUNT,
+              })
+              .eq("user_id", user.id);
+          } else {
+            await sb.from("ktrenz_user_points").insert({
+              user_id: user.id,
+              points: BONUS_AMOUNT,
+              lifetime_points: BONUS_AMOUNT,
+            });
+          }
+          firstAnalyzer = true;
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ insight_text: insightText, insight_data: parsed, first_analyzer: firstAnalyzer }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
