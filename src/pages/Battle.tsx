@@ -929,8 +929,18 @@ interface Prediction {
 
 /* ── Simple in-memory cache ── */
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const battleCache: { data: BattlePair[] | null; ts: number; ticketInfo: any; ticketTs: number } = {
-  data: null, ts: 0, ticketInfo: null, ticketTs: 0,
+const battleCache: {
+  data: BattlePair[] | null;
+  ts: number;
+  ticketInfo: any;
+  ticketTs: number;
+  battleDate: string | null;
+} = {
+  data: null,
+  ts: 0,
+  ticketInfo: null,
+  ticketTs: 0,
+  battleDate: null,
 };
 
 /* ── Main Battle Page ── */
@@ -1044,6 +1054,124 @@ export default function Battle() {
     }
   }, []);
 
+  async function buildBattlePairsForBatch(batchId: string): Promise<BattlePair[]> {
+    const { data: candidateRuns } = await (supabase.from("ktrenz_b2_runs") as any)
+      .select("id, star_id, content_score, counts, created_at, batch_id")
+      .eq("batch_id", batchId)
+      .order("created_at", { ascending: false })
+      .limit(40);
+
+    if (!candidateRuns || candidateRuns.length < 2) return [];
+
+    const allRuns = candidateRuns as B2Run[];
+    const starBest = new Map<string, B2Run>();
+    allRuns.forEach((r) => {
+      if (!starBest.has(r.star_id)) {
+        starBest.set(r.star_id, r);
+      }
+    });
+
+    const bestRuns = Array.from(starBest.values()).sort((a, b) => b.content_score - a.content_score);
+    if (bestRuns.length < 2) return [];
+
+    const starIds = bestRuns.map((r) => r.star_id);
+    const { data: starsData } = await supabase
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, image_url")
+      .in("id", starIds);
+
+    const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
+    const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
+
+    const pairs: BattlePair[] = [];
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
+      const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
+      pairs.push({ runs: pairRuns, items: {} });
+    }
+
+    for (const pair of pairs) {
+      for (const run of pair.runs) {
+        const { data: runItems } = await supabase
+          .from("ktrenz_b2_items")
+          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+          .eq("run_id", run.id)
+          .eq("has_thumbnail", true)
+          .not("source", "eq", "naver_blog")
+          .order("engagement_score", { ascending: false })
+          .limit(8);
+        pair.items[run.id] = (runItems || []) as B2Item[];
+      }
+    }
+
+    return pairs.filter(pair => {
+      const runIds = pair.runs.map(r => r.id);
+      return runIds.every(id => (pair.items[id]?.length ?? 0) >= 3);
+    });
+  }
+
+  async function restoreSubmittedState(pairs: BattlePair[], battleDate?: string | null) {
+    setPairStates({});
+    setPredictions([]);
+    setCollapsedPairs(new Set());
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser || pairs.length === 0 || !battleDate) return;
+
+    const { data: existingPreds } = await supabase
+      .from("b2_predictions")
+      .select("picked_run_id, opponent_run_id, band, status, settled_at, created_at")
+      .eq("user_id", currentUser.id)
+      .eq("battle_date", battleDate);
+
+    if (!existingPreds || existingPreds.length === 0) return;
+
+    const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
+    pairs.forEach((pair, idx) => {
+      const pairRunIds = new Set(pair.runs.map(r => r.id));
+      const match = existingPreds.find(p => pairRunIds.has(p.picked_run_id));
+      if (match) {
+        restoredStates[idx] = {
+          pickedRunId: match.picked_run_id,
+          selectedBand: match.band as Band,
+          submitted: true,
+          hotVotes: new Set<string>(),
+        };
+      }
+    });
+
+    if (Object.keys(restoredStates).length > 0) {
+      setPairStates(restoredStates);
+      setCollapsedPairs(new Set(Object.keys(restoredStates).map(Number)));
+    }
+
+    const runIds = [...new Set(existingPreds.flatMap((p: any) => [p.picked_run_id, p.opponent_run_id]))];
+    const { data: runs } = await (supabase.from("ktrenz_b2_runs") as any)
+      .select("id, star_id")
+      .in("id", runIds);
+    const starIds = [...new Set((runs || []).map((r: any) => r.star_id))];
+    const { data: stars } = await (supabase.from("ktrenz_stars") as any)
+      .select("id, display_name")
+      .in("id", starIds);
+
+    const runToStar = new Map<string, string>();
+    (runs || []).forEach((r: any) => {
+      const star = (stars || []).find((s: any) => s.id === r.star_id);
+      if (star) runToStar.set(r.id, star.display_name);
+    });
+
+    const restoredPredictions: Prediction[] = existingPreds.map((p: any) => ({
+      pickedRunId: p.picked_run_id,
+      opponentRunId: p.opponent_run_id,
+      band: p.band as Band,
+      pickedStarName: runToStar.get(p.picked_run_id) || "Unknown",
+      opponentStarName: runToStar.get(p.opponent_run_id) || "Unknown",
+      status: p.status || "pending",
+      created_at: p.created_at || new Date().toISOString(),
+    }));
+
+    setPredictions(restoredPredictions);
+  }
+
   useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); }, [loadTickets]);
 
   // Load unseen settlement results on mount
@@ -1095,11 +1223,11 @@ export default function Battle() {
     // Use cached data if fresh
     if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
       setBattlePairs(battleCache.data);
+      await restoreSubmittedState(battleCache.data, battleCache.battleDate);
       setLoading(false);
       return;
     }
 
-    // Determine the active batch_id – try latest battle first, fall back if insufficient runs
     const { data: recentBattles } = await (supabase
       .from("ktrenz_b2_battles") as any)
       .select("batch_id, battle_date, status")
@@ -1107,77 +1235,29 @@ export default function Battle() {
       .limit(3);
 
     let latestBattle: any = null;
-    let runsData: any[] | null = null;
+    let validPairs: BattlePair[] = [];
 
     for (const battle of (recentBattles || [])) {
-      const { data: candidateRuns } = await (supabase.from("ktrenz_b2_runs") as any)
-        .select("id, star_id, content_score, counts, created_at, batch_id")
-        .eq("batch_id", battle.batch_id)
-        .order("created_at", { ascending: false })
-        .limit(40);
-
-      if (candidateRuns && candidateRuns.length >= 2) {
+      const candidatePairs = await buildBattlePairsForBatch(battle.batch_id);
+      if (candidatePairs.length > 0) {
         latestBattle = battle;
-        runsData = candidateRuns;
+        validPairs = candidatePairs;
         break;
       }
     }
 
-    if (!runsData || runsData.length < 2) {
+    if (validPairs.length === 0) {
+      setBattlePairs([]);
+      await restoreSubmittedState([], null);
       setLoading(false);
       return;
     }
-
-    const allRuns = runsData as B2Run[];
-    // Pick the most recent run per star (latest created_at wins)
-    const starBest = new Map<string, B2Run>();
-    allRuns.forEach((r) => {
-      if (!starBest.has(r.star_id)) {
-        starBest.set(r.star_id, r);
-      }
-    });
-
-    const bestRuns = Array.from(starBest.values()).sort((a, b) => b.content_score - a.content_score);
-    if (bestRuns.length < 2) { setLoading(false); return; }
-
-    const starIds = bestRuns.map((r) => r.star_id);
-    const { data: starsData } = await supabase
-      .from("ktrenz_stars")
-      .select("id, display_name, name_ko, image_url")
-      .in("id", starIds);
-
-    const starMap = new Map((starsData || []).map((s: any) => [s.id, s]));
-    const enrichedRuns = bestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
-
-    const pairs: BattlePair[] = [];
-    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < 10; i += 2) {
-      const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
-      pairs.push({ runs: pairRuns, items: {} });
-    }
-
-    for (const pair of pairs) {
-      for (const run of pair.runs) {
-        const { data: runItems } = await supabase
-          .from("ktrenz_b2_items")
-          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
-          .eq("run_id", run.id)
-          .eq("has_thumbnail", true)
-          .not("source", "eq", "naver_blog")
-          .order("engagement_score", { ascending: false })
-          .limit(8);
-        pair.items[run.id] = (runItems || []) as B2Item[];
-      }
-    }
-
-    const validPairs = pairs.filter(pair => {
-      const runIds = pair.runs.map(r => r.id);
-      return runIds.every(id => (pair.items[id]?.length ?? 0) >= 3);
-    });
 
     if (!skipTranslation) {
       const allItems = validPairs.flatMap(p => Object.values(p.items).flat());
       if (allItems.length > 0) {
         translateIfNeeded("ktrenz_b2_items", "title", allItems, () => {
+          battleCache.ts = 0;
           loadBattleData(true);
         });
       }
@@ -1185,56 +1265,10 @@ export default function Battle() {
 
     setBattlePairs(validPairs);
     battleCache.data = validPairs;
+    battleCache.battleDate = latestBattle?.battle_date || null;
     battleCache.ts = Date.now();
 
-    // Restore submitted state from existing predictions in DB
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser && validPairs.length > 0) {
-      const allRunIds = validPairs.flatMap(p => p.runs.map(r => r.id));
-      const battleDate = latestBattle?.battle_date || new Date().toISOString().slice(0, 10);
-      const { data: existingPreds } = await supabase
-        .from("b2_predictions")
-        .select("picked_run_id, opponent_run_id, band, status, settled_at")
-        .eq("user_id", currentUser.id)
-        .eq("battle_date", battleDate);
-
-      if (existingPreds && existingPreds.length > 0) {
-        const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
-        validPairs.forEach((pair, idx) => {
-          const pairRunIds = new Set(pair.runs.map(r => r.id));
-          const match = existingPreds.find(p => pairRunIds.has(p.picked_run_id));
-          if (match) {
-            restoredStates[idx] = {
-              pickedRunId: match.picked_run_id,
-              selectedBand: match.band as Band,
-              submitted: true,
-              hotVotes: new Set<string>(),
-            };
-          }
-        });
-        if (Object.keys(restoredStates).length > 0) {
-          setPairStates(prev => ({ ...prev, ...restoredStates }));
-          // Auto-collapse restored submitted battles
-          setCollapsedPairs(new Set(Object.keys(restoredStates).map(Number)));
-        }
-
-        const restoredPredictions: Prediction[] = existingPreds.map(p => {
-          const pair = validPairs.find(vp => vp.runs.some(r => r.id === p.picked_run_id));
-          const pickedRun = pair?.runs.find(r => r.id === p.picked_run_id);
-          const opponentRun = pair?.runs.find(r => r.id === p.opponent_run_id);
-          return {
-            pickedRunId: p.picked_run_id,
-            opponentRunId: p.opponent_run_id,
-            band: p.band as Band,
-            pickedStarName: pickedRun?.star?.display_name || "Unknown",
-            opponentStarName: opponentRun?.star?.display_name || "Unknown",
-            status: (p as any).status || "pending",
-            created_at: new Date().toISOString(),
-          };
-        });
-        setPredictions(restoredPredictions);
-      }
-    }
+    await restoreSubmittedState(validPairs, battleCache.battleDate);
 
     setLoading(false);
    } catch (err) {
