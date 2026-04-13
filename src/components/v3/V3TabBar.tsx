@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Flame, Bot, Power, Activity, Bell, User, Compass } from "lucide-react";
+import { getDefaultAvatar } from "@/lib/defaultAvatar";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -134,11 +135,8 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
               // Profile center button
               return (
                 <button key={tab.id} onClick={handleProfileClick} className="flex-1 flex items-center justify-center -mt-3 relative">
-                   <div className={cn("w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center", profile?.avatar_url ? "bg-black" : "bg-[hsl(220,10%,97%)]")}>
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
-                    ) : (
-                      <User className="w-7 h-7 text-muted-foreground" />
+                   <div className={cn("w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center", "bg-black")}>
+                      <img src={profile?.avatar_url || getDefaultAvatar(user?.id)} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                     )}
                   </div>
                 </button>
