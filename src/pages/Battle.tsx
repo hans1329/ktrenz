@@ -1220,7 +1220,9 @@ export default function Battle() {
 
   async function loadBattleData(skipTranslation = false) {
    try {
-    // Use cached data if fresh
+    const { phase } = getTimerPhase();
+
+    // Use cached data if fresh for the same visible battle date window
     if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
       setBattlePairs(battleCache.data);
       await restoreSubmittedState(battleCache.data, battleCache.battleDate);
@@ -1232,12 +1234,17 @@ export default function Battle() {
       .from("ktrenz_b2_battles") as any)
       .select("batch_id, battle_date, status")
       .order("battle_date", { ascending: false })
-      .limit(3);
+      .limit(5);
+
+    const orderedBattles = [...(recentBattles || [])];
+    if (phase === "results" || phase === "opening") {
+      orderedBattles.sort((a: any, b: any) => a.battle_date.localeCompare(b.battle_date));
+    }
 
     let latestBattle: any = null;
     let validPairs: BattlePair[] = [];
 
-    for (const battle of (recentBattles || [])) {
+    for (const battle of orderedBattles) {
       const candidatePairs = await buildBattlePairsForBatch(battle.batch_id);
       if (candidatePairs.length > 0) {
         latestBattle = battle;
