@@ -199,7 +199,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     
-    <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={ticketInfo?.remaining ?? 0} total={ticketInfo?.total ?? 3} />
+    <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={ticketInfo?.remaining ?? 0} total={ticketInfo?.total ?? 3} totalPoints={profile?.total_points ?? 0} />
     <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
