@@ -1099,11 +1099,25 @@ export default function Battle() {
       return;
     }
 
-    const { data: runsData } = await (supabase
-      .from("ktrenz_b2_runs") as any)
-      .select("id, star_id, content_score, counts, created_at")
-      .order("created_at", { ascending: false })
-      .limit(20);
+    // Determine the active batch_id from the latest battle record
+    const { data: latestBattle } = await (supabase
+      .from("ktrenz_b2_battles") as any)
+      .select("batch_id, battle_date, status")
+      .order("battle_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const activeBatchId = latestBattle?.batch_id;
+
+    let runsQuery = (supabase.from("ktrenz_b2_runs") as any)
+      .select("id, star_id, content_score, counts, created_at, batch_id")
+      .order("created_at", { ascending: false });
+
+    if (activeBatchId) {
+      runsQuery = runsQuery.eq("batch_id", activeBatchId);
+    }
+
+    const { data: runsData } = await runsQuery.limit(40);
 
     if (!runsData || runsData.length < 2) {
       setLoading(false);
