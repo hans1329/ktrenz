@@ -975,6 +975,7 @@ export default function Battle() {
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
   const [showFirstAnalyzerModal, setShowFirstAnalyzerModal] = useState(false);
+  const [settledBattleResults, setSettledBattleResults] = useState<{ starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[]>([]);
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -1189,7 +1190,7 @@ export default function Battle() {
     setPredictions(restoredPredictions);
   }
 
-  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); }, [loadTickets]);
+  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); loadSettledBattleResults(); }, [loadTickets]);
 
   // Auto-refresh every 60s to detect battle status changes
   useEffect(() => {
@@ -1231,7 +1232,71 @@ export default function Battle() {
     })));
   }
 
-  // Load unseen settlement results on mount
+  async function loadSettledBattleResults() {
+    // Get recent settled battles
+    const { data: settledBattles } = await (supabase.from("ktrenz_b2_battles") as any)
+      .select("batch_id, battle_date, status")
+      .eq("status", "settled")
+      .order("battle_date", { ascending: false })
+      .limit(3);
+    if (!settledBattles?.length) { setSettledBattleResults([]); return; }
+
+    const results: { starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[] = [];
+
+    for (const battle of settledBattles) {
+      // Get R1 runs
+      const { data: r1Runs } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("id, star_id, content_score")
+        .eq("batch_id", battle.batch_id)
+        .eq("search_round", 1)
+        .order("content_score", { ascending: false })
+        .limit(40);
+      if (!r1Runs?.length) continue;
+
+      // Dedupe by star
+      const starBest = new Map<string, any>();
+      r1Runs.forEach((r: any) => { if (!starBest.has(r.star_id)) starBest.set(r.star_id, r); });
+      const bestRuns = Array.from(starBest.values()).sort((a: any, b: any) => b.content_score - a.content_score);
+
+      // Get R2 runs
+      const { data: r2Runs } = await (supabase.from("ktrenz_b2_runs") as any)
+        .select("star_id, content_score")
+        .eq("batch_id", battle.batch_id)
+        .eq("search_round", 2)
+        .limit(100);
+
+      const r2Map = new Map<string, number>();
+      (r2Runs || []).forEach((r: any) => {
+        const existing = r2Map.get(r.star_id);
+        if (!existing || r.content_score > existing) r2Map.set(r.star_id, r.content_score);
+      });
+
+      // Get star names
+      const starIds = bestRuns.map((r: any) => r.star_id);
+      const { data: stars } = await supabase.from("ktrenz_stars").select("id, display_name").in("id", starIds);
+      const starNameMap = new Map((stars || []).map((s: any) => [s.id, s.display_name]));
+
+      // Build pairs (same logic as buildBattlePairsForBatch)
+      for (let i = 0; i + 1 < bestRuns.length; i += 2) {
+        const a = bestRuns[i];
+        const b = bestRuns[i + 1];
+        const r1A = a.content_score;
+        const r1B = b.content_score;
+        const r2A = r2Map.get(a.star_id) ?? r1A;
+        const r2B = r2Map.get(b.star_id) ?? r1B;
+        const growthA = r1A > 0 ? Math.round(((r2A - r1A) / r1A) * 100) : 0;
+        const growthB = r1B > 0 ? Math.round(((r2B - r1B) / r1B) * 100) : 0;
+        results.push({
+          starA: starNameMap.get(a.star_id) || "Unknown",
+          starB: starNameMap.get(b.star_id) || "Unknown",
+          growthA, growthB,
+          battleDate: battle.battle_date,
+        });
+      }
+    }
+    setSettledBattleResults(results);
+  }
+
   async function loadUnseenSettlements() {
     const { data: { user: u } } = await supabase.auth.getUser();
     if (!u) return;
@@ -1541,7 +1606,7 @@ export default function Battle() {
               const displayCount = tab.key === "live"
                 ? count
                 : tab.key === "settled"
-                ? settledHistoryPredictions.length
+                ? settledBattleResults.length
                 : myBetPredictions.length;
               return (
                 <button
@@ -1561,38 +1626,85 @@ export default function Battle() {
           </div>
         </div>
 
-        {/* My Bets tab: show all joined predictions */}
-        {(battleFilter === "myBets" || battleFilter === "settled") && (() => {
-          const listToShow = battleFilter === "settled" ? settledHistoryPredictions : myBetPredictions;
-          if (listToShow.length === 0) return null;
-          return (
-            <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-              <div className="flex items-center gap-2 pb-1">
-                <Trophy className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">
-                  {battleFilter === "settled" ? t("settledTab") : t("historyTab")} ({listToShow.length})
-                </span>
-              </div>
-              {listToShow.map((pred, i) => (
-                <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                      {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                      {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="ml-2 shrink-0">
-                    {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
-                  </Badge>
-                </div>
-              ))}
+        {/* My Bets tab */}
+        {battleFilter === "myBets" && myBetPredictions.length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
+            <div className="flex items-center gap-2 pb-1">
+              <Trophy className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">
+                {t("historyTab")} ({myBetPredictions.length})
+              </span>
             </div>
-          );
-        })()}
+            {myBetPredictions.map((pred, i) => (
+              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
+                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
+                  </p>
+                </div>
+                <Badge variant="outline" className="ml-2 shrink-0">
+                  {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Settled tab: all battle pair results */}
+        {battleFilter === "settled" && settledBattleResults.length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-3 mb-4">
+            {(() => {
+              const grouped = new Map<string, typeof settledBattleResults>();
+              settledBattleResults.forEach(r => {
+                const arr = grouped.get(r.battleDate) || [];
+                arr.push(r);
+                grouped.set(r.battleDate, arr);
+              });
+              return Array.from(grouped.entries()).map(([date, pairs]) => (
+                <div key={date} className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{date}</p>
+                  {pairs.map((pair, i) => {
+                    const aWins = pair.growthA > pair.growthB;
+                    const bWins = pair.growthB > pair.growthA;
+                    const draw = pair.growthA === pair.growthB;
+                    return (
+                      <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+                          {/* Star A */}
+                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.04]")}>
+                            <p className={cn("text-sm font-bold truncate", aWins ? "text-primary" : "text-foreground")}>{pair.starA}</p>
+                            <p className={cn("text-lg font-black mt-0.5", pair.growthA > 0 ? (aWins ? "text-primary" : "text-emerald-500") : pair.growthA < 0 ? "text-red-400" : "text-muted-foreground")}>
+                              {pair.growthA > 0 ? "+" : ""}{pair.growthA}%
+                            </p>
+                            {aWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                          </div>
+                          {/* VS */}
+                          <div className="px-2 text-center">
+                            <span className="text-xs font-bold text-purple-500">VS</span>
+                          </div>
+                          {/* Star B */}
+                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.04]")}>
+                            <p className={cn("text-sm font-bold truncate", bWins ? "text-primary" : "text-foreground")}>{pair.starB}</p>
+                            <p className={cn("text-lg font-black mt-0.5", pair.growthB > 0 ? (bWins ? "text-primary" : "text-emerald-500") : pair.growthB < 0 ? "text-red-400" : "text-muted-foreground")}>
+                              {pair.growthB > 0 ? "+" : ""}{pair.growthB}%
+                            </p>
+                            {bWins && <span className="text-[10px] font-bold text-primary">🏆 {t("winner")}</span>}
+                          </div>
+                        </div>
+                        {draw && <p className="text-center text-[10px] text-muted-foreground pb-2">{t("draw")}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </div>
+        )}
 
         {/* Filtered battle pairs */}
         {battlePairs.map((pair, pairIdx) => {
@@ -1758,47 +1870,24 @@ export default function Battle() {
           </div>
         )}
 
-        {/* Empty state for filter */}
-        {/* Settled tab: show history predictions */}
-        {battleFilter === "settled" && settledHistoryPredictions.length > 0 && (
-          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-            {settledHistoryPredictions.map((pred, i) => (
-              <div key={pred.id || i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                  </p>
-                </div>
-                <Badge variant={pred.status === "won" ? "default" : "outline"} className={cn("ml-2 shrink-0", pred.status === "won" && "bg-primary")}>
-                  {t(pred.status === "won" ? "won" : "lost")}
-                </Badge>
-              </div>
-            ))}
+        {/* Empty states */}
+        {battleFilter === "myBets" && myBetPredictions.length === 0 && (
+          <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
+            {t("noBattlesYet")}
           </div>
         )}
-
-        {((battleFilter === "myBets" && myBetPredictions.length === 0) || (
-          battleFilter !== "myBets" &&
-          battlePairs.every((_, idx) => {
-            const s = getPairState(idx);
-            const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
-            if (battleFilter === "live") return s.submitted && p?.status !== "pending";
-            if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
-            return false;
-          }) &&
-          !(battleFilter === "settled" && settledHistoryPredictions.length > 0)
-        )) && (
+        {battleFilter === "settled" && settledBattleResults.length === 0 && (
           <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
-            {battleFilter === "settled"
-              ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")
-              : battleFilter === "myBets"
-              ? (language === "ko" ? "참여한 배틀이 없습니다" : "No battles joined yet")
-              : (language === "ko" ? "라이브 배틀이 없습니다" : "No live battles")}
+            {t("noSettled")}
+          </div>
+        )}
+        {battleFilter === "live" && battlePairs.every((_, idx) => {
+          const s = getPairState(idx);
+          const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
+          return s.submitted && p?.status !== "pending";
+        }) && (
+          <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
+            {t("allDone")}
           </div>
         )}
 
