@@ -152,9 +152,12 @@ const SpotifyRedeem = () => {
       });
       if (error) throw error;
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.error) throw new Error(parsed.error);
       return (parsed.products ?? []) as ReloadlyProduct[];
     },
     enabled: !!selectedCountry && step === "products" && !!user,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   /* ── Order mutation ── */
