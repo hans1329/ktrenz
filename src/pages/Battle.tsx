@@ -962,7 +962,6 @@ export default function Battle() {
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
   const [drawerPairIndex, setDrawerPairIndex] = useState<number>(0);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [showTicketInfo, setShowTicketInfo] = useState(false);
   const [battleFilter, setBattleFilter] = useState<"live" | "settled" | "myBets">("live");
@@ -979,6 +978,14 @@ export default function Battle() {
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
+  const myBetMap = new Map<string, Prediction>();
+  [...predictions, ...historyPredictions].forEach((pred) => {
+    myBetMap.set(`${pred.pickedRunId}:${pred.opponentRunId}:${pred.band}`, pred);
+  });
+  const myBetPredictions = Array.from(myBetMap.values()).sort((a, b) =>
+    new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+  );
+  const settledHistoryPredictions = myBetPredictions.filter((pred) => pred.status === "won" || pred.status === "lost");
 
   function getPairState(idx: number) {
     return pairStates[idx] || { pickedRunId: null, selectedBand: null, submitted: false, hotVotes: new Set<string>() };
@@ -1431,6 +1438,7 @@ export default function Battle() {
         band: state.selectedBand,
       });
       if (predError) console.error("[Battle] prediction insert error:", predError);
+      else await loadHistoryPredictions();
     } catch (e) {
       console.error("[Battle] submit error:", e);
     }
@@ -1529,10 +1537,11 @@ export default function Battle() {
                 if (tab.key === "settled") return state.submitted && predictions.find(p => p.pickedRunId === state.pickedRunId)?.status !== "pending";
                 return state.submitted;
               }).length;
-              const histCount = tab.key === "settled"
-                ? historyPredictions.filter(p => p.status === "won" || p.status === "lost").length
-                : tab.key === "myBets" ? historyPredictions.length : 0;
-              const displayCount = Math.max(count, histCount);
+              const displayCount = tab.key === "live"
+                ? count
+                : tab.key === "settled"
+                ? settledHistoryPredictions.length
+                : myBetPredictions.length;
               return (
                 <button
                   key={tab.key}
@@ -1544,52 +1553,37 @@ export default function Battle() {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {tab.label} {count > 0 && <span className="ml-0.5 opacity-70">{count}</span>}
-                  {displayCount > 0 && count === 0 && <span className="ml-0.5 opacity-70">{displayCount}</span>}
+                  {tab.label} {displayCount > 0 && <span className="ml-0.5 opacity-70">{displayCount}</span>}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* My Bets tab: show history at top */}
-        {battleFilter === "myBets" && (predictions.length > 0 || historyPredictions.length > 0) && (
-          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5 mb-4">
-            <div className="pb-2">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border text-sm font-semibold text-foreground"
-              >
-                <span className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  {t("historyTab")} ({predictions.length})
-                  {historyPredictions.length > predictions.length && ` / ${historyPredictions.length} total`}
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`} />
-              </button>
-
-              {showHistory && (
-                <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                  {(historyPredictions.length > 0 ? historyPredictions : predictions).map((pred, i) => (
-                    <div key={i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                          {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
-                          {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="ml-2 shrink-0">
-                        {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* My Bets tab: show all joined predictions */}
+        {battleFilter === "myBets" && myBetPredictions.length > 0 && (
+          <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
+            <div className="flex items-center gap-2 pb-1">
+              <Trophy className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">{t("historyTab")} ({myBetPredictions.length})</span>
             </div>
+            {myBetPredictions.map((pred, i) => (
+              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
+                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                    {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
+                  </p>
+                </div>
+                <Badge variant="outline" className="ml-2 shrink-0">
+                  {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
+                </Badge>
+              </div>
+            ))}
           </div>
         )}
 
@@ -1598,9 +1592,9 @@ export default function Battle() {
           // Filter logic
           const state = getPairState(pairIdx);
           const pred = predictions.find(p => p.pickedRunId === state.pickedRunId);
+          if (battleFilter === "myBets") return null;
           if (battleFilter === "live" && state.submitted && pred?.status !== "pending") return null;
           if (battleFilter === "settled" && (!state.submitted || pred?.status === "pending")) return null;
-          if (battleFilter === "myBets" && !state.submitted) return null;
 
           const pairState = getPairState(pairIdx);
           const pairRuns = pair.runs;
@@ -1760,9 +1754,9 @@ export default function Battle() {
 
         {/* Empty state for filter */}
         {/* Settled tab: show history predictions */}
-        {battleFilter === "settled" && historyPredictions.filter(p => p.status === "won" || p.status === "lost").length > 0 && (
+        {battleFilter === "settled" && settledHistoryPredictions.length > 0 && (
           <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-2 mb-4">
-            {historyPredictions.filter(p => p.status === "won" || p.status === "lost").map((pred, i) => (
+            {settledHistoryPredictions.map((pred, i) => (
               <div key={pred.id || i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
@@ -1782,14 +1776,17 @@ export default function Battle() {
           </div>
         )}
 
-        {battlePairs.every((_, idx) => {
-          const s = getPairState(idx);
-          const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
-          if (battleFilter === "live") return s.submitted && p?.status !== "pending";
-          if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
-          if (battleFilter === "myBets") return !s.submitted;
-          return false;
-        }) && !(battleFilter === "settled" && historyPredictions.some(p => p.status === "won" || p.status === "lost")) && (
+        {((battleFilter === "myBets" && myBetPredictions.length === 0) || (
+          battleFilter !== "myBets" &&
+          battlePairs.every((_, idx) => {
+            const s = getPairState(idx);
+            const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
+            if (battleFilter === "live") return s.submitted && p?.status !== "pending";
+            if (battleFilter === "settled") return !s.submitted || p?.status === "pending";
+            return false;
+          }) &&
+          !(battleFilter === "settled" && settledHistoryPredictions.length > 0)
+        )) && (
           <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground text-sm">
             {battleFilter === "settled"
               ? (language === "ko" ? "정산된 배틀이 없습니다" : "No settled battles yet")

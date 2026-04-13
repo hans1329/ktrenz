@@ -39,12 +39,12 @@ function isAfterKSTTime(kstHour: number, kstMin: number, targetHour: number, tar
   return kstHour > targetHour || (kstHour === targetHour && kstMin >= targetMin);
 }
 
-function hasExpectedRound1Runs(round1Count: number, totalPairs: number | null | undefined) {
+function hasExpectedRuns(runCount: number, totalPairs: number | null | undefined) {
   const expectedRuns = Number(totalPairs || 0) * 2;
   if (expectedRuns > 0) {
-    return round1Count >= expectedRuns;
+    return runCount >= expectedRuns;
   }
-  return round1Count > 0;
+  return runCount > 0;
 }
 
 Deno.serve(async (req) => {
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
       const recoveredFromCollecting =
         yesterdayBattle.status === "collecting" &&
-        hasExpectedRound1Runs(yesterdayRound1Count || 0, yesterdayBattle.total_pairs);
+        hasExpectedRuns(yesterdayRound1Count || 0, yesterdayBattle.total_pairs);
 
       if (yesterdayBattle.status === "open" || recoveredFromCollecting) {
         await sb.from("ktrenz_b2_battles")
@@ -114,8 +114,30 @@ Deno.serve(async (req) => {
     // PHASE 2: 어제 Round 2 수집 (09:30+ KST)
     // ═══════════════════════════════════════════════════════════
     if (yesterdayBattle?.status === "closed" && isAfterKSTTime(kstHour, kstMin, 9, 30)) {
-      // Round 2 큐가 아직 안 만들어졌으면 시작
-      if (!queueBusy || queueBatchId !== yesterdayBatchId) {
+      const { count: yesterdayRound2Count } = await sb
+        .from("ktrenz_b2_runs")
+        .select("*", { count: "exact", head: true })
+        .eq("batch_id", yesterdayBatchId)
+        .eq("search_round", 2);
+
+      const expectedRound2Runs = Number(yesterdayBattle.total_pairs || 0) * 2;
+      const round2Complete = hasExpectedRuns(yesterdayRound2Count || 0, yesterdayBattle.total_pairs);
+
+      if (queueBusy && queueBatchId === yesterdayBatchId) {
+        const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
+          action: "process_next",
+          search_round: 2,
+        });
+        log.push(`Phase 2: Round 2 process_next: star=${result.processed_star_id}, pending=${result.progress?.pending}`);
+        return respond(log);
+      }
+
+      if (queueBusy && queueBatchId !== yesterdayBatchId) {
+        log.push(`Phase 2: Waiting for active queue ${queueBatchId} before yesterday round 2 recovery`);
+        return respond(log);
+      }
+
+      if ((yesterdayRound2Count || 0) === 0) {
         const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
           action: "start_round2",
           prev_batch_id: yesterdayBatchId,
@@ -124,13 +146,8 @@ Deno.serve(async (req) => {
         return respond(log);
       }
 
-      // Round 2 큐 처리 중
-      if (queueBusy && queueBatchId === yesterdayBatchId) {
-        const result = await callFunction(supabaseUrl, serviceKey, "ktrenz-battle-autobatch", {
-          action: "process_next",
-          search_round: 2,
-        });
-        log.push(`Phase 2: Round 2 process_next: star=${result.processed_star_id}, pending=${result.progress?.pending}`);
+      if (!round2Complete) {
+        log.push(`Phase 2: Waiting for complete round 2 data (${yesterdayRound2Count || 0}/${expectedRound2Runs || 0})`);
         return respond(log);
       }
     }
@@ -146,13 +163,20 @@ Deno.serve(async (req) => {
         .eq("batch_id", yesterdayBatchId)
         .eq("search_round", 2);
 
-      if ((r2Count || 0) > 0) {
+      const expectedRound2Runs = Number(yesterdayBattle.total_pairs || 0) * 2;
+      const round2Complete = hasExpectedRuns(r2Count || 0, yesterdayBattle.total_pairs);
+
+      if (round2Complete) {
         // Round 2 수집 완료 → 정산
         const result = await callFunction(supabaseUrl, serviceKey, "settle-trend-vs", {});
         log.push(`Phase 3: Settlement: settled=${result.settled}, total=${result.total}`);
 
         // 정산 완료 후 battle status 업데이트 (settle 함수에서도 하지만 확실하게)
-        if (result.settled > 0) {
+        const settlementComplete = result?.message === "No pending predictions"
+          || Number(result?.total || 0) === 0
+          || Number(result?.settled || 0) === Number(result?.total || 0);
+
+        if (settlementComplete) {
           await sb.from("ktrenz_b2_battles")
             .update({ status: "settled", settled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
             .eq("id", yesterdayBattle.id);
@@ -173,6 +197,11 @@ Deno.serve(async (req) => {
           log.push(`Phase 3.5: Keywords already extracted for ${today} (${kwCount})`);
         }
 
+        return respond(log);
+      }
+
+      if ((r2Count || 0) > 0) {
+        log.push(`Phase 3: Waiting for full round 2 data before settlement (${r2Count || 0}/${expectedRound2Runs || 0})`);
         return respond(log);
       }
     }
@@ -246,7 +275,7 @@ Deno.serve(async (req) => {
         .eq("search_round", 1);
 
       const expectedTodayRuns = Number(todayBattle.total_pairs || 0) * 2;
-      if (hasExpectedRound1Runs(todayRound1Count || 0, todayBattle.total_pairs)) {
+      if (hasExpectedRuns(todayRound1Count || 0, todayBattle.total_pairs)) {
         await sb.from("ktrenz_b2_battles")
           .update({ status: "open", updated_at: new Date().toISOString() })
           .eq("id", todayBattle.id)
