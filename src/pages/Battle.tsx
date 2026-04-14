@@ -715,10 +715,24 @@ function ArtistSection({
       const setWidth = thirdStart.offsetLeft - middleStart.offsetLeft;
       if (setWidth <= 0) return;
 
-      if (el.scrollLeft >= thirdStart.offsetLeft) {
-        el.scrollLeft -= setWidth;
-      } else if (el.scrollLeft < middleStart.offsetLeft) {
-        el.scrollLeft += setWidth;
+      const needsJump =
+        el.scrollLeft >= thirdStart.offsetLeft ||
+        el.scrollLeft < middleStart.offsetLeft;
+
+      if (needsJump) {
+        // Disable snap to prevent the browser from animating the jump
+        el.style.scrollSnapType = "none";
+
+        if (el.scrollLeft >= thirdStart.offsetLeft) {
+          el.scrollLeft -= setWidth;
+        } else {
+          el.scrollLeft += setWidth;
+        }
+
+        // Re-enable snap after the paint
+        requestAnimationFrame(() => {
+          el.style.scrollSnapType = "";
+        });
       }
 
       updateActiveIndex();
@@ -728,7 +742,7 @@ function ArtistSection({
       updateActiveIndex();
 
       if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(settleLoop, 120);
+      scrollTimer = setTimeout(settleLoop, 280);
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
@@ -788,7 +802,7 @@ function ArtistSection({
       {/* Horizontal card carousel */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0"
+        className="flex gap-2.5 overflow-x-auto snap-x snap-proximity scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0"
       >
         {loopItems.map((item, loopIdx) => (
           <div
