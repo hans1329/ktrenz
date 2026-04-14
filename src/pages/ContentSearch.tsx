@@ -31,7 +31,11 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
-  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore" | "report">("search");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore" | "report">(
+    initialTab === "report" ? "report" : "search"
+  );
   const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
   const [collectedStarName, setCollectedStarName] = useState("");
   const [battleStarId, setBattleStarId] = useState<string | null>(null);
