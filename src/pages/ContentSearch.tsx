@@ -30,7 +30,7 @@ const ContentSearchPage = () => {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [selectedStarName, setSelectedStarName] = useState("");
   const [activeSource, setActiveSource] = useState<SourceKey | "all" | "no_image">("all");
-  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore">("search");
+  const [viewMode, setViewMode] = useState<"search" | "collected" | "battle" | "prescore" | "report">("search");
   const [collectedStarId, setCollectedStarId] = useState<string | null>(null);
   const [collectedStarName, setCollectedStarName] = useState("");
   const [battleStarId, setBattleStarId] = useState<string | null>(null);
@@ -381,6 +381,9 @@ const ContentSearchPage = () => {
               {prescoreData?.items?.length > 0 && (
                 <span className="text-[10px] opacity-60">({prescoreData.items.filter((i: any) => i.news_count > 0).length})</span>
               )}
+            </TabButton>
+            <TabButton active={viewMode === "report"} onClick={() => { setViewMode("report"); clearSelection(); }}>
+              <FileText className="w-3.5 h-3.5" /> 리포트
             </TabButton>
           </div>
 
@@ -878,6 +881,11 @@ const ContentSearchPage = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* === REPORT MODE === */}
+        {viewMode === "report" && (
+          <AdminAutoReport />
         )}
       </main>
     </div>
