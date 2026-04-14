@@ -341,6 +341,7 @@ Deno.serve(async (req) => {
         meta_title: content.meta_title,
         meta_description: content.meta_description,
         codeinjection_head,
+        ...(featureImage ? { feature_image: featureImage } : {}),
       });
 
       const slug = result.posts?.[0]?.slug;
