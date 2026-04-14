@@ -690,12 +690,13 @@ function ArtistSection({
       const children = Array.from(el.children) as HTMLElement[];
       if (children.length === 0) return;
 
-      const scrollLeft = el.scrollLeft;
+      const containerCenter = el.scrollLeft + el.clientWidth / 2;
       let closest = offset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
-        const dist = Math.abs(child.offsetLeft - scrollLeft);
+        const childCenter = child.offsetLeft + child.offsetWidth / 2;
+        const dist = Math.abs(childCenter - containerCenter);
         if (dist < minDist) {
           minDist = dist;
           closest = i;
@@ -758,7 +759,7 @@ function ArtistSection({
 
     const child = el.children[i + offset] as HTMLElement | undefined;
     if (child) {
-      child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+      child.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
   };
 
@@ -802,12 +803,13 @@ function ArtistSection({
       {/* Horizontal card carousel */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto snap-x snap-proximity scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0"
+        className="flex gap-0 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-loop-${loopIdx}`}
-            className="snap-start flex-shrink-0 w-full sm:w-72 lg:w-80 cursor-pointer"
+            className="snap-center flex-shrink-0 w-[calc(100%-16px)] sm:w-72 lg:w-80 cursor-pointer first:ml-2 last:mr-2"
             onClick={() => onCardTap(item)}
           >
             <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
