@@ -882,6 +882,11 @@ const ContentSearchPage = () => {
             )}
           </div>
         )}
+
+        {/* === REPORT MODE === */}
+        {viewMode === "report" && (
+          <AdminAutoReport />
+        )}
       </main>
     </div>
   );
