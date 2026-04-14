@@ -382,6 +382,9 @@ const ContentSearchPage = () => {
                 <span className="text-[10px] opacity-60">({prescoreData.items.filter((i: any) => i.news_count > 0).length})</span>
               )}
             </TabButton>
+            <TabButton active={viewMode === "report"} onClick={() => { setViewMode("report"); clearSelection(); }}>
+              <FileText className="w-3.5 h-3.5" /> 리포트
+            </TabButton>
           </div>
 
           {viewMode === "search" && (
