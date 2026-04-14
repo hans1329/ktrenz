@@ -65,11 +65,25 @@ async function fetchBattleStats(supabase: ReturnType<typeof createClient>, battl
 async function fetchRecentB2Items(supabase: ReturnType<typeof createClient>) {
   const { data, error } = await supabase
     .from("ktrenz_b2_items")
-    .select("title, title_en, title_ko, source, engagement_score, star_id")
+    .select("title, title_en, title_ko, source, engagement_score, star_id, thumbnail, has_thumbnail")
     .order("created_at", { ascending: false })
     .limit(10);
   if (error) console.error("fetchRecentB2Items error:", error.message);
   return data || [];
+}
+
+function pickBestFeatureImage(b2Items: any[]): string | null {
+  // Prefer Supabase-cached images (permanent URLs), then other thumbnails
+  const withThumb = b2Items.filter((i: any) => i.has_thumbnail && i.thumbnail);
+  if (withThumb.length === 0) return null;
+
+  // Prioritize cached images (supabase storage) for reliability
+  const cached = withThumb.find((i: any) => i.thumbnail.includes("supabase.co/storage"));
+  if (cached) return cached.thumbnail;
+
+  // Then prefer high-engagement items with thumbnails
+  const sorted = [...withThumb].sort((a: any, b: any) => (b.engagement_score || 0) - (a.engagement_score || 0));
+  return sorted[0]?.thumbnail || null;
 }
 
 // ── OpenAI content generation ──
