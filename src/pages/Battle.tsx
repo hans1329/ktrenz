@@ -1282,11 +1282,6 @@ export default function Battle() {
     }));
     setSettlementResults(mapped);
     setTimeout(() => setShowSettlementModal(true), 500);
-    // Mark as seen immediately via RPC so modal won't reappear on re-login
-    const ids = mapped.map(r => r.id);
-    if (ids.length > 0) {
-      supabase.rpc("mark_b2_predictions_seen", { _prediction_ids: ids } as any).then(() => {});
-    }
   }
 
   async function loadBattleData(skipTranslation = false) {
