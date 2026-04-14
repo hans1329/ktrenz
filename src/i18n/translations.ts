@@ -938,6 +938,12 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.tapToAnalyze": { en: "Vote for the trend you think will rise more!", ko: "더 유행할 트렌드에 투표해주세요!", ja: "伸びると思うトレンドに投票！", zh: "为你认为会更火的趋势投票！" },
   "battle.firstAnalyzerTitle": { en: "You're the first to analyze this trend!", ko: "가장 처음으로 트렌드를 분석하셨어요!", ja: "このトレンドを最初に分析しました！", zh: "您是第一个分析此趋势的人！" },
   "battle.firstAnalyzerDesc": { en: "+30 K-Cashes bonus awarded!", ko: "+30 캐쉬 보너스가 지급되었어요!", ja: "+30 K-Cashesボーナスが付与されました！", zh: "+30 K-Cashes奖金已发放！" },
+
+  // ── Footer ──
+  "footer.report": { en: "Report", ko: "리포트", ja: "レポート", zh: "报告" },
+  "footer.about": { en: "About", ko: "소개", ja: "概要", zh: "关于" },
+  "footer.privacy": { en: "Privacy", ko: "개인정보", ja: "プライバシー", zh: "隐私" },
+  "footer.terms": { en: "Terms", ko: "이용약관", ja: "利用規約", zh: "条款" },
 };
 
 export default translations;
