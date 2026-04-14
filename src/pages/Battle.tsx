@@ -690,12 +690,13 @@ function ArtistSection({
       const children = Array.from(el.children) as HTMLElement[];
       if (children.length === 0) return;
 
-      const scrollLeft = el.scrollLeft;
+      const containerCenter = el.scrollLeft + el.clientWidth / 2;
       let closest = offset;
       let minDist = Infinity;
 
       children.forEach((child, i) => {
-        const dist = Math.abs(child.offsetLeft - scrollLeft);
+        const childCenter = child.offsetLeft + child.offsetWidth / 2;
+        const dist = Math.abs(childCenter - containerCenter);
         if (dist < minDist) {
           minDist = dist;
           closest = i;
