@@ -2240,7 +2240,6 @@ export default function Battle() {
         </SheetContent>
       </Sheet>
 
-      <V3Footer />
       <V3TabBar activeTab="battle" onTabChange={() => {}} />
       <AllTicketsUsedModal
         open={showAllUsedModal}
