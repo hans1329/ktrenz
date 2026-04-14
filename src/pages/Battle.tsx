@@ -1302,10 +1302,9 @@ export default function Battle() {
       .order("battle_date", { ascending: false })
       .limit(5);
 
+    // Always try most recent battles first — the fallback loop will skip
+    // batches that don't have valid pairs regardless of phase.
     const orderedBattles = [...(recentBattles || [])];
-    if (phase === "results" || phase === "opening") {
-      orderedBattles.sort((a: any, b: any) => a.battle_date.localeCompare(b.battle_date));
-    }
 
     let latestBattle: any = null;
     let validPairs: BattlePair[] = [];
