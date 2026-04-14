@@ -808,7 +808,7 @@ function ArtistSection({
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-loop-${loopIdx}`}
-            className="snap-start flex-shrink-0 w-full sm:w-72 lg:w-80 cursor-pointer"
+            className="snap-center flex-shrink-0 w-[calc(100%-16px)] sm:w-72 lg:w-80 cursor-pointer first:ml-2 last:mr-2"
             onClick={() => onCardTap(item)}
           >
             <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
