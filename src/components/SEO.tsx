@@ -39,7 +39,7 @@ export default function SEO({
     name: "KTrenZ",
     url: SITE_URL,
     logo: `${SITE_URL}/pwa-512x512.png`,
-    description: "Real-time K-Pop trend detection platform powered by multi-source data analysis",
+    description: "Join K-Trend growth predictions driven by K-Stars. Pick your winner and prove your fandom insight.",
     sameAs: [
       "https://x.com/ktrenz_official",
     ],
