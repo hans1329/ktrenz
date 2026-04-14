@@ -1282,6 +1282,15 @@ export default function Battle() {
     }));
     setSettlementResults(mapped);
     setTimeout(() => setShowSettlementModal(true), 500);
+    // Mark as seen immediately so modal won't reappear on re-login
+    const ids = mapped.map(r => r.id);
+    if (ids.length > 0) {
+      supabase
+        .from("b2_predictions")
+        .update({ seen_at: new Date().toISOString() } as any)
+        .in("id", ids)
+        .then(() => {});
+    }
   }
 
   async function loadBattleData(skipTranslation = false) {
