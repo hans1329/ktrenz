@@ -2263,6 +2263,11 @@ export default function Battle() {
         open={showSettlementModal}
         onClose={() => {
           setShowSettlementModal(false);
+          // Mark as seen via RPC when user confirms
+          const ids = settlementResults.map(r => r.id);
+          if (ids.length > 0) {
+            supabase.rpc("mark_b2_predictions_seen", { _prediction_ids: ids } as any).then(() => {});
+          }
         }}
         results={settlementResults}
         language={language}
