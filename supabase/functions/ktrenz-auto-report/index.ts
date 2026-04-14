@@ -300,6 +300,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Pick the best feature image for the report
+    const featureImage = pickBestFeatureImage(b2Items);
+    console.log(`Feature image: ${featureImage || "none"}`);
+
     // Generate both KO and EN reports
     const results: any[] = [];
 
