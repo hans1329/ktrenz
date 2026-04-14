@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords, Trophy, XCircle, Clock, Zap, BarChart3 } from "lucide-react";
+import { Search, Loader2, ExternalLink, Newspaper, BookOpen, Youtube, Music, Camera, MessageCircle, Database, Swords, Trophy, XCircle, Clock, Zap, BarChart3, FileText } from "lucide-react";
+import AdminAutoReport from "@/pages/admin/AdminAutoReport";
 import SEO from "@/components/SEO";
 import SmartImage from "@/components/SmartImage";
 
