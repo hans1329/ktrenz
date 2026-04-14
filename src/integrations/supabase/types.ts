@@ -10650,6 +10650,10 @@ export type Database = {
         Args: { p_action: string; p_hour?: number; p_minute?: number }
         Returns: Json
       }
+      mark_b2_predictions_seen: {
+        Args: { _prediction_ids: string[] }
+        Returns: number
+      }
       pin_post: { Args: { post_id_param: string }; Returns: boolean }
       pin_wiki_entry: {
         Args: { wiki_entry_id_param: string }
