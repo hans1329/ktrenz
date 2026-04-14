@@ -6,7 +6,7 @@ const V3Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="pb-28 pt-8 px-4">
+    <footer className="pb-6 pt-8 px-4">
       <div className="max-w-md mx-auto border-t border-border pt-6">
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <Link to="/key?tab=report" className="hover:text-foreground transition-colors">
