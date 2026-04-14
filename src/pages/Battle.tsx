@@ -1151,7 +1151,12 @@ export default function Battle() {
     setPredictions(restoredPredictions);
   }
 
-  useEffect(() => { loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); loadSettledBattleResults(); }, [loadTickets]);
+  useEffect(() => {
+    loadBattleData(); loadTickets(); loadUnseenSettlements(); loadHistoryPredictions(); loadSettledBattleResults();
+    // Safety timeout: force loading=false after 8s to prevent infinite spinner
+    const safetyTimeout = setTimeout(() => setLoading(false), 8_000);
+    return () => clearTimeout(safetyTimeout);
+  }, [loadTickets]);
 
   // Auto-refresh every 60s to detect battle status changes
   useEffect(() => {
