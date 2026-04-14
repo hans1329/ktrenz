@@ -802,7 +802,8 @@ function ArtistSection({
       {/* Horizontal card carousel */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto snap-x snap-proximity scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0"
+        className="flex gap-0 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {loopItems.map((item, loopIdx) => (
           <div
