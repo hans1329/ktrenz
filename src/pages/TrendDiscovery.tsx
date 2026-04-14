@@ -6,6 +6,7 @@ import DiscoverBattleStatus from "@/components/discover/DiscoverBattleStatus";
 import DiscoverUserRankings from "@/components/discover/DiscoverUserRankings";
 import DiscoverHotContent from "@/components/discover/DiscoverHotContent";
 import HeaderTicketSlot from "@/components/HeaderTicketSlot";
+import V3Footer from "@/components/v3/V3Footer";
 
 const TrendDiscovery = () => {
   return (
@@ -28,6 +29,7 @@ const TrendDiscovery = () => {
           <DiscoverBattleStatus />
           <DiscoverUserRankings />
           <DiscoverHotContent />
+          <V3Footer />
         </div>
       </div>
 

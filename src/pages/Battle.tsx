@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
+import V3Footer from "@/components/v3/V3Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SmartImage from "@/components/SmartImage";
@@ -2239,6 +2240,7 @@ export default function Battle() {
         </SheetContent>
       </Sheet>
 
+      <V3Footer />
       <V3TabBar activeTab="battle" onTabChange={() => {}} />
       <AllTicketsUsedModal
         open={showAllUsedModal}
