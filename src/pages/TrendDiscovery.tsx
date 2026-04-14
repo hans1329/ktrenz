@@ -29,6 +29,7 @@ const TrendDiscovery = () => {
           <DiscoverBattleStatus />
           <DiscoverUserRankings />
           <DiscoverHotContent />
+          <V3Footer />
         </div>
       </div>
 
