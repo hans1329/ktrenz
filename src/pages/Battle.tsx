@@ -2100,13 +2100,13 @@ export default function Battle() {
             </SheetTitle>
           </SheetHeader>
           <div className="py-4 space-y-4">
-            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
+            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`] ? (
               <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <InsightLoadingText starName={insightDrawer?.starName ?? ""} t={globalT} />
               </div>
             ) : (() => {
-              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
+              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`;
               const data = insightData[key];
               if (!data) return <p className="text-sm text-muted-foreground text-center py-8">No data available</p>;
               return (
