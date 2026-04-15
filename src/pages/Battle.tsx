@@ -968,7 +968,7 @@ export default function Battle() {
   }
 
   async function openInsightDrawer(runId: string, starId: string, starName: string) {
-    const key = `${runId}-${starId}`;
+    const key = `${runId}-${starId}-${language}`;
     setInsightDrawer({ open: true, runId, starId, starName });
 
     if (insightData[key]) return;
@@ -980,6 +980,7 @@ export default function Battle() {
         .select("insight_data")
         .eq("run_id", runId)
         .eq("star_id", starId)
+        .eq("language", language)
         .maybeSingle();
 
       if (cached?.insight_data) {
