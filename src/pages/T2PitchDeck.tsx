@@ -668,8 +668,8 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── AI FAN AGENT ───── */}
-      <Section id="agent">
+      {/* ───── TREND BATTLE ───── */}
+      <Section id="battle">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black mb-4">
