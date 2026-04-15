@@ -674,7 +674,10 @@ function ArtistSection({
     if (!el) return;
     requestAnimationFrame(() => {
       const firstMiddle = el.children[offset] as HTMLElement | undefined;
-      if (firstMiddle) el.scrollLeft = firstMiddle.offsetLeft;
+      if (firstMiddle) {
+        const paddingLeft = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+        el.scrollLeft = firstMiddle.offsetLeft - paddingLeft;
+      }
       setActiveIndex(0);
     });
   }, [itemCount, offset]);
@@ -809,7 +812,7 @@ function ArtistSection({
         {loopItems.map((item, loopIdx) => (
           <div
             key={`${item.id}-loop-${loopIdx}`}
-            className="snap-center flex-shrink-0 w-[85%] sm:w-72 lg:w-80 cursor-pointer"
+            className="snap-start flex-shrink-0 w-[85%] sm:w-72 lg:w-80 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
             <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
