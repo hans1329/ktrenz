@@ -436,10 +436,10 @@ export default function T2PitchDeck() {
 
           <div className="grid grid-cols-4 gap-4 max-w-xl mx-auto">
             {[
-              { label: l.statKeywords, value: 500, suffix: "+" },
-              { label: l.statSources, value: 3, suffix: "" },
+              { label: l.statKeywords, value: 10000, suffix: "+" },
+              { label: l.statSources, value: 12, suffix: "" },
               { label: l.statLag, value: 15, suffix: "min" },
-              { label: l.statArtists, value: 100, suffix: "+" },
+              { label: l.statArtists, value: 5000, suffix: "+" },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <div className="text-xl md:text-2xl font-black text-primary">
