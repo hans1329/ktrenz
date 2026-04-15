@@ -968,7 +968,7 @@ export default function Battle() {
   }
 
   async function openInsightDrawer(runId: string, starId: string, starName: string) {
-    const key = `${runId}-${starId}`;
+    const key = `${runId}-${starId}-${language}`;
     setInsightDrawer({ open: true, runId, starId, starName });
 
     if (insightData[key]) return;
@@ -980,6 +980,7 @@ export default function Battle() {
         .select("insight_data")
         .eq("run_id", runId)
         .eq("star_id", starId)
+        .eq("language", language)
         .maybeSingle();
 
       if (cached?.insight_data) {
@@ -2099,13 +2100,13 @@ export default function Battle() {
             </SheetTitle>
           </SheetHeader>
           <div className="py-4 space-y-4">
-            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}`] ? (
+            {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`] ? (
               <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <InsightLoadingText starName={insightDrawer?.starName ?? ""} t={globalT} />
               </div>
             ) : (() => {
-              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}`;
+              const key = `${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`;
               const data = insightData[key];
               if (!data) return <p className="text-sm text-muted-foreground text-center py-8">No data available</p>;
               return (
