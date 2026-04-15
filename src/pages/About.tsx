@@ -147,7 +147,7 @@ const About = () => {
       />
       <div className="min-h-screen bg-background">
         <div className="relative">
-          <V3Header />
+          <V3Header hideSpotify />
           <div className="absolute top-3 right-14 z-50">
             <LanguageSwitcher />
           </div>
