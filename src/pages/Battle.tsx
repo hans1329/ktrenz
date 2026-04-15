@@ -674,7 +674,10 @@ function ArtistSection({
     if (!el) return;
     requestAnimationFrame(() => {
       const firstMiddle = el.children[offset] as HTMLElement | undefined;
-      if (firstMiddle) el.scrollLeft = firstMiddle.offsetLeft;
+      if (firstMiddle) {
+        const paddingLeft = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+        el.scrollLeft = firstMiddle.offsetLeft - paddingLeft;
+      }
       setActiveIndex(0);
     });
   }, [itemCount, offset]);
