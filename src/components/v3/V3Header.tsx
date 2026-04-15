@@ -118,7 +118,7 @@ const SpotifyGoalBar = () => {
   );
 };
 
-const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rightSlot?: React.ReactNode }) => {
+const V3Header = ({ centerSlot, rightSlot, hideSpotify }: { centerSlot?: React.ReactNode; rightSlot?: React.ReactNode; hideSpotify?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -322,7 +322,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
               {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
               <div className="flex items-center gap-2 shrink-0">
                 <T2AdminControls />
-                <SpotifyGoalBar />
+                {!hideSpotify && <SpotifyGoalBar />}
                 {rightSlot}
               </div>
             </>
