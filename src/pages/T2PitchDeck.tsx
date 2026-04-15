@@ -8,7 +8,7 @@ import {
   Database, LineChart, Radar, MessageSquare, RefreshCw
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import ktrenzLogo from "@/assets/k-trenz-logo.webp";
+import ktrenzLogo from "@/assets/logo_nd.webp";
 
 type Lang = "en" | "ko";
 
