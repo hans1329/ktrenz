@@ -406,7 +406,7 @@ export default function T2PitchDeck() {
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center z-10">
-          <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-6 opacity-60" />
+          
 
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.08] tracking-tight mb-6">
