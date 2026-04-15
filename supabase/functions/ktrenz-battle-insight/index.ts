@@ -25,12 +25,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // Check cache first
+    // Check cache first (language-aware)
     const { data: cached } = await sb
       .from("ktrenz_b2_insights")
       .select("insight_text, insight_data")
       .eq("run_id", run_id)
       .eq("star_id", star_id)
+      .eq("language", language)
       .maybeSingle();
 
     if (cached) {
@@ -139,10 +140,10 @@ Return JSON: { "headline": "...", "bullets": ["...", "..."], "lifestyle": [{"cat
 
     const insightText = [parsed.headline || "", ...(parsed.bullets || [])].join("\n");
 
-    // Cache in DB
+    // Cache in DB (per language)
     await sb.from("ktrenz_b2_insights").upsert(
-      { run_id, star_id, insight_text: insightText, insight_data: parsed },
-      { onConflict: "run_id,star_id" }
+      { run_id, star_id, language, insight_text: insightText, insight_data: parsed },
+      { onConflict: "run_id,star_id,language" }
     );
 
     // Award 30 K-Cashes to the first analyzer

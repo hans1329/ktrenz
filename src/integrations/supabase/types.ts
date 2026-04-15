@@ -2687,6 +2687,7 @@ export type Database = {
           id: string
           insight_data: Json | null
           insight_text: string
+          language: string
           run_id: string
           star_id: string
         }
@@ -2695,6 +2696,7 @@ export type Database = {
           id?: string
           insight_data?: Json | null
           insight_text: string
+          language?: string
           run_id: string
           star_id: string
         }
@@ -2703,6 +2705,7 @@ export type Database = {
           id?: string
           insight_data?: Json | null
           insight_text?: string
+          language?: string
           run_id?: string
           star_id?: string
         }
