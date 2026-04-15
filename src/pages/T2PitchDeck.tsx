@@ -116,7 +116,6 @@ const t = {
       { emoji: "📈", title: "Real-Time Settlement", desc: "Round 1 and Round 2 scores are compared after 24 hours. Growth rates are calculated transparently, and results are published with full data lineage." },
       { emoji: "🌐", title: "Multi-Source Scoring", desc: "Content scores aggregate engagement signals from 12+ sources — ensuring predictions are grounded in comprehensive, cross-platform intelligence." },
     ],
-    ],
 
     // Use Cases
     useCasesTag: "Use Cases",
