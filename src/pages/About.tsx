@@ -2,6 +2,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store, Ticket, Crosshair, Trophy, Headphones, Megaphone, Building2, HelpCircle, ChevronDown } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import SamplePredictionCards from "@/components/about/SamplePredictionCards";
@@ -145,7 +146,12 @@ const About = () => {
         jsonLd={jsonLd as any}
       />
       <div className="min-h-screen bg-background">
-        <V3Header />
+        <div className="relative">
+          <V3Header />
+          <div className="absolute top-3 right-14 z-50">
+            <LanguageSwitcher />
+          </div>
+        </div>
 
         {/* Hero — clean dark */}
         <section className="relative overflow-hidden bg-zinc-950">
