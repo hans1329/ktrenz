@@ -1,73 +1,102 @@
-# Welcome to your Lovable project
+# KTrenZ — K-Pop Trend Battle Platform
 
-## Project info
+<p align="center">
+  <strong>Real-time K-Pop trend prediction battles powered by multi-source data intelligence</strong>
+</p>
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+<p align="center">
+  <a href="https://ktrenz.com">Live App</a> •
+  <a href="https://ktrenz.com/about">About</a> •
+  <a href="https://ktrenz.com/pd">Pitch Deck</a>
+</p>
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🎯 What is KTrenZ?
 
-**Use Lovable**
+KTrenZ is a **gamified trend prediction platform** where fans become trend analysts. Users predict which K-Pop artist's content will grow the most in 24 hours, earning K-Cashes based on accuracy.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Core Loop
+```
+Content Collection → Prescore → Battle Matching → User Predictions → 24h Settlement → Rewards
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+## ⚔️ Trend Battle System
 
-**Use your preferred IDE**
+- **Daily prediction battles** — Pick the artist whose trend will rise more
+- **Multi-source scoring** — YouTube, TikTok, Instagram, Naver News/Blog, DataLab
+- **Tiered rewards** — Steady (💎50), Rising (💎150), Surge (💎500) based on growth accuracy
+- **AI-powered analysis** — GPT-4o-mini trend insights for each matchup
+- **Transparent settlement** — 24-hour growth rate calculation with real-time results
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🏗️ Architecture
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Tech Stack
 
-Follow these steps:
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + Vite 5 + TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| Backend | Supabase (Auth, DB, Edge Functions, Storage) |
+| AI | OpenAI GPT-4o-mini |
+| Mobile | Capacitor (iOS) + PWA |
+| CDN/Proxy | Cloudflare Workers |
+| CMS | Ghost (SEO reports via `/report`) |
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Data Pipeline
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```
+┌─────────────┐    ┌──────────────┐    ┌───────────────┐
+│  Prescore   │───▶│  Autobatch   │───▶│  Collection   │
+│ (All Stars) │    │ (Tier Match) │    │ (Round 1 & 2) │
+└─────────────┘    └──────────────┘    └───────┬───────┘
+                                               │
+                   ┌──────────────┐    ┌───────▼───────┐
+                   │   Rewards    │◀───│  Settlement   │
+                   │  (K-Cashes)  │    │ (Growth Calc) │
+                   └──────────────┘    └───────────────┘
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+All pipeline stages are orchestrated via a **DB-driven state machine** (`ktrenz_pipeline_state`) — no direct function-to-function calls.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Key Tables
+
+| Table | Purpose |
+|-------|---------|
+| `ktrenz_stars` | Artist registry (SSOT) |
+| `ktrenz_b2_runs` | Score snapshots per round |
+| `ktrenz_b2_items` | Battle content cards |
+| `ktrenz_b2_battles` | Battle state management |
+| `b2_predictions` | User predictions |
+| `ktrenz_discover_keywords` | Commercial keyword extraction |
+
+## 🔑 Key Design Decisions
+
+- **Content-centric, not artist-ownership** — Users predict content trends, avoiding legal risks
+- **"Prediction" not "Betting"** — Terminology policy to prevent gambling associations
+- **Anonymous access** — Battle page is publicly viewable without login
+- **Membership tiers** — 4 tiers (Beginner → Expert) with daily ticket quotas
+- **DB-based orchestration** — All batch processing respects Supabase limits via state machine
+
+## 📱 Platforms
+
+- **Web** — [ktrenz.com](https://ktrenz.com)
+- **iOS** — Capacitor-based native app with OTA updates via web
+- **PWA** — Installable progressive web app
+
+## 🚀 Getting Started
+
+```bash
+git clone <repo-url>
+cd ktrenz
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Requires `.env` with Supabase credentials. See `.env.example` for reference.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📄 License
 
-**Use GitHub Codespaces**
+© 2025 Fantagram, Inc. All rights reserved.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+131 Continental Dr. Suite 305, City of Newark, DE 19713 U.S.A.
