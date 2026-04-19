@@ -1502,11 +1502,7 @@ export default function Battle() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen overflow-hidden">
-        {/* Full-screen splash background */}
-        <img src={battleHeroBg} alt="" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover brightness-[0.35]" />
-        <div className="absolute inset-0 bg-black/20" />
-
+      <div className="relative min-h-screen overflow-hidden bg-background">
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen -mt-12">
           {/* Sword & Shield clash animation */}
           <div className="relative w-24 h-24 mb-4">
