@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, X, Loader2, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import T2AdminControls from "@/components/t2/T2AdminControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -321,7 +320,6 @@ const V3Header = ({ centerSlot, rightSlot, hideSpotify }: { centerSlot?: React.R
               </Link>
               {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
               <div className="flex items-center gap-2 shrink-0">
-                <T2AdminControls />
                 {!hideSpotify && <SpotifyGoalBar />}
                 {rightSlot}
               </div>

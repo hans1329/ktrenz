@@ -45,12 +45,6 @@ import AdminUserAnalytics from "./pages/admin/AdminUserAnalytics";
 import AdminKeywordMonitor from "./pages/admin/AdminKeywordMonitor";
 import AdminAutoReport from "./pages/admin/AdminAutoReport";
 
-import T2MyArtists from "./pages/T2MyArtists";
-import T2KeywordDetail from "./pages/T2KeywordDetail";
-import T2PitchDeck from "./pages/T2PitchDeck";
-import T2ArtistPage from "./pages/T2ArtistPage";
-import T2BrandPage from "./pages/T2BrandPage";
-import T2TrendGrades from "./pages/T2TrendGrades";
 import B2BLogin from "./pages/b2b/B2BLogin";
 import B2BOnboarding from "./pages/b2b/B2BOnboarding";
 import B2BLayout from "./pages/b2b/B2BLayout";
@@ -64,7 +58,6 @@ import B2BBenchmark from "./pages/b2b/B2BBenchmark";
 import B2BMarkets from "./pages/b2b/B2BMarkets";
 import B2BRecommendations from "./pages/b2b/B2BRecommendations";
 import B2BActivation from "./pages/b2b/B2BActivation";
-import T2CategoryDetail from "./pages/T2CategoryDetail";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -106,14 +99,7 @@ const App = () => (
                 <Route path="/pitchdeck" element={<PitchDeck />} />
                 <Route path="/deck" element={<Deck />} />
                 <Route path="/signal" element={<SignalRadar />} />
-                
-                <Route path="/t2/my" element={<T2MyArtists />} />
-                <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
-                <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
-                <Route path="/t2/brand/:brandId" element={<T2BrandPage />} />
-                <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
-                <Route path="/pd" element={<T2PitchDeck />} />
-                <Route path="/t2/grades" element={<T2TrendGrades />} />
+
                 <Route path="/about" element={<About />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
