@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Env files — credentials should come from Cloudflare Pages env vars (production)
+# or a local .env (gitignored). See .env.example for the key list.
+.env
+.env.local
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
