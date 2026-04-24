@@ -771,7 +771,7 @@ function ArtistSection({
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <span className={`text-sm sm:text-base font-extrabold transition-colors shrink-0 ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
-             <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Trend by</span>
+             <span className="text-xs sm:text-sm text-muted-foreground shrink-0">{lt("battle.labelTrendBy")}</span>
              <span className={`text-sm sm:text-base font-bold transition-colors truncate ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
           </div>
           {isSubmitted && isPicked ? (
@@ -791,6 +791,44 @@ function ArtistSection({
           )}
         </button>
       </div>
+
+      {/* Signal strip — momentum evidence */}
+      {(() => {
+        const totalEng = runItems.reduce((sum, it) => sum + (it.engagement_score || 0), 0);
+        const sourceCount = new Set(runItems.map((it) => it.source)).size;
+        const formatEng = (n: number) => {
+          if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+          if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+          return String(Math.round(n));
+        };
+        return (
+          <div className="max-w-sm mx-auto sm:max-w-[80%] px-4 flex items-center justify-center gap-3 text-[11px] text-muted-foreground mb-1">
+            <span className="inline-flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-orange-500" />
+              <span className="font-semibold text-foreground">{contentScore.toFixed(0)}</span>
+              <span className="opacity-70">{scoreLabel}</span>
+            </span>
+            {totalEng > 0 && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span className="font-semibold text-foreground">{formatEng(totalEng)}</span>
+                </span>
+              </>
+            )}
+            {sourceCount > 0 && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="font-semibold text-foreground">{sourceCount}</span>
+                  <span className="opacity-70">{lt("battle.signalSources")}</span>
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Horizontal card carousel */}
       <div
