@@ -174,7 +174,7 @@ function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, tota
             </div>
             <span className="text-sm font-bold text-foreground">15:00 GMT</span>
           </div>
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-3 space-y-2">
+          <div className="rounded-xl bg-muted/50 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-emerald-500" />
@@ -269,7 +269,7 @@ function PredictionConfirmModal({ open, onClose, language, starName, band, rewar
           </div>
 
           {/* Spotify */}
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-3 space-y-2">
+          <div className="rounded-xl bg-muted/50 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Gift className="w-4 h-4 text-emerald-500" />
@@ -491,7 +491,7 @@ function FlipCard({ digit }: { digit: string }) {
   }, [digit]);
 
   return (
-    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md bg-card/40 backdrop-blur-sm">
+    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-sm bg-card">
       {/* Current digit — slides out downward when changing */}
       <div
         className="absolute inset-0 flex items-center justify-center"
@@ -1860,7 +1860,7 @@ export default function Battle() {
                     {idx > 0 && (
                       <div className="my-6 flex items-center gap-3 px-4">
                         <div className="flex-1 h-px bg-border/60" />
-                        <span className="text-[10px] font-semibold text-purple-500 uppercase tracking-widest">vs</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">vs</span>
                         <div className="flex-1 h-px bg-border/60" />
                       </div>
                     )}
@@ -2242,9 +2242,9 @@ export default function Battle() {
                       <span className="text-xs text-muted-foreground">Trend Vibe:</span>
                       <Badge variant="secondary" className={cn(
                         "text-xs",
-                        data.vibe === "hot" && "bg-red-500/10 text-red-600",
-                        data.vibe === "rising" && "bg-orange-500/10 text-orange-600",
-                        data.vibe === "steady" && "bg-emerald-500/10 text-emerald-600",
+                        data.vibe === "hot" && "bg-primary/10 text-primary",
+                        data.vibe === "rising" && "bg-primary/10 text-primary",
+                        data.vibe === "steady" && "bg-muted text-muted-foreground",
                       )}>
                         {data.vibe === "hot" ? "Hot" : data.vibe === "rising" ? "Rising" : "Steady"}
                       </Badge>
