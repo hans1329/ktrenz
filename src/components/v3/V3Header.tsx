@@ -104,16 +104,19 @@ const SpotifyGoalBar = () => {
       >
         <div className={cn("w-5 h-5 shrink-0", isFull && "animate-[pulse_2s_ease-in-out_infinite]")}>{SPOTIFY_SVG}</div>
         <div className="w-12 h-4 rounded-full bg-muted overflow-hidden relative">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
-          />
-          <span
-            className="absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight"
-            style={{ mixBlendMode: "difference", color: "white" }}
-          >
+          {/* Base text: dark on unfilled muted bg */}
+          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight text-muted-foreground">
             {Math.round(progress)}%
           </span>
+          {/* Fill with clipped white text: appears only over the green-filled region */}
+          <div
+            className="absolute top-0 left-0 h-full rounded-full transition-all duration-500 overflow-hidden"
+            style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
+          >
+            <span className="absolute top-0 left-0 h-full w-12 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight text-white">
+              {Math.round(progress)}%
+            </span>
+          </div>
         </div>
       </button>
       <SpotifyGoalPopup open={showPopup} onClose={() => setShowPopup(false)} kPoints={kPoints} />
