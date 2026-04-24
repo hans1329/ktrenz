@@ -1210,22 +1210,34 @@ export default function Battle() {
       setActivePairIdx(null);
       return;
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible.length > 0) {
-          const idx = Number((visible[0].target as HTMLElement).dataset.pairIdx);
-          if (!Number.isNaN(idx)) setActivePairIdx(idx);
-        }
-      },
-      { threshold: [0.15, 0.35, 0.55, 0.75], rootMargin: "-10% 0px -40% 0px" },
-    );
-    Object.values(pairRefs.current).forEach((el) => {
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
+    // Default to first pair so bar shows immediately — observer refines as user scrolls.
+    setActivePairIdx((prev) => (prev === null || prev >= battlePairs.length ? 0 : prev));
+
+    // Delay observer setup slightly so refs are fully wired after initial layout.
+    const setupTimer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          if (visible.length > 0) {
+            const idx = Number((visible[0].target as HTMLElement).dataset.pairIdx);
+            if (!Number.isNaN(idx)) setActivePairIdx(idx);
+          }
+        },
+        { threshold: [0.05, 0.25, 0.5, 0.75], rootMargin: "-64px 0px -180px 0px" },
+      );
+      Object.values(pairRefs.current).forEach((el) => {
+        if (el) observer.observe(el);
+      });
+      (setupTimer as any)._observer = observer;
+    }, 50);
+
+    return () => {
+      clearTimeout(setupTimer);
+      const obs = (setupTimer as any)._observer as IntersectionObserver | undefined;
+      obs?.disconnect();
+    };
   }, [battlePairs.length, battleFilter]);
 
   async function loadHistoryPredictions() {
