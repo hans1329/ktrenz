@@ -634,6 +634,7 @@ const dict: Record<string, string> = {
   "battle.instruction": "浏览内容后选择你认为会更火的趋势，并预测其增长区间。区间越窄，奖励越大！",
   "battle.signalSources": "来源",
   "battle.labelTrendBy": "趋势",
+  "battle.viewTrend": "查看趋势",
   "battle.nextSettlement": "距下次结算",
   "battle.contentScore": "分数",
   "battle.pickWinner": "明天哪个趋势会更火？",

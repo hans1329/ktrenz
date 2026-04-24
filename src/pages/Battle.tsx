@@ -760,7 +760,7 @@ function ArtistSection({
       <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-1">
         <button
           onClick={onInsightOpen}
-          className={`w-full flex items-center justify-between px-4 py-4 rounded-full transition-all shadow-sm bg-white ${
+          className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all shadow-sm bg-white ${
             isSubmitted && isPicked
               ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
               : isPicked
@@ -785,7 +785,7 @@ function ArtistSection({
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground"
             )}>
-              {lt("battle.predict") || "Predict"}
+              {lt("battle.viewTrend")}
             </span>
           )}
         </button>

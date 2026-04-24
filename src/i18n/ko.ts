@@ -634,6 +634,7 @@ const dict: Record<string, string> = {
   "battle.instruction": "콘텐츠를 살펴보고 더 커질 트렌드를 골라 성장 구간까지 예측하세요. 구간이 좁을수록 보상이 커집니다!",
   "battle.signalSources": "소스",
   "battle.labelTrendBy": "트렌드",
+  "battle.viewTrend": "트렌드 보기",
   "battle.nextSettlement": "다음 정산까지",
   "battle.contentScore": "점수",
   "battle.pickWinner": "어떤  K · 트렌드가 내일 더 유행할까요?",
