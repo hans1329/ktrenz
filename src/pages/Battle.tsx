@@ -36,18 +36,6 @@ import { toast } from "@/hooks/use-toast";
 import SettlementResultsModal, { type SettledPrediction } from "@/components/battle/SettlementResultsModal";
 import TicketInfoPopup from "@/components/TicketInfoPopup";
 import { cn } from "@/lib/utils";
-import battleHeroBg from "@/assets/battle-hero-bg.jpg";
-
-// Preload hero background image
-if (typeof window !== 'undefined') {
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'image';
-  link.href = battleHeroBg;
-  if (!document.head.querySelector(`link[href="${battleHeroBg}"]`)) {
-    document.head.appendChild(link);
-  }
-}
 
 interface B2Item {
   id: string;
@@ -577,9 +565,9 @@ const PHASE_LABELS: Record<TimerPhase, Record<string, string>> = {
 };
 
 const PHASE_COLORS: Record<TimerPhase, string> = {
-  closing: "text-white/90",
-  results: "text-white/90",
-  opening: "text-white/90",
+  closing: "text-foreground/80",
+  results: "text-foreground/80",
+  opening: "text-foreground/80",
 };
 
 function FlipTimer() {
@@ -604,14 +592,14 @@ function FlipTimer() {
 
   return (
     <div className="flex flex-col items-center gap-1.5 my-0 py-[10px]">
-      <span className={cn("text-[11px] font-bold tracking-wider uppercase text-white/90", PHASE_COLORS[phase])}>
+      <span className={cn("text-[11px] font-bold tracking-wider uppercase", PHASE_COLORS[phase])}>
         {PHASE_LABELS[phase][lang]}
       </span>
       <div className="flex items-center justify-center gap-2.5 sm:gap-4">
         <FlipGroup value={pad(time.h)} />
-        <span className="text-2xl font-bold text-white/70">:</span>
+        <span className="text-2xl font-bold text-muted-foreground">:</span>
         <FlipGroup value={pad(time.m)} />
-        <span className="text-2xl font-bold text-white/70">:</span>
+        <span className="text-2xl font-bold text-muted-foreground">:</span>
         <FlipGroup value={pad(time.s)} />
       </div>
     </div>
@@ -1073,18 +1061,26 @@ export default function Battle() {
       pairs.push({ runs: pairRuns, items: {} });
     }
 
-    for (const pair of pairs) {
-      for (const run of pair.runs) {
-        const { data: runItems } = await supabase
-          .from("ktrenz_b2_items")
-          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
-          .eq("run_id", run.id)
-          .eq("has_thumbnail", true)
-          .not("source", "eq", "naver_blog")
-          .order("engagement_score", { ascending: false })
-          .limit(8);
-        pair.items[run.id] = (runItems || []) as B2Item[];
-      }
+    const allRunIds = pairs.flatMap((p) => p.runs.map((r) => r.id));
+    if (allRunIds.length > 0) {
+      const { data: allItems } = await supabase
+        .from("ktrenz_b2_items")
+        .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata, run_id")
+        .in("run_id", allRunIds)
+        .eq("has_thumbnail", true)
+        .not("source", "eq", "naver_blog")
+        .order("engagement_score", { ascending: false });
+      const itemsByRun = new Map<string, B2Item[]>();
+      (allItems || []).forEach((it: any) => {
+        const arr = itemsByRun.get(it.run_id) || [];
+        if (arr.length < 8) arr.push(it as B2Item);
+        itemsByRun.set(it.run_id, arr);
+      });
+      pairs.forEach((pair) => {
+        pair.runs.forEach((run) => {
+          pair.items[run.id] = itemsByRun.get(run.id) || [];
+        });
+      });
     }
 
     return pairs.filter(pair => {
@@ -1212,29 +1208,25 @@ export default function Battle() {
       .limit(3);
     if (!settledBattles?.length) { setSettledBattleResults([]); return; }
 
-    const results: { starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[] = [];
+    const perBattle = await Promise.all(settledBattles.map(async (battle: any) => {
+      const [{ data: r1Runs }, { data: r2Runs }] = await Promise.all([
+        (supabase.from("ktrenz_b2_runs") as any)
+          .select("id, star_id, content_score")
+          .eq("batch_id", battle.batch_id)
+          .eq("search_round", 1)
+          .order("content_score", { ascending: false })
+          .limit(40),
+        (supabase.from("ktrenz_b2_runs") as any)
+          .select("star_id, content_score")
+          .eq("batch_id", battle.batch_id)
+          .eq("search_round", 2)
+          .limit(100),
+      ]);
+      if (!r1Runs?.length) return [];
 
-    for (const battle of settledBattles) {
-      // Get R1 runs
-      const { data: r1Runs } = await (supabase.from("ktrenz_b2_runs") as any)
-        .select("id, star_id, content_score")
-        .eq("batch_id", battle.batch_id)
-        .eq("search_round", 1)
-        .order("content_score", { ascending: false })
-        .limit(40);
-      if (!r1Runs?.length) continue;
-
-      // Dedupe by star
       const starBest = new Map<string, any>();
       r1Runs.forEach((r: any) => { if (!starBest.has(r.star_id)) starBest.set(r.star_id, r); });
       const bestRuns = Array.from(starBest.values()).sort((a: any, b: any) => b.content_score - a.content_score);
-
-      // Get R2 runs
-      const { data: r2Runs } = await (supabase.from("ktrenz_b2_runs") as any)
-        .select("star_id, content_score")
-        .eq("batch_id", battle.batch_id)
-        .eq("search_round", 2)
-        .limit(100);
 
       const r2Map = new Map<string, number>();
       (r2Runs || []).forEach((r: any) => {
@@ -1242,12 +1234,11 @@ export default function Battle() {
         if (!existing || r.content_score > existing) r2Map.set(r.star_id, r.content_score);
       });
 
-      // Get star names
       const starIds = bestRuns.map((r: any) => r.star_id);
       const { data: stars } = await supabase.from("ktrenz_stars").select("id, display_name").in("id", starIds);
       const starNameMap = new Map((stars || []).map((s: any) => [s.id, s.display_name]));
 
-      // Build pairs (same logic as buildBattlePairsForBatch)
+      const battleResults: { starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[] = [];
       for (let i = 0; i + 1 < bestRuns.length; i += 2) {
         const a = bestRuns[i];
         const b = bestRuns[i + 1];
@@ -1257,15 +1248,16 @@ export default function Battle() {
         const r2B = r2Map.get(b.star_id) ?? r1B;
         const growthA = r1A > 0 ? Math.round(((r2A - r1A) / r1A) * 100) : 0;
         const growthB = r1B > 0 ? Math.round(((r2B - r1B) / r1B) * 100) : 0;
-        results.push({
+        battleResults.push({
           starA: starNameMap.get(a.star_id) || "Unknown",
           starB: starNameMap.get(b.star_id) || "Unknown",
           growthA, growthB,
           battleDate: battle.battle_date,
         });
       }
-    }
-    setSettledBattleResults(results);
+      return battleResults;
+    }));
+    setSettledBattleResults(perBattle.flat());
   }
 
   async function loadUnseenSettlements() {
@@ -1513,19 +1505,14 @@ export default function Battle() {
           } />
         </div>
 
-        <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-          <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.45]" />
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
-
         <div className="relative z-10 pt-16 pb-24 space-y-5">
           <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
-            <Skeleton className="h-7 w-40 mx-auto bg-white/20" />
-            <Skeleton className="h-12 w-48 mx-auto bg-white/20" />
+            <Skeleton className="h-7 w-40 mx-auto" />
+            <Skeleton className="h-12 w-48 mx-auto" />
             <div className="flex items-center justify-center gap-1.5 mt-6 mb-4">
-              <Skeleton className="h-7 w-14 bg-white/15" />
-              <Skeleton className="h-7 w-20 bg-white/10" />
-              <Skeleton className="h-7 w-16 bg-white/10" />
+              <Skeleton className="h-7 w-14" />
+              <Skeleton className="h-7 w-20" />
+              <Skeleton className="h-7 w-16" />
             </div>
           </div>
 
@@ -1571,16 +1558,10 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      {/* Full-width hero background */}
-      <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
-        <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.45]" />
-        <div className="absolute inset-0 bg-black/20" />
-      </div>
-
       <div className="relative z-10 pt-16 pb-24 space-y-5">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
-          <h2 className="text-xl text-white tracking-tight font-sans font-bold sm:text-3xl text-center">
+          <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
             {t("pickWinner")}
           </h2>
           <FlipTimer />
@@ -1610,8 +1591,8 @@ export default function Battle() {
                   className={cn(
                     "px-3.5 py-2 text-xs font-semibold transition-all border-b-2",
                     battleFilter === tab.key
-                      ? "border-primary text-white"
-                      : "border-transparent text-white/60 hover:text-white/90"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {tab.label} {displayCount > 0 && <span className="ml-0.5 opacity-70">{displayCount}</span>}
