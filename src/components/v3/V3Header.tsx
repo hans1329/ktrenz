@@ -103,14 +103,17 @@ const SpotifyGoalBar = () => {
         className="flex items-center gap-1.5 px-0.5 py-1 active:opacity-60 transition-opacity"
       >
         <div className={cn("w-5 h-5 shrink-0", isFull && "animate-[pulse_2s_ease-in-out_infinite]")}>{SPOTIFY_SVG}</div>
-        <div className="w-8 h-3.5 rounded-full bg-muted overflow-hidden relative">
+        <div className="w-12 h-4 rounded-full bg-muted overflow-hidden relative">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
           />
-          {isFull && (
-            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white drop-shadow-sm">✓</span>
-          )}
+          <span
+            className="absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight text-foreground"
+            style={{ mixBlendMode: "difference", color: "white" }}
+          >
+            {isFull ? "✓" : `${Math.round(progress)}%`}
+          </span>
         </div>
       </button>
       <SpotifyGoalPopup open={showPopup} onClose={() => setShowPopup(false)} kPoints={kPoints} />
