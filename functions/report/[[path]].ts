@@ -46,6 +46,10 @@ export const onRequest = async (context: { request: Request }): Promise<Response
       /https?:\/\/ghost\.ktrenz\.com\//g,
       url.origin + "/report/",
     );
+    newLocation = newLocation.replace(
+      /https?:\/\/168\.144\.100\.36\//g,
+      url.origin + "/report/",
+    );
     newLocation = newLocation.replace(/^\/((?!report)[^/])/, "/report/$1");
     return Response.redirect(newLocation, response.status);
   }
@@ -66,6 +70,10 @@ export const onRequest = async (context: { request: Request }): Promise<Response
     html = html.replace(
       /https?:\/\/ghost\.ktrenz\.com\//g,
       "https://ktrenz.com/report/",
+    );
+    html = html.replace(
+      /https?:\/\/168\.144\.100\.36(?=[/"'\s]|$)/g,
+      "https://ktrenz.com/report",
     );
     html = html.replace(
       /href="\/((?!report\/|assets\/|public\/|content\/|ghost\/|favicon|shared\/|members\/)[a-z0-9][a-z0-9-]*\/?)"/g,
