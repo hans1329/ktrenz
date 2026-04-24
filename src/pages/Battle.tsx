@@ -966,6 +966,8 @@ export default function Battle() {
   const [historyPredictions, setHistoryPredictions] = useState<Prediction[]>([]);
   const [showFirstAnalyzerModal, setShowFirstAnalyzerModal] = useState(false);
   const [settledBattleResults, setSettledBattleResults] = useState<{ starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[]>([]);
+  const [activePairIdx, setActivePairIdx] = useState<number | null>(null);
+  const pairRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
@@ -1201,6 +1203,30 @@ export default function Battle() {
     const iv = setInterval(() => { battleCache.ts = 0; loadBattleData(); loadHistoryPredictions(); }, 60_000);
     return () => clearInterval(iv);
   }, []);
+
+  // Track which pair is most-visible in viewport → powers BottomCommitBar
+  useEffect(() => {
+    if (battleFilter !== "live" || battlePairs.length === 0) {
+      setActivePairIdx(null);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length > 0) {
+          const idx = Number((visible[0].target as HTMLElement).dataset.pairIdx);
+          if (!Number.isNaN(idx)) setActivePairIdx(idx);
+        }
+      },
+      { threshold: [0.15, 0.35, 0.55, 0.75], rootMargin: "-10% 0px -40% 0px" },
+    );
+    Object.values(pairRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [battlePairs.length, battleFilter]);
 
   async function loadHistoryPredictions() {
     const { data: { user: u } } = await supabase.auth.getUser();
@@ -1542,7 +1568,7 @@ export default function Battle() {
           } />
         </div>
 
-        <div className="relative z-10 pt-16 pb-8 space-y-5">
+        <div className="relative z-10 pt-16 pb-48 space-y-5">
           <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
             <Skeleton className="h-7 w-40 mx-auto" />
             <Skeleton className="h-12 w-48 mx-auto" />
@@ -1595,7 +1621,7 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      <div className="relative z-10 pt-16 pb-8 space-y-5">
+      <div className="relative z-10 pt-16 pb-48 space-y-5">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
@@ -1733,7 +1759,12 @@ export default function Battle() {
           const pickedRun = pairRuns.find((r) => r.id === pairState.pickedRunId);
 
           return (
-            <div key={pairIdx} className="space-y-5 relative">
+            <div
+              key={pairIdx}
+              ref={(el) => { pairRefs.current[pairIdx] = el; }}
+              data-pair-idx={pairIdx}
+              className="space-y-5 relative"
+            >
               {/* Question-style battle header */}
               <div className={cn("max-w-sm sm:max-w-[80%] mx-auto px-2 sm:px-0", pairIdx > 0 ? "my-6" : "mb-1")}>
                 <div
@@ -2338,6 +2369,107 @@ export default function Battle() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bottom sticky CommitBar for currently-active pair */}
+      {battleFilter === "live" && activePairIdx !== null && (() => {
+        const activePair = battlePairs[activePairIdx];
+        if (!activePair) return null;
+        const state = getPairState(activePairIdx);
+        if (state.submitted) return null;
+        const [runA, runB] = activePair.runs;
+        if (!runA || !runB) return null;
+        const pickedRun = activePair.runs.find(r => r.id === state.pickedRunId);
+        const pickedStar = pickedRun?.star?.display_name || "";
+
+        return (
+          <div
+            className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border shadow-lg"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="max-w-md mx-auto px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-muted-foreground">
+                  Battle {activePairIdx + 1}
+                </span>
+                {state.pickedRunId && (
+                  <button
+                    onClick={() => updatePairState(activePairIdx, { pickedRunId: null, selectedBand: null })}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {globalT("common.change")}
+                  </button>
+                )}
+              </div>
+
+              {!state.pickedRunId ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {[runA, runB].map((run, idx) => (
+                    <button
+                      key={run.id}
+                      onClick={() => handlePick(activePairIdx, run.id)}
+                      className="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-all"
+                    >
+                      <span className="text-[10px] font-extrabold text-primary">
+                        {idx === 0 ? "A" : "B"}
+                      </span>
+                      <span className="text-sm font-bold text-foreground truncate max-w-full">
+                        {run.star?.display_name || "—"}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">
+                        {t("labelTrendBy")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-1.5 text-xs">
+                    <Trophy className="w-3 h-3 text-primary" />
+                    <span className="font-bold text-primary truncate max-w-[50%]">{pickedStar}</span>
+                    <span className="text-muted-foreground">· {t("predictGrowth")}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {BANDS.map((band) => {
+                      const isSelected = state.selectedBand === band.key;
+                      const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                      return (
+                        <button
+                          key={band.key}
+                          onClick={() =>
+                            updatePairState(activePairIdx, {
+                              selectedBand: state.selectedBand === band.key ? null : band.key,
+                            })
+                          }
+                          className={cn(
+                            "flex flex-col items-center py-1.5 px-1 rounded-lg border transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/10 shadow-sm"
+                              : "border-border bg-background hover:border-primary/40",
+                          )}
+                        >
+                          <span className="text-sm leading-none">
+                            {band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}
+                          </span>
+                          <span className="text-[10px] font-medium mt-0.5">{bandLabel}</span>
+                          <span className="text-[9px] font-bold text-muted-foreground">+{band.reward.toLocaleString()}💎</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full h-9"
+                    disabled={!state.selectedBand}
+                    onClick={() => handleSubmit(activePairIdx)}
+                  >
+                    {t("submitPrediction")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

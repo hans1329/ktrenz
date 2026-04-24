@@ -24,6 +24,7 @@ const dict: Record<string, string> = {
   "nav.profile": "Profile",
   "nav.openMenu": "Open menu",
   "common.viewProfile": "View profile",
+  "common.change": "Change",
   "search.placeholder": "Search artists, groups...",
   "search.noResults": "No results found",
   "rankings.live": "🔥 Live Fire",
