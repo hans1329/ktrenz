@@ -691,7 +691,7 @@ const dict: Record<string, string> = {
   "battle.pleaseWait": "잠시만 기다려주세요!",
   "battle.predicted": "상승예측",
   "battle.predict": "예측하기",
-  "battle.questionFormat": "{a}의 트렌드가 {b}보다 내일 더 유행할까?",
+  "battle.questionFormat": "{a}의 트렌드가 {b}가 만드는 트렌드보다 내일 더 유행할까?",
   "battle.tapToAnalyze": "아래 콘텐츠를 확인하고 어느 트렌드가 더 커질지 판단하세요",
   "battle.firstAnalyzerTitle": "가장 처음으로 트렌드를 분석하셨어요!",
   "battle.firstAnalyzerDesc": "+30 캐쉬 보너스가 지급되었어요!",

@@ -691,7 +691,7 @@ const dict: Record<string, string> = {
   "battle.pleaseWait": "请稍等！",
   "battle.predicted": "上升预测",
   "battle.predict": "预测",
-  "battle.questionFormat": "{a}的趋势明天会比{b}更火吗？",
+  "battle.questionFormat": "{a}的趋势明天会比{b}创造的趋势更火吗？",
   "battle.tapToAnalyze": "浏览下方内容,判断哪个趋势会更火",
   "battle.firstAnalyzerTitle": "您是第一个分析此趋势的人！",
   "battle.firstAnalyzerDesc": "+30 K-Cashes奖金已发放！",

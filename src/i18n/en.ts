@@ -691,7 +691,7 @@ const dict: Record<string, string> = {
   "battle.pleaseWait": "Please wait a moment!",
   "battle.predicted": "Growth Predicted",
   "battle.predict": "Predict",
-  "battle.questionFormat": "Will {a}'s trend rise more than {b}'s tomorrow?",
+  "battle.questionFormat": "Will {a}'s trend rise more than {b}'s trend tomorrow?",
   "battle.tapToAnalyze": "Browse the content below — then decide which trend will rise more",
   "battle.firstAnalyzerTitle": "You're the first to analyze this trend!",
   "battle.firstAnalyzerDesc": "+30 K-Cashes bonus awarded!",
