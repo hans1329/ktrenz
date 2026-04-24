@@ -1692,7 +1692,7 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      <div className="relative z-10 pt-16 pb-48 space-y-5">
+      <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-2xl mx-auto w-full">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
