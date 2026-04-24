@@ -5,7 +5,7 @@
 html, body {
   overscroll-behavior: none;
   overflow-x: hidden;
-  background-color: hsl(220, 10%, 98%);
+  background-color: hsl(220, 14%, 96%);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -49,7 +49,9 @@ html {
 
 @layer base {
   :root {
-    --background: 220 10% 98%;
+    /* 3-tier surface system:
+       background = page (subtle gray) → card = elevated white → muted = nested gray */
+    --background: 220 14% 96%;
     --foreground: 0 0% 15%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 15%;
@@ -57,9 +59,9 @@ html {
     --popover-foreground: 0 0% 15%;
     --primary: 290 65% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
+    --secondary: 220 14% 94%;
     --secondary-foreground: 220 15% 25%;
-    --muted: 220 14% 94%;
+    --muted: 220 14% 92%;
     --muted-foreground: 215 12% 45%;
     --accent: 290 65% 45%;
     --accent-foreground: 0 0% 100%;

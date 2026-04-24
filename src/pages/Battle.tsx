@@ -1593,7 +1593,7 @@ export default function Battle() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-muted/30">
+      <div className="relative min-h-screen bg-background">
         <div className="fixed top-0 left-0 right-0 z-50 bg-card">
           <V3Header rightSlot={
             <div className="flex items-center gap-1">
@@ -1638,7 +1638,7 @@ export default function Battle() {
 
 
   return (
-    <div className="relative min-h-screen bg-muted/30">
+    <div className="relative min-h-screen bg-background">
       <SEO
         title="KTrenZ – K-Pop Content Battle"
         titleKo="KTrenZ – K-Pop 콘텐츠 배틀"
@@ -1710,7 +1710,7 @@ export default function Battle() {
               </span>
             </div>
             {myBetPredictions.map((pred, i) => (
-              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-muted/40 p-3 flex items-center justify-between">
+              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card shadow-sm p-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
                     {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
@@ -1747,7 +1747,7 @@ export default function Battle() {
                     const bWins = pair.growthB > pair.growthA;
                     const draw = pair.growthA === pair.growthB;
                     return (
-                      <div key={i} className="rounded-2xl bg-muted/40 overflow-hidden">
+                      <div key={i} className="rounded-2xl bg-card shadow-sm overflow-hidden">
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center">
                           {/* Star A */}
                           <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.05]")}>
@@ -1804,8 +1804,8 @@ export default function Battle() {
               <div className={cn("max-w-sm sm:max-w-[80%] mx-auto px-2 sm:px-0", pairIdx > 0 ? "my-6" : "mb-1")}>
                 <div
                   className={cn(
-                    "rounded-2xl p-4 space-y-2 transition-all",
-                    pairState.submitted ? "bg-primary/5" : "bg-muted/40",
+                    "rounded-2xl p-4 space-y-2 transition-all shadow-sm",
+                    pairState.submitted ? "bg-primary/5" : "bg-card",
                   )}
                   onClick={() => {
                     if (battleFilter === "live" && pairState.submitted) {
@@ -1895,7 +1895,7 @@ export default function Battle() {
         {/* Today's Battle Summary — only in live tab when there are submissions */}
         {battleFilter === "live" && predictions.filter(p => p.status === "pending").length > 0 && (
           <div className="max-w-lg sm:max-w-4xl mx-auto px-4 mt-6 mb-2">
-            <div className="rounded-2xl bg-muted/40 p-4 space-y-3">
+            <div className="rounded-2xl bg-card shadow-sm p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-foreground">
@@ -2416,7 +2416,7 @@ export default function Battle() {
 
         return (
           <div
-            className="fixed bottom-0 left-0 right-0 z-40 bg-card/40 backdrop-blur-2xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.12)]"
+            className="fixed bottom-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.08)]"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="max-w-md mx-auto px-4 py-3 space-y-2">
