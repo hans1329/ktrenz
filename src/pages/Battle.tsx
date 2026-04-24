@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import V3Footer from "@/components/v3/V3Footer";
@@ -1502,49 +1503,50 @@ export default function Battle() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-background">
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen -mt-12">
-          {/* Sword & Shield clash animation */}
-          <div className="relative w-24 h-24 mb-4">
-            <span className="absolute text-3xl animate-[swordLeft_1.2s_ease-in-out_infinite]" style={{ left: 0, top: '50%', transform: 'translateY(-50%)' }}>
-              ⚔️
-            </span>
-            <span className="absolute text-3xl animate-[shieldRight_1.2s_ease-in-out_infinite]" style={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}>
-              🛡️
-            </span>
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl animate-[clashSpark_1.2s_ease-in-out_infinite]">
-              💥
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-white mb-3 tracking-tight">{t("pickWinner")}</h2>
-          <div className="w-48 h-2 rounded-full overflow-hidden bg-white/20">
-            <div
-              className="h-full rounded-full"
-              style={{
-                background: "linear-gradient(90deg, #ff6b6b, #ffa94d, #ffd43b, #69db7c, #4dabf7, #9775fa, #ff6b6b)",
-                backgroundSize: "200% 100%",
-                animation: "shimmer 1.5s ease-in-out infinite",
-              }}
-            />
-          </div>
-          <p className="text-white/70 text-sm mt-3">{t("loading")}</p>
+      <div className="relative min-h-screen bg-muted/30">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-card">
+          <V3Header rightSlot={
+            <div className="flex items-center gap-1">
+              <Ticket className="text-primary/40 h-[16px] w-[18px]" />
+              <Skeleton className="h-4 w-4" />
+            </div>
+          } />
         </div>
-        <style>{`
-          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-          @keyframes swordLeft {
-            0%, 100% { transform: translateY(-50%) translateX(-8px) rotate(-15deg); }
-            45%, 55% { transform: translateY(-50%) translateX(18px) rotate(10deg); }
-          }
-          @keyframes shieldRight {
-            0%, 100% { transform: translateY(-50%) translateX(8px) rotate(15deg); }
-            45%, 55% { transform: translateY(-50%) translateX(-18px) rotate(-10deg); }
-          }
-          @keyframes clashSpark {
-            0%, 35% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
-            45%, 55% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-            70%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
-          }
-        `}</style>
+
+        <div className="absolute top-0 left-0 right-0 h-[340px] z-0 pointer-events-none overflow-hidden">
+          <img src={battleHeroBg} alt="" fetchPriority="high" className="w-full h-full object-cover brightness-[0.45]" />
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+
+        <div className="relative z-10 pt-16 pb-24 space-y-5">
+          <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
+            <Skeleton className="h-7 w-40 mx-auto bg-white/20" />
+            <Skeleton className="h-12 w-48 mx-auto bg-white/20" />
+            <div className="flex items-center justify-center gap-1.5 mt-6 mb-4">
+              <Skeleton className="h-7 w-14 bg-white/15" />
+              <Skeleton className="h-7 w-20 bg-white/10" />
+              <Skeleton className="h-7 w-16 bg-white/10" />
+            </div>
+          </div>
+
+          {[0, 1].map(i => (
+            <div key={i} className="max-w-sm sm:max-w-[80%] mx-auto px-2 sm:px-0">
+              <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                <Skeleton className="h-5 w-3/5" />
+                <Skeleton className="h-3 w-4/5" />
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                  <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                </div>
+                <div className="flex gap-2 justify-center pt-2">
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
