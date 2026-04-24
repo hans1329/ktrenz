@@ -927,21 +927,61 @@ interface Prediction {
   reward_amount?: number;
 }
 
-/* ── Simple in-memory cache ── */
+/* ── Cache (in-memory + localStorage persistence) ── */
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const battleCache: {
+const CACHE_KEY = "ktrenz-battle-cache-v1";
+
+interface BattleCacheShape {
   data: BattlePair[] | null;
   ts: number;
   ticketInfo: any;
   ticketTs: number;
   battleDate: string | null;
-} = {
+}
+
+const battleCache: BattleCacheShape = {
   data: null,
   ts: 0,
   ticketInfo: null,
   ticketTs: 0,
   battleDate: null,
 };
+
+// Hydrate from localStorage on module load — survives tab close within TTL.
+if (typeof window !== "undefined") {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<BattleCacheShape>;
+      const now = Date.now();
+      if (parsed.data && parsed.ts && now - parsed.ts < CACHE_TTL) {
+        battleCache.data = parsed.data as BattlePair[];
+        battleCache.ts = parsed.ts;
+        battleCache.battleDate = parsed.battleDate ?? null;
+      }
+      if (parsed.ticketInfo && parsed.ticketTs && now - parsed.ticketTs < CACHE_TTL) {
+        battleCache.ticketInfo = parsed.ticketInfo;
+        battleCache.ticketTs = parsed.ticketTs;
+      }
+    }
+  } catch {}
+}
+
+function persistBattleCache() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        data: battleCache.data,
+        ts: battleCache.ts,
+        ticketInfo: battleCache.ticketInfo,
+        ticketTs: battleCache.ticketTs,
+        battleDate: battleCache.battleDate,
+      }),
+    );
+  } catch {}
+}
 
 /* ── Main Battle Page ── */
 export default function Battle() {
@@ -1066,6 +1106,7 @@ export default function Battle() {
       if (parsed) {
         battleCache.ticketInfo = parsed;
         battleCache.ticketTs = Date.now();
+        persistBattleCache();
         setTicketInfo(parsed);
       }
     }
@@ -1457,28 +1498,22 @@ export default function Battle() {
     battleCache.data = validPairs;
     battleCache.battleDate = latestBattle?.battle_date || null;
     battleCache.ts = Date.now();
+    persistBattleCache();
 
     await restoreSubmittedState(validPairs, battleCache.battleDate);
 
-    // Preload first thumbnail of each run to prevent layout shift
+    // Fire-and-forget thumbnail preload — no await, so render isn't blocked.
+    // Browsers will stream images in place as they arrive.
     const imagesToPreload = validPairs.flatMap(p =>
       p.runs.map(r => {
         const items = p.items[r.id] || [];
         return items[0]?.thumbnail || r.star?.image_url || null;
       })
     ).filter(Boolean) as string[];
-
-    if (imagesToPreload.length > 0) {
-      await Promise.allSettled(
-        imagesToPreload.map(src => new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
-          img.src = src;
-          setTimeout(resolve, 3000); // max 3s wait
-        }))
-      );
-    }
+    imagesToPreload.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
 
     setLoading(false);
    } catch (err) {
@@ -1604,7 +1639,7 @@ export default function Battle() {
           } />
         </div>
 
-        <div className="relative z-10 pt-16 pb-48 space-y-5">
+        <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-2xl mx-auto w-full">
           <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
             <Skeleton className="h-7 w-40 mx-auto" />
             <Skeleton className="h-12 w-48 mx-auto" />
