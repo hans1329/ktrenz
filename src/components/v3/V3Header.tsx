@@ -109,10 +109,10 @@ const SpotifyGoalBar = () => {
             style={{ width: `${Math.max(progress, 10)}%`, backgroundColor: "hsl(142, 71%, 45%)" }}
           />
           <span
-            className="absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight text-foreground"
+            className="absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none tracking-tight"
             style={{ mixBlendMode: "difference", color: "white" }}
           >
-            {isFull ? "✓" : `${Math.round(progress)}%`}
+            {Math.round(progress)}%
           </span>
         </div>
       </button>
