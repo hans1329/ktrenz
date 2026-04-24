@@ -813,7 +813,7 @@ function ArtistSection({
               </div>
 
               {/* Signal row — same white as header, separated by a subtle inset shadow */}
-              <div className="flex items-center justify-between gap-2 px-4 py-2.5 text-[11px] bg-card shadow-[inset_0_4px_8px_-4px_rgba(0,0,0,0.06)]">
+              <div className="flex items-center justify-center gap-5 px-4 py-2.5 text-[11px] bg-card shadow-[inset_0_4px_8px_-4px_rgba(0,0,0,0.06)]">
                 <span className="inline-flex items-center gap-1">
                   <TrendingUp className="w-3 h-3 text-muted-foreground" />
                   <span className="font-bold text-foreground">{contentScore.toFixed(0)}</span>
@@ -1639,7 +1639,7 @@ export default function Battle() {
           } />
         </div>
 
-        <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-2xl mx-auto w-full">
+        <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-3xl mx-auto w-full">
           <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
             <Skeleton className="h-7 w-40 mx-auto" />
             <Skeleton className="h-12 w-48 mx-auto" />
@@ -1692,7 +1692,7 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-2xl mx-auto w-full">
+      <div className="relative z-10 pt-16 pb-48 space-y-5 max-w-3xl mx-auto w-full">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
