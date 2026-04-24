@@ -756,42 +756,7 @@ function ArtistSection({
 
   return (
     <div className="space-y-2">
-      {/* Pick bar — constrained width */}
-      <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-1">
-        <button
-          onClick={onInsightOpen}
-          className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all shadow-sm bg-white ${
-            isSubmitted && isPicked
-              ? "border-2 border-primary ring-2 ring-primary/20 shadow-primary/15"
-              : isPicked
-                ? "border border-primary/30 shadow-primary/10"
-                : "border border-purple-300/50 hover:border-purple-400/60"
-          }`}
-        >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span className={`text-sm sm:text-base font-extrabold transition-colors shrink-0 ${isPicked ? "text-primary" : "text-foreground"}`}>{index === 0 ? "A" : "B"} ·</span>
-             <span className="text-xs sm:text-sm text-muted-foreground shrink-0">{lt("battle.labelTrendBy")}</span>
-             <span className={`text-sm sm:text-base font-bold transition-colors truncate ${isPicked ? "text-primary" : "text-foreground"}`}>{starName}</span>
-          </div>
-          {isSubmitted && isPicked ? (
-            <span className="flex items-center gap-1 text-xs font-bold text-primary shrink-0 ml-2">
-              <Trophy className="w-3.5 h-3.5" />
-              {lt("battle.predicted")}
-            </span>
-          ) : (
-            <span className={cn(
-              "shrink-0 ml-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all pointer-events-none",
-              isPicked
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground"
-            )}>
-              {lt("battle.viewTrend")}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Signal strip — momentum evidence */}
+      {/* Trend card (A/B) with integrated momentum signals */}
       {(() => {
         const totalEng = runItems.reduce((sum, it) => sum + (it.engagement_score || 0), 0);
         const sourceCount = new Set(runItems.map((it) => it.source)).size;
@@ -801,30 +766,76 @@ function ArtistSection({
           return String(Math.round(n));
         };
         return (
-          <div className="max-w-sm mx-auto sm:max-w-[80%] px-4 flex items-center justify-center gap-3 text-[11px] text-muted-foreground mb-1">
-            <span className="inline-flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-orange-500" />
-              <span className="font-semibold text-foreground">{contentScore.toFixed(0)}</span>
-              <span className="opacity-70">{scoreLabel}</span>
-            </span>
-            {totalEng > 0 && (
-              <>
-                <span className="opacity-40">·</span>
+          <div className="max-w-sm mx-auto sm:max-w-[80%] sm:mx-auto px-2 sm:px-0 mb-1">
+            <button
+              onClick={onInsightOpen}
+              className={cn(
+                "group w-full rounded-2xl transition-all shadow-sm bg-white overflow-hidden text-left",
+                "hover:shadow-md active:scale-[0.995]",
+                isSubmitted && isPicked
+                  ? "border-2 border-primary ring-2 ring-primary/15"
+                  : isPicked
+                    ? "border border-primary/40 shadow-primary/10"
+                    : "border border-border hover:border-primary/30",
+              )}
+            >
+              {/* Header row: A/B badge + name + action hint */}
+              <div className="flex items-center gap-3 px-4 pt-3 pb-2.5">
+                <div
+                  className={cn(
+                    "shrink-0 w-9 h-9 rounded-xl grid place-items-center font-extrabold text-sm transition-colors",
+                    isPicked ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+                  )}
+                >
+                  {index === 0 ? "A" : "B"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">
+                    {lt("battle.labelTrendBy")}
+                  </div>
+                  <div
+                    className={cn(
+                      "text-base font-bold truncate leading-tight mt-0.5",
+                      isPicked ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {starName}
+                  </div>
+                </div>
+                {isSubmitted && isPicked ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-xs font-bold text-primary">
+                    <Trophy className="w-3.5 h-3.5" />
+                    {lt("battle.predicted")}
+                  </span>
+                ) : (
+                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                    {lt("battle.viewTrend")}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                )}
+              </div>
+
+              {/* Signal row inside the card */}
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-muted/30 border-t border-border/60 text-[11px]">
                 <span className="inline-flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-500" />
-                  <span className="font-semibold text-foreground">{formatEng(totalEng)}</span>
+                  <TrendingUp className="w-3 h-3 text-orange-500" />
+                  <span className="font-bold text-foreground">{contentScore.toFixed(0)}</span>
+                  <span className="text-muted-foreground opacity-80">{scoreLabel}</span>
                 </span>
-              </>
-            )}
-            {sourceCount > 0 && (
-              <>
-                <span className="opacity-40">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="font-semibold text-foreground">{sourceCount}</span>
-                  <span className="opacity-70">{lt("battle.signalSources")}</span>
-                </span>
-              </>
-            )}
+                {totalEng > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-amber-500" />
+                    <span className="font-bold text-foreground">{formatEng(totalEng)}</span>
+                  </span>
+                )}
+                {sourceCount > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="font-bold text-foreground">{sourceCount}</span>
+                    <span className="text-muted-foreground opacity-80">{lt("battle.signalSources")}</span>
+                  </span>
+                )}
+              </div>
+            </button>
           </div>
         );
       })()}
@@ -2395,7 +2406,7 @@ export default function Battle() {
 
         return (
           <div
-            className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border shadow-lg"
+            className="fixed bottom-0 left-0 right-0 z-40 bg-card/70 backdrop-blur-xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.12)]"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="max-w-md mx-auto px-4 py-3 space-y-2">
