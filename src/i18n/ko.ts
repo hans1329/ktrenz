@@ -633,6 +633,7 @@ const dict: Record<string, string> = {
   "battle.howItWorks": "참여 방법",
   "battle.instruction": "콘텐츠를 살펴보고 더 커질 트렌드를 골라 성장 구간까지 예측하세요. 구간이 좁을수록 보상이 커집니다!",
   "battle.signalSources": "소스",
+  "battle.signalEngagement": "반응",
   "battle.labelTrendBy": "트렌드",
   "battle.viewTrend": "트렌드 보기",
   "battle.nextSettlement": "다음 정산까지",
