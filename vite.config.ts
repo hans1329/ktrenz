@@ -40,7 +40,30 @@ export default defineConfig(() => ({
         cacheId: "ktrenz-pwa",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
+        // Precache only the main entry + critical assets. Route-lazy chunks
+        // (Admin*, B2B*, FanAgent, recharts, etc.) are fetched on-demand and
+        // handled by workbox runtime caching instead.
+        globPatterns: [
+          "index.html",
+          "manifest.webmanifest",
+          "registerSW.js",
+          "robots.txt",
+          "pwa-*.png",
+          "favicon.*",
+          "assets/index-*.{js,css}",
+          "assets/web-*.js",
+          "assets/*.{webp,jpg,jpeg,png,svg,woff,woff2}",
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/.*\.js$/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "ktrenz-pwa-lazy-chunks",
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
       },
     }),
   ],
