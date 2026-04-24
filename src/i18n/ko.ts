@@ -22,6 +22,8 @@ const dict: Record<string, string> = {
   "nav.settings": "설정",
   "nav.myActivity": "나의 활동",
   "nav.profile": "프로필",
+  "nav.openMenu": "메뉴 열기",
+  "common.viewProfile": "프로필 보기",
   "search.placeholder": "아티스트, 그룹 검색...",
   "search.noResults": "결과 없음",
   "rankings.live": "🔥 실시간 화력",

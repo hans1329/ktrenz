@@ -22,6 +22,8 @@ const dict: Record<string, string> = {
   "nav.settings": "Settings",
   "nav.myActivity": "My Activity",
   "nav.profile": "Profile",
+  "nav.openMenu": "Open menu",
+  "common.viewProfile": "View profile",
   "search.placeholder": "Search artists, groups...",
   "search.noResults": "No results found",
   "rankings.live": "🔥 Live Fire",

@@ -27,7 +27,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import V3Header from "@/components/v3/V3Header";
-import V3TabBar from "@/components/v3/V3TabBar";
 import V3Footer from "@/components/v3/V3Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFieldTranslation } from "@/hooks/useFieldTranslation";
@@ -1543,7 +1542,7 @@ export default function Battle() {
           } />
         </div>
 
-        <div className="relative z-10 pt-16 pb-24 space-y-5">
+        <div className="relative z-10 pt-16 pb-8 space-y-5">
           <div className="text-center space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
             <Skeleton className="h-7 w-40 mx-auto" />
             <Skeleton className="h-12 w-48 mx-auto" />
@@ -1596,7 +1595,7 @@ export default function Battle() {
       </div>
       <TicketInfoPopup open={showTicketInfo} onClose={() => setShowTicketInfo(false)} remaining={remainingTickets} total={totalTickets} totalPoints={profile?.total_points ?? 0} />
 
-      <div className="relative z-10 pt-16 pb-24 space-y-5">
+      <div className="relative z-10 pt-16 pb-8 space-y-5">
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
@@ -2282,7 +2281,6 @@ export default function Battle() {
         </SheetContent>
       </Sheet>
 
-      <V3TabBar activeTab="battle" onTabChange={() => {}} />
       <AllTicketsUsedModal
         open={showAllUsedModal}
         onClose={() => setShowAllUsedModal(false)}

@@ -22,6 +22,8 @@ const dict: Record<string, string> = {
   "nav.settings": "设置",
   "nav.myActivity": "我的活动",
   "nav.profile": "个人资料",
+  "nav.openMenu": "打开菜单",
+  "common.viewProfile": "查看个人资料",
   "search.placeholder": "搜索艺人、团体...",
   "search.noResults": "未找到结果",
   "rankings.live": "🔥 实时火力",

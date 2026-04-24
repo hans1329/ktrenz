@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import HeaderTicketSlot from "@/components/HeaderTicketSlot";
-import V3TabBar from "@/components/v3/V3TabBar";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -147,7 +146,7 @@ const UserDashboard = () => {
           </Card>
         </div>
       ) : (
-      <main className="pt-14 pb-24 px-4 max-w-2xl mx-auto">
+      <main className="pt-14 pb-8 px-4 max-w-2xl mx-auto">
 
         {/* ── 1. Battle Stats Summary ── */}
         <section className="mt-4 mb-5">
@@ -315,7 +314,6 @@ const UserDashboard = () => {
         results={reviewResults}
         language={language}
       />
-      <V3TabBar activeTab="activity" onTabChange={() => {}} />
     </div>
   );
 };
