@@ -299,38 +299,6 @@ function decodeHtml(str: string) {
   return basic.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }
 
-// Canonicalize URL to dedup the same article across trackers / syndications.
-// Strips query string and fragment, normalizes host/protocol.
-function canonicalUrl(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  try {
-    const u = new URL(raw);
-    return `${u.host.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/$/, "")}`;
-  } catch {
-    return null;
-  }
-}
-
-// Build dedup keys for a content item. Items sharing ANY key cluster together.
-// - url: canonical host+path
-// - title: lowercased first ~40 chars after stripping punctuation (catches same
-//   story re-headlined across outlets — e.g., 롯데백화점 브랜드 캠페인 기사)
-function dedupeKeys(item: { id: string; url?: string | null; title?: string | null }): string[] {
-  const keys: string[] = [];
-  const url = canonicalUrl(item.url || undefined);
-  if (url) keys.push("u:" + url);
-  const raw = (item.title || "").toLowerCase();
-  const normalized = raw
-    .replace(/[\[\]{}()<>«»'"“”‘’,.:;!?\-—–_…~·•|/\\]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (normalized.length >= 6) {
-    keys.push("t:" + normalized.slice(0, 40));
-  }
-  if (keys.length === 0) keys.push("id:" + item.id);
-  return keys;
-}
-
 function sourceIcon(source: string): ReactNode {
   const cls = "w-3.5 h-3.5 text-white";
   const icon = (() => {
@@ -1145,52 +1113,37 @@ export default function Battle() {
 
     const allRunIds = pairs.flatMap((p) => p.runs.map((r) => r.id));
     if (allRunIds.length > 0) {
-      const { data: allItems } = await supabase
-        .from("ktrenz_b2_items")
-        .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata, run_id")
-        .in("run_id", allRunIds)
-        .eq("has_thumbnail", true)
-        .not("source", "eq", "naver_blog")
-        .order("engagement_score", { ascending: false });
+      // Server-side dedup via RPC (see migration 20260424180000_b2_items_dedup.sql).
+      // DISTINCT ON (run_id, dedup_key) keeps only the highest-engagement
+      // representative of each article cluster. Fallback to plain select if the
+      // RPC hasn't been applied yet (e.g., dev against unmigrated DB).
+      const { data: rpcItems, error: rpcErr } = await supabase.rpc(
+        "ktrenz_get_battle_items_deduped" as any,
+        { p_run_ids: allRunIds },
+      );
+      let allItems: any[] | null = rpcErr ? null : (rpcItems as any[] | null);
+      if (!allItems) {
+        const { data } = await supabase
+          .from("ktrenz_b2_items")
+          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata, run_id")
+          .in("run_id", allRunIds)
+          .eq("has_thumbnail", true)
+          .not("source", "eq", "naver_blog")
+          .order("engagement_score", { ascending: false });
+        allItems = data as any[] | null;
+      }
 
-      const rawByRun = new Map<string, B2Item[]>();
+      const itemsByRun = new Map<string, B2Item[]>();
       (allItems || []).forEach((it: any) => {
-        const arr = rawByRun.get(it.run_id) || [];
+        const arr = itemsByRun.get(it.run_id) || [];
         arr.push(it as B2Item);
-        rawByRun.set(it.run_id, arr);
+        itemsByRun.set(it.run_id, arr);
       });
 
-      // Dedupe near-duplicate articles (same event across sources/outlets):
-      // 1) same canonical URL or 2) same normalized-title 40-char prefix.
-      // Keep the item with the highest engagement_score per cluster.
       pairs.forEach((pair) => {
         pair.runs.forEach((run) => {
-          const items = rawByRun.get(run.id) || [];
-          const winners = new Map<string, B2Item>();
-          for (const item of items) {
-            const keys = dedupeKeys(item);
-            let existing: B2Item | undefined;
-            for (const k of keys) {
-              const w = winners.get(k);
-              if (w && (!existing || (w.engagement_score || 0) > (existing.engagement_score || 0))) existing = w;
-            }
-            const candidateScore = item.engagement_score || 0;
-            const existingScore = existing?.engagement_score || 0;
-            const picked = existing && existingScore >= candidateScore ? existing : item;
-            for (const k of keys) winners.set(k, picked);
-          }
-          const seen = new Set<string>();
-          const deduped: B2Item[] = [];
-          for (const item of items) {
-            if (seen.has(item.id)) continue;
-            const keys = dedupeKeys(item);
-            const rep = keys.map((k) => winners.get(k)).find(Boolean);
-            if (rep && !seen.has(rep.id)) {
-              deduped.push(rep);
-              seen.add(rep.id);
-            }
-          }
-          pair.items[run.id] = deduped
+          const items = itemsByRun.get(run.id) || [];
+          pair.items[run.id] = items
             .sort((a, b) => (b.engagement_score || 0) - (a.engagement_score || 0))
             .slice(0, 8);
         });
