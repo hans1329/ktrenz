@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'KTrenZ',
   webDir: 'dist',
   server: {
-    url: 'https://ktrenz.lovable.app',
+    url: 'https://ktrenz.com',
     cleartext: true,
   },
   ios: {

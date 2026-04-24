@@ -18,7 +18,7 @@ export default defineConfig(() => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        id: "/ktrenz-lovable-pwa",
+        id: "/ktrenz-pwa",
         name: "KTrenZ - Live K-Pop Trend Rankings",
         short_name: "KTrenZ",
         description: "Real-time K-Pop trend rankings powered by YouTube, X, and music data",
@@ -37,7 +37,7 @@ export default defineConfig(() => ({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        cacheId: "ktrenz-lovable",
+        cacheId: "ktrenz-pwa",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],

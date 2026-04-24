@@ -16,7 +16,7 @@ if ("serviceWorker" in navigator) {
   if ("caches" in window) {
     caches.keys().then((names) => {
       names.forEach((name) => {
-        if (!name.startsWith("ktrenz-lovable-")) {
+        if (!name.startsWith("ktrenz-")) {
           caches.delete(name);
         }
       });
