@@ -770,13 +770,10 @@ function ArtistSection({
             <button
               onClick={onInsightOpen}
               className={cn(
-                "group w-full rounded-2xl transition-all shadow-sm bg-white overflow-hidden text-left",
-                "hover:shadow-md active:scale-[0.995]",
-                isSubmitted && isPicked
-                  ? "border-2 border-primary ring-2 ring-primary/15"
-                  : isPicked
-                    ? "border border-primary/40 shadow-primary/10"
-                    : "border border-border hover:border-primary/30",
+                "group w-full rounded-2xl bg-card text-left overflow-hidden transition-all shadow-sm",
+                "hover:shadow-md hover:bg-muted/40",
+                isSubmitted && isPicked && "ring-2 ring-primary bg-primary/5 hover:bg-primary/5",
+                !isSubmitted && isPicked && "ring-1 ring-primary/60 bg-primary/[0.03] hover:bg-primary/[0.03]",
               )}
             >
               {/* Header row: A/B badge + name + action hint */}
@@ -784,7 +781,7 @@ function ArtistSection({
                 <div
                   className={cn(
                     "shrink-0 w-9 h-9 rounded-xl grid place-items-center font-extrabold text-sm transition-colors",
-                    isPicked ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+                    isPicked ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
                   )}
                 >
                   {index === 0 ? "A" : "B"}
@@ -808,30 +805,30 @@ function ArtistSection({
                     {lt("battle.predicted")}
                   </span>
                 ) : (
-                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                     {lt("battle.viewTrend")}
                     <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 )}
               </div>
 
-              {/* Signal row inside the card */}
-              <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-muted/30 border-t border-border/60 text-[11px]">
+              {/* Signal row — neutral tones, data-forward */}
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-muted/40 text-[11px]">
                 <span className="inline-flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3 text-orange-500" />
+                  <TrendingUp className="w-3 h-3 text-muted-foreground" />
                   <span className="font-bold text-foreground">{contentScore.toFixed(0)}</span>
-                  <span className="text-muted-foreground opacity-80">{scoreLabel}</span>
+                  <span className="text-muted-foreground opacity-70">{scoreLabel}</span>
                 </span>
                 {totalEng > 0 && (
                   <span className="inline-flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-amber-500" />
+                    <Zap className="w-3 h-3 text-muted-foreground" />
                     <span className="font-bold text-foreground">{formatEng(totalEng)}</span>
                   </span>
                 )}
                 {sourceCount > 0 && (
                   <span className="inline-flex items-center gap-1">
                     <span className="font-bold text-foreground">{sourceCount}</span>
-                    <span className="text-muted-foreground opacity-80">{lt("battle.signalSources")}</span>
+                    <span className="text-muted-foreground opacity-70">{lt("battle.signalSources")}</span>
                   </span>
                 )}
               </div>
@@ -852,7 +849,7 @@ function ArtistSection({
             className="snap-start flex-shrink-0 w-[85%] sm:w-72 lg:w-80 cursor-pointer"
             onClick={() => onCardTap(item)}
           >
-            <div className="rounded-xl overflow-hidden bg-card border border-primary/10">
+            <div className="rounded-xl overflow-hidden bg-card shadow-sm">
               {/* Square image */}
               <div className="relative aspect-[4/3] bg-muted">
                 {item.thumbnail ? (
@@ -868,16 +865,14 @@ function ArtistSection({
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
                 )}
-                {/* Light purple overlay */}
-                <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-                {/* Bottom gradient for text readability */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-primary/15 to-transparent pointer-events-none" />
+                {/* Subtle bottom gradient for source icon contrast */}
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                 <div className="absolute top-1.5 right-1.5">
                   {sourceIcon(item.source)}
                 </div>
               </div>
               {/* Content area */}
-              <div className="p-3 min-h-[40px] flex items-center bg-primary/[0.03]">
+              <div className="p-3 min-h-[40px] flex items-center bg-muted/30">
                 <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-1">
                   {decodeHtml(getLocalizedTitle(item, language))}
                 </p>
@@ -1715,7 +1710,7 @@ export default function Battle() {
               </span>
             </div>
             {myBetPredictions.map((pred, i) => (
-              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+              <div key={pred.id || `${pred.pickedRunId}-${pred.opponentRunId}-${pred.band}-${pred.created_at || i}`} className="rounded-xl bg-muted/40 p-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
                     {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
@@ -1752,10 +1747,10 @@ export default function Battle() {
                     const bWins = pair.growthB > pair.growthA;
                     const draw = pair.growthA === pair.growthB;
                     return (
-                      <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
+                      <div key={i} className="rounded-2xl bg-muted/40 overflow-hidden">
                         <div className="grid grid-cols-[1fr_auto_1fr] items-center">
                           {/* Star A */}
-                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.03]")}>
+                          <div className={cn("px-3 py-2.5 text-center", aWins && "bg-primary/[0.05]")}>
                             <p className={cn("text-sm font-bold truncate", aWins ? "text-foreground" : "text-muted-foreground")}>{pair.starA}</p>
                             <p className={cn("text-lg font-black mt-0.5", aWins ? "text-foreground" : "text-muted-foreground")}>
                               {pair.growthA > 0 ? "+" : ""}{pair.growthA}%
@@ -1767,7 +1762,7 @@ export default function Battle() {
                             <span className="text-[10px] font-bold text-muted-foreground/40">VS</span>
                           </div>
                           {/* Star B */}
-                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.03]")}>
+                          <div className={cn("px-3 py-2.5 text-center", bWins && "bg-primary/[0.05]")}>
                             <p className={cn("text-sm font-bold truncate", bWins ? "text-foreground" : "text-muted-foreground")}>{pair.starB}</p>
                             <p className={cn("text-lg font-black mt-0.5", bWins ? "text-foreground" : "text-muted-foreground")}>
                               {pair.growthB > 0 ? "+" : ""}{pair.growthB}%
@@ -1809,10 +1804,8 @@ export default function Battle() {
               <div className={cn("max-w-sm sm:max-w-[80%] mx-auto px-2 sm:px-0", pairIdx > 0 ? "my-6" : "mb-1")}>
                 <div
                   className={cn(
-                    "rounded-2xl border p-4 space-y-2 transition-all",
-                    pairState.submitted
-                      ? "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800"
-                      : "bg-card border-border"
+                    "rounded-2xl p-4 space-y-2 transition-all",
+                    pairState.submitted ? "bg-primary/5" : "bg-muted/40",
                   )}
                   onClick={() => {
                     if (battleFilter === "live" && pairState.submitted) {
@@ -1827,10 +1820,10 @@ export default function Battle() {
                 >
                   {/* Battle number badge */}
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-[10px] font-bold uppercase tracking-widest rounded-full px-3 py-1 border",
+                    <span className={cn("text-[10px] font-bold uppercase tracking-widest rounded-full px-3 py-1",
                       pairState.submitted
-                        ? "bg-sky-600 text-white border-sky-400"
-                        : "bg-primary text-primary-foreground border-primary/40"
+                        ? "bg-primary/15 text-primary"
+                        : "bg-primary text-primary-foreground"
                     )}>
                       Battle {pairIdx + 1}{pairState.submitted ? ` ✓` : ""}
                     </span>
@@ -1902,7 +1895,7 @@ export default function Battle() {
         {/* Today's Battle Summary — only in live tab when there are submissions */}
         {battleFilter === "live" && predictions.filter(p => p.status === "pending").length > 0 && (
           <div className="max-w-lg sm:max-w-4xl mx-auto px-4 mt-6 mb-2">
-            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+            <div className="rounded-2xl bg-muted/40 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-foreground">
@@ -2447,9 +2440,9 @@ export default function Battle() {
                     <button
                       key={run.id}
                       onClick={() => handlePick(activePairIdx, run.id)}
-                      className="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border-2 border-primary/40 bg-card hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all shadow-sm"
+                      className="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl bg-card hover:bg-muted/50 active:scale-[0.98] transition-all shadow-sm"
                     >
-                      <span className="text-[10px] font-extrabold text-primary">
+                      <span className="text-[10px] font-extrabold text-muted-foreground">
                         {idx === 0 ? "A" : "B"}
                       </span>
                       <span className="text-sm font-bold text-foreground truncate max-w-full">
@@ -2481,10 +2474,10 @@ export default function Battle() {
                             })
                           }
                           className={cn(
-                            "flex flex-col items-center py-1.5 px-1 rounded-lg border-2 transition-all shadow-sm",
+                            "flex flex-col items-center py-1.5 px-1 rounded-lg transition-all shadow-sm",
                             isSelected
-                              ? "border-primary bg-primary/10"
-                              : "border-border bg-card hover:border-primary/40",
+                              ? "bg-primary/10 ring-1 ring-primary"
+                              : "bg-card hover:bg-muted/50",
                           )}
                         >
                           <span className="text-sm leading-none">
