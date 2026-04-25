@@ -82,6 +82,10 @@ const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; ico
 
 const SPOTIFY_GOAL = 9000;
 
+// Engagement requirements before user may pick a side.
+const ENGAGEMENT_CONTENT_TARGET = 2;
+const ENGAGEMENT_TOTAL_STEPS = 1 + ENGAGEMENT_CONTENT_TARGET; // trend view + N contents
+
 /* ── All Tickets Used Celebration Modal ── */
 function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, totalTickets }: {
   open: boolean; onClose: () => void; language: string; userLevel: number; kPoints: number; totalTickets: number;
@@ -629,6 +633,7 @@ function ArtistSection({
   onInsightOpen,
   disabled,
   index,
+  engagement,
 }: {
   runItems: B2Item[];
   runId: string;
@@ -644,6 +649,7 @@ function ArtistSection({
   onInsightOpen: () => void;
   disabled: boolean;
   index: number;
+  engagement: { trendViewed: boolean; contentCount: number; complete: boolean };
 }) {
   const { language, t: lt } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -832,6 +838,35 @@ function ArtistSection({
                     <span className="text-muted-foreground opacity-70">{lt("battle.signalSources")}</span>
                   </span>
                 )}
+                {/* Engagement gamification: trend view + N content views */}
+                <span
+                  className="inline-flex items-center gap-0.5"
+                  title={engagement.complete ? lt("battle.unlockedHint") : lt("battle.unlockHint")}
+                >
+                  <span
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-colors",
+                      engagement.trendViewed ? "bg-primary" : "bg-muted-foreground/30",
+                    )}
+                  />
+                  {Array.from({ length: ENGAGEMENT_CONTENT_TARGET }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full transition-colors",
+                        engagement.contentCount > i ? "bg-primary" : "bg-muted-foreground/30",
+                      )}
+                    />
+                  ))}
+                  <span
+                    className={cn(
+                      "ml-1 font-bold tabular-nums",
+                      engagement.complete ? "text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {(engagement.trendViewed ? 1 : 0) + engagement.contentCount}/{ENGAGEMENT_TOTAL_STEPS}
+                  </span>
+                </span>
               </div>
             </button>
           </div>
@@ -1016,6 +1051,84 @@ export default function Battle() {
   const [activePairIdx, setActivePairIdx] = useState<number | null>(null);
   const pairRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  // Engagement gating: each run requires trend-view + 2 content views before pick.
+  type RunEngagement = { trendViewed: boolean; viewedItems: Set<string> };
+  const [runEngagement, setRunEngagement] = useState<Record<string, RunEngagement>>({});
+
+  function getEngagement(runId: string) {
+    const e = runEngagement[runId];
+    return {
+      trendViewed: !!e?.trendViewed,
+      contentCount: Math.min(e?.viewedItems.size ?? 0, ENGAGEMENT_CONTENT_TARGET),
+    };
+  }
+
+  function isEngagementComplete(runId: string) {
+    const { trendViewed, contentCount } = getEngagement(runId);
+    return trendViewed && contentCount >= ENGAGEMENT_CONTENT_TARGET;
+  }
+
+  async function recordTrendView(runId: string) {
+    if (!user) return;
+    setRunEngagement((prev) => {
+      const cur = prev[runId];
+      if (cur?.trendViewed) return prev;
+      return {
+        ...prev,
+        [runId]: {
+          trendViewed: true,
+          viewedItems: cur?.viewedItems ?? new Set<string>(),
+        },
+      };
+    });
+    try {
+      await (supabase.rpc as any)("ktrenz_record_trend_view", { p_run_id: runId });
+    } catch (e) {
+      console.error("[engagement] trend view rpc failed", e);
+    }
+  }
+
+  async function recordContentView(runId: string, itemId: string) {
+    if (!user) return;
+    let alreadyHad = false;
+    setRunEngagement((prev) => {
+      const cur = prev[runId] ?? { trendViewed: false, viewedItems: new Set<string>() };
+      if (cur.viewedItems.has(itemId)) {
+        alreadyHad = true;
+        return prev;
+      }
+      const next = new Set(cur.viewedItems);
+      next.add(itemId);
+      return { ...prev, [runId]: { ...cur, viewedItems: next } };
+    });
+    if (alreadyHad) return;
+    try {
+      await (supabase.rpc as any)("ktrenz_record_content_view", {
+        p_run_id: runId,
+        p_item_id: itemId,
+      });
+    } catch (e) {
+      console.error("[engagement] content view rpc failed", e);
+    }
+  }
+
+  async function loadRunEngagement(runIds: string[]) {
+    if (!user || runIds.length === 0) return;
+    const { data } = await (supabase.from as any)("ktrenz_b2_user_run_engagement")
+      .select("run_id, trend_viewed_at, viewed_item_ids")
+      .eq("user_id", user.id)
+      .in("run_id", runIds);
+    if (!data) return;
+    const next: Record<string, RunEngagement> = {};
+    for (const row of data as any[]) {
+      next[row.run_id] = {
+        trendViewed: !!row.trend_viewed_at,
+        viewedItems: new Set<string>(row.viewed_item_ids || []),
+      };
+    }
+    setRunEngagement((prev) => ({ ...prev, ...next }));
+  }
+
   const remainingTickets = ticketInfo?.remaining ?? 3;
   const totalTickets = ticketInfo?.total ?? 3;
   const myBetMap = new Map<string, Prediction>();
@@ -1046,6 +1159,7 @@ export default function Battle() {
   }
 
   async function openInsightDrawer(runId: string, starId: string, starName: string) {
+    recordTrendView(runId);
     const key = `${runId}-${starId}-${language}`;
     setInsightDrawer({ open: true, runId, starId, starName });
 
@@ -1500,6 +1614,9 @@ export default function Battle() {
     battleCache.ts = Date.now();
     persistBattleCache();
 
+    // Hydrate engagement progress for visible runs
+    loadRunEngagement(validPairs.flatMap((p) => p.runs.map((r) => r.id)));
+
     await restoreSubmittedState(validPairs, battleCache.battleDate);
 
     // Fire-and-forget thumbnail preload — no await, so render isn't blocked.
@@ -1533,6 +1650,16 @@ export default function Battle() {
     // If all tickets used, show tier info instead of allowing pick
     if (remainingTickets <= 0) {
       setShowTicketInfo(true);
+      return;
+    }
+    // Engagement gate: must view trend + 2 content cards before picking this side
+    if (state.pickedRunId !== runId && !isEngagementComplete(runId)) {
+      const { trendViewed, contentCount } = getEngagement(runId);
+      const done = (trendViewed ? 1 : 0) + contentCount;
+      toast({
+        title: globalT("battle.unlockHint"),
+        description: `${done}/${ENGAGEMENT_TOTAL_STEPS}`,
+      });
       return;
     }
     updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
@@ -1912,10 +2039,14 @@ export default function Battle() {
                         isPicked={pairState.pickedRunId === run.id}
                         isSubmitted={pairState.submitted}
                         onPick={() => handlePick(pairIdx, run.id)}
-                        onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); }}
+                        onCardTap={(item) => { setDrawerItem(item); setDrawerPairIndex(pairIdx); recordContentView(run.id, item.id); }}
                         onInsightOpen={() => openInsightDrawer(run.id, run.star_id, run.star?.display_name || "Unknown")}
                         disabled={pairState.submitted}
                         index={idx}
+                        engagement={(() => {
+                          const e = getEngagement(run.id);
+                          return { ...e, complete: isEngagementComplete(run.id) };
+                        })()}
                       />
                     </div>
                   </div>
@@ -2472,23 +2603,42 @@ export default function Battle() {
 
               {!state.pickedRunId ? (
                 <div className="grid grid-cols-2 gap-2">
-                  {[runA, runB].map((run, idx) => (
-                    <button
-                      key={run.id}
-                      onClick={() => handlePick(activePairIdx, run.id)}
-                      className="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl bg-card hover:bg-muted/50 active:scale-[0.98] transition-all shadow-sm"
-                    >
-                      <span className="text-[10px] font-extrabold text-muted-foreground">
-                        {idx === 0 ? "A" : "B"}
-                      </span>
-                      <span className="text-sm font-bold text-foreground truncate max-w-full">
-                        {run.star?.display_name || "—"}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground">
-                        {t("labelTrendBy")}
-                      </span>
-                    </button>
-                  ))}
+                  {[runA, runB].map((run, idx) => {
+                    const eng = getEngagement(run.id);
+                    const unlocked = isEngagementComplete(run.id);
+                    const stepsDone = (eng.trendViewed ? 1 : 0) + eng.contentCount;
+                    return (
+                      <button
+                        key={run.id}
+                        onClick={() => handlePick(activePairIdx, run.id)}
+                        className={cn(
+                          "flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all shadow-sm",
+                          unlocked
+                            ? "bg-card hover:bg-muted/50 active:scale-[0.98]"
+                            : "bg-muted/60 opacity-70",
+                        )}
+                      >
+                        <span className="text-[10px] font-extrabold text-muted-foreground">
+                          {idx === 0 ? "A" : "B"}
+                        </span>
+                        <span className={cn(
+                          "text-sm font-bold truncate max-w-full",
+                          unlocked ? "text-foreground" : "text-muted-foreground",
+                        )}>
+                          {run.star?.display_name || "—"}
+                        </span>
+                        {unlocked ? (
+                          <span className="text-[9px] text-muted-foreground">
+                            {t("labelTrendBy")}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-semibold text-primary/80 tabular-nums">
+                            🔒 {stepsDone}/{ENGAGEMENT_TOTAL_STEPS}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="space-y-2">

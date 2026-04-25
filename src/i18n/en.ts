@@ -634,6 +634,8 @@ const dict: Record<string, string> = {
   "battle.instruction": "Browse the content, pick the trend you think will rise more, then predict its growth band. The tighter the band, the bigger the reward!",
   "battle.signalSources": "sources",
   "battle.signalEngagement": "engagement",
+  "battle.unlockHint": "View the trend and at least 2 contents to unlock pick",
+  "battle.unlockedHint": "Ready to pick",
   "battle.labelTrendBy": "Trend by",
   "battle.viewTrend": "View trend",
   "battle.nextSettlement": "Next settlement in",

@@ -634,6 +634,8 @@ const dict: Record<string, string> = {
   "battle.instruction": "コンテンツを見て伸びそうなトレンドを選び、成長幅まで予測しましょう。幅が狭いほど報酬が大きくなります！",
   "battle.signalSources": "ソース",
   "battle.signalEngagement": "反応",
+  "battle.unlockHint": "トレンドと2件以上のコンテンツを確認するとピック可能",
+  "battle.unlockedHint": "ピック可能",
   "battle.labelTrendBy": "トレンド",
   "battle.viewTrend": "トレンドを見る",
   "battle.nextSettlement": "次の精算まで",
