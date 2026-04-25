@@ -19,7 +19,7 @@ import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -2493,15 +2493,25 @@ export default function Battle() {
         if (!runA || !runB) return null;
         const pickedRun = activePair.runs.find(r => r.id === state.pickedRunId);
         const pickedStar = pickedRun?.star?.display_name || "";
+        const aUnlocked = isEngagementComplete(runA.id);
+        const bUnlocked = isEngagementComplete(runB.id);
+        const bothLocked = !state.pickedRunId && !aUnlocked && !bUnlocked;
 
         return (
           <div
-            className="fixed bottom-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.08)]"
+            className={cn(
+              "fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.08)] transition-colors",
+              bothLocked ? "bg-muted/70" : "bg-card/80",
+            )}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="max-w-md mx-auto px-4 py-3 space-y-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-muted-foreground">
+                <span className={cn(
+                  "inline-flex items-center gap-1 font-semibold",
+                  bothLocked ? "text-muted-foreground" : "text-muted-foreground",
+                )}>
+                  {bothLocked && <Lock className="w-3 h-3" />}
                   Battle {activePairIdx + 1}
                 </span>
                 {state.pickedRunId && (
@@ -2513,6 +2523,11 @@ export default function Battle() {
                   </button>
                 )}
               </div>
+              {bothLocked && (
+                <p className="text-center text-[11px] text-muted-foreground -mt-1">
+                  {globalT("battle.unlockHint")}
+                </p>
+              )}
 
               {!state.pickedRunId ? (
                 <div className="grid grid-cols-2 gap-2">
