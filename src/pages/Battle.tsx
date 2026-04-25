@@ -19,7 +19,7 @@ import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles, Lock } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles, Lock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -838,35 +838,35 @@ function ArtistSection({
                     <span className="text-muted-foreground opacity-70">{lt("battle.signalSources")}</span>
                   </span>
                 )}
-                {/* Engagement gamification: trend view + N content views */}
-                <span
-                  className="inline-flex items-center gap-0.5"
-                  title={engagement.complete ? lt("battle.unlockedHint") : lt("battle.unlockHint")}
-                >
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full transition-colors",
-                      engagement.trendViewed ? "bg-primary" : "bg-muted-foreground/30",
-                    )}
-                  />
-                  {Array.from({ length: ENGAGEMENT_CONTENT_TARGET }).map((_, i) => (
+                {/* Engagement progress — completed milestones only */}
+                {(() => {
+                  if (engagement.complete) {
+                    return (
+                      <span
+                        className="inline-flex items-center gap-1 font-bold text-primary"
+                        title={lt("battle.unlockedHint")}
+                      >
+                        <Check className="w-3 h-3" />
+                        {lt("battle.stepReady")}
+                      </span>
+                    );
+                  }
+                  const items: string[] = [];
+                  if (engagement.trendViewed) items.push(lt("battle.stepTrend"));
+                  for (let i = 0; i < engagement.contentCount; i++) {
+                    items.push(`${lt("battle.stepContent")} ${i + 1}`);
+                  }
+                  if (items.length === 0) return null;
+                  return (
                     <span
-                      key={i}
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full transition-colors",
-                        engagement.contentCount > i ? "bg-primary" : "bg-muted-foreground/30",
-                      )}
-                    />
-                  ))}
-                  <span
-                    className={cn(
-                      "ml-1 font-bold tabular-nums",
-                      engagement.complete ? "text-primary" : "text-muted-foreground",
-                    )}
-                  >
-                    {(engagement.trendViewed ? 1 : 0) + engagement.contentCount}/{ENGAGEMENT_TOTAL_STEPS}
-                  </span>
-                </span>
+                      className="inline-flex items-center gap-1 text-muted-foreground"
+                      title={lt("battle.unlockHint")}
+                    >
+                      <Check className="w-3 h-3 text-primary" />
+                      <span>{items.join(" · ")}</span>
+                    </span>
+                  );
+                })()}
               </div>
             </button>
           </div>
