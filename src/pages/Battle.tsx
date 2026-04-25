@@ -634,6 +634,7 @@ function ArtistSection({
   disabled,
   index,
   engagement,
+  onUnlockGuide,
 }: {
   runItems: B2Item[];
   runId: string;
@@ -650,6 +651,7 @@ function ArtistSection({
   disabled: boolean;
   index: number;
   engagement: { trendViewed: boolean; contentCount: number; complete: boolean };
+  onUnlockGuide: () => void;
 }) {
   const { language, t: lt } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -838,35 +840,39 @@ function ArtistSection({
                     <span className="text-muted-foreground opacity-70">{lt("battle.signalSources")}</span>
                   </span>
                 )}
-                {/* Engagement progress — completed milestones only */}
-                {(() => {
-                  if (engagement.complete) {
-                    return (
-                      <span
-                        className="inline-flex items-center gap-1 font-bold text-primary"
-                        title={lt("battle.unlockedHint")}
-                      >
-                        <Check className="w-3 h-3" />
-                        {lt("battle.stepReady")}
-                      </span>
-                    );
-                  }
-                  const items: string[] = [];
-                  if (engagement.trendViewed) items.push(lt("battle.stepTrend"));
-                  for (let i = 0; i < engagement.contentCount; i++) {
-                    items.push(`${lt("battle.stepContent")} ${i + 1}`);
-                  }
-                  if (items.length === 0) return null;
-                  return (
+                {/* Engagement progress — always visible, tap opens guide */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onUnlockGuide(); }}
+                  className={cn(
+                    "inline-flex items-center gap-1 transition-colors hover:opacity-80",
+                    engagement.complete ? "font-bold text-primary" : "text-muted-foreground",
+                  )}
+                  title={engagement.complete ? lt("battle.unlockedHint") : lt("battle.unlockHint")}
+                >
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center w-3 h-3 rounded-full",
+                      engagement.trendViewed ? "bg-primary text-primary-foreground" : "bg-muted-foreground/25",
+                    )}
+                  >
+                    {engagement.trendViewed && <Check className="w-2 h-2" strokeWidth={3} />}
+                  </span>
+                  {Array.from({ length: ENGAGEMENT_CONTENT_TARGET }).map((_, i) => (
                     <span
-                      className="inline-flex items-center gap-1 text-muted-foreground"
-                      title={lt("battle.unlockHint")}
+                      key={i}
+                      className={cn(
+                        "inline-flex items-center justify-center w-3 h-3 rounded-full",
+                        engagement.contentCount > i ? "bg-primary text-primary-foreground" : "bg-muted-foreground/25",
+                      )}
                     >
-                      <Check className="w-3 h-3 text-primary" />
-                      <span>{items.join(" · ")}</span>
+                      {engagement.contentCount > i && <Check className="w-2 h-2" strokeWidth={3} />}
                     </span>
-                  );
-                })()}
+                  ))}
+                  {engagement.complete && (
+                    <span className="ml-1">{lt("battle.stepReady")}</span>
+                  )}
+                </button>
               </div>
             </button>
           </div>
@@ -1050,6 +1056,7 @@ export default function Battle() {
   const [settledBattleResults, setSettledBattleResults] = useState<{ starA: string; starB: string; growthA: number; growthB: number; battleDate: string }[]>([]);
   const [activePairIdx, setActivePairIdx] = useState<number | null>(null);
   const pairRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [showEngageGuide, setShowEngageGuide] = useState(false);
 
   // Engagement gating: each run requires trend-view + 2 content views before pick.
   type RunEngagement = { trendViewed: boolean; viewedItems: Set<string> };
@@ -1654,12 +1661,7 @@ export default function Battle() {
     }
     // Engagement gate: must view trend + 2 content cards before picking this side
     if (state.pickedRunId !== runId && !isEngagementComplete(runId)) {
-      const { trendViewed, contentCount } = getEngagement(runId);
-      const done = (trendViewed ? 1 : 0) + contentCount;
-      toast({
-        title: globalT("battle.unlockHint"),
-        description: `${done}/${ENGAGEMENT_TOTAL_STEPS}`,
-      });
+      setShowEngageGuide(true);
       return;
     }
     updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
@@ -2047,6 +2049,7 @@ export default function Battle() {
                           const e = getEngagement(run.id);
                           return { ...e, complete: isEngagementComplete(run.id) };
                         })()}
+                        onUnlockGuide={() => setShowEngageGuide(true)}
                       />
                     </div>
                   </div>
@@ -2483,6 +2486,37 @@ export default function Battle() {
         </DialogContent>
       </Dialog>
 
+      {/* Engagement guide dialog */}
+      <Dialog open={showEngageGuide} onOpenChange={setShowEngageGuide}>
+        <DialogContent className="max-w-sm rounded-2xl mx-auto">
+          <DialogTitle className="text-base font-bold">
+            {globalT("battle.guideTitle")}
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {globalT("battle.guideDescription")}
+          </DialogDescription>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">1</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepTrend")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepTrendDesc")}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
+              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">2</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepContent")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepContentDesc")}</p>
+              </div>
+            </div>
+          </div>
+          <Button onClick={() => setShowEngageGuide(false)} className="w-full mt-2">
+            {globalT("common.gotIt")}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* Bottom sticky CommitBar for currently-active pair */}
       {battleFilter === "live" && activePairIdx !== null && (() => {
         const activePair = battlePairs[activePairIdx];
@@ -2523,11 +2557,6 @@ export default function Battle() {
                   </button>
                 )}
               </div>
-              {bothLocked && (
-                <p className="text-center text-[11px] text-muted-foreground -mt-1">
-                  {globalT("battle.unlockHint")}
-                </p>
-              )}
 
               {!state.pickedRunId ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -2538,12 +2567,12 @@ export default function Battle() {
                     return (
                       <button
                         key={run.id}
-                        onClick={() => handlePick(activePairIdx, run.id)}
+                        onClick={() => unlocked ? handlePick(activePairIdx, run.id) : setShowEngageGuide(true)}
                         className={cn(
                           "flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all shadow-sm",
                           unlocked
                             ? "bg-card hover:bg-muted/50 active:scale-[0.98]"
-                            : "bg-muted/60 opacity-70",
+                            : "bg-muted/60 opacity-80 hover:opacity-100",
                         )}
                       >
                         <span className="text-[10px] font-extrabold text-muted-foreground">
