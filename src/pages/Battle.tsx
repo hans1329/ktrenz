@@ -1390,39 +1390,58 @@ export default function Battle() {
     return () => clearInterval(iv);
   }, []);
 
-  // Track which pair is most-visible in viewport → powers BottomCommitBar
+  // Track which pair is closest to viewport center → powers BottomCommitBar.
+  // Scroll-based instead of IntersectionObserver because tall pair cards can sit
+  // between observer thresholds without triggering callbacks, leaving the bar stuck.
   useEffect(() => {
     if (battleFilter !== "live" || battlePairs.length === 0) {
       setActivePairIdx(null);
       return;
     }
-    // Default to first pair so bar shows immediately — observer refines as user scrolls.
     setActivePairIdx((prev) => (prev === null || prev >= battlePairs.length ? 0 : prev));
 
-    // Delay observer setup slightly so refs are fully wired after initial layout.
-    const setupTimer = setTimeout(() => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries
-            .filter((e) => e.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-          if (visible.length > 0) {
-            const idx = Number((visible[0].target as HTMLElement).dataset.pairIdx);
-            if (!Number.isNaN(idx)) setActivePairIdx(idx);
-          }
-        },
-        { threshold: [0.05, 0.25, 0.5, 0.75], rootMargin: "-64px 0px -180px 0px" },
-      );
-      Object.values(pairRefs.current).forEach((el) => {
-        if (el) observer.observe(el);
-      });
-      (setupTimer as any)._observer = observer;
-    }, 50);
+    let raf = 0;
+    function compute() {
+      const vh = window.innerHeight;
+      // Anchor at ~40% from top so the picked pair feels "in focus" above the bar.
+      const anchorY = vh * 0.4;
+      let closestIdx: number | null = null;
+      let closestDist = Infinity;
+      const entries = Object.entries(pairRefs.current) as [string, HTMLDivElement | null][];
+      for (const [key, el] of entries) {
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        // Skip if entirely off-screen
+        if (rect.bottom < 0 || rect.top > vh) continue;
+        const elCenter = rect.top + rect.height / 2;
+        const dist = Math.abs(elCenter - anchorY);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = Number(key);
+        }
+      }
+      if (closestIdx !== null) {
+        setActivePairIdx((prev) => (prev === closestIdx ? prev : closestIdx));
+      }
+    }
 
+    function onScroll() {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        compute();
+      });
+    }
+
+    // Initial compute after layout settles.
+    const initial = setTimeout(compute, 50);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
     return () => {
-      clearTimeout(setupTimer);
-      const obs = (setupTimer as any)._observer as IntersectionObserver | undefined;
-      obs?.disconnect();
+      clearTimeout(initial);
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
   }, [battlePairs.length, battleFilter]);
 
