@@ -39,12 +39,13 @@ export default defineConfig(() => ({
         cleanupOutdatedCaches: true,
         cacheId: "ktrenz-pwa",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
-        // Precache only the main entry + critical assets. Route-lazy chunks
-        // (Admin*, B2B*, FanAgent, recharts, etc.) are fetched on-demand and
-        // handled by workbox runtime caching instead.
+        // Precache critical assets only. index.html is intentionally excluded
+        // so navigation requests always hit network first (see runtimeCaching).
+        // Route-lazy chunks (Admin*, B2B*, recharts, lang chunks 등)는
+        // 별도로 runtime cache에서 처리.
         globPatterns: [
-          "index.html",
           "manifest.webmanifest",
           "registerSW.js",
           "robots.txt",
@@ -56,6 +57,17 @@ export default defineConfig(() => ({
           "assets/*.{webp,jpg,jpeg,png,svg,woff,woff2}",
         ],
         runtimeCaching: [
+          {
+            // Navigation requests (top-level URLs, refreshes) — network first
+            // so newly added routes work without a stale-SW reload.
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "ktrenz-pwa-html",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 10, maxAgeSeconds: 24 * 60 * 60 },
+            },
+          },
           {
             urlPattern: /\/assets\/.*\.js$/,
             handler: "StaleWhileRevalidate",
