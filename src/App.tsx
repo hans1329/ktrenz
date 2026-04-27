@@ -16,6 +16,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const KPass = lazy(() => import("./pages/KPass"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PitchDeck = lazy(() => import("./pages/PitchDeck"));
+const PitchDeck3 = lazy(() => import("./pages/PitchDeck3"));
 const Deck = lazy(() => import("./pages/Deck"));
 const SignalRadar = lazy(() => import("./pages/SignalRadar"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -117,6 +118,7 @@ const App = () => (
                   <Route path="/dashboard" element={<UserDashboard />} />
                   <Route path="/pitchdeck" element={<PitchDeck />} />
                   <Route path="/pd" element={<PitchDeck />} />
+                  <Route path="/pd3" element={<PitchDeck3 />} />
                   <Route path="/deck" element={<Deck />} />
                   <Route path="/signal" element={<SignalRadar />} />
 
