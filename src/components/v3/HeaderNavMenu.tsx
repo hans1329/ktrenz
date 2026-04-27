@@ -4,6 +4,7 @@ import { Flame, Compass, Activity, Bell, User as UserIcon, Settings, LogOut, Log
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/i18n/translations";
 import { getDefaultAvatar } from "@/lib/defaultAvatar";
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const HeaderNavMenu = () => {
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -123,6 +124,29 @@ const HeaderNavMenu = () => {
               </DropdownMenuItem>
             );
           })}
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground py-1 font-semibold">
+            {t("common.language")}
+          </DropdownMenuLabel>
+          <div className="grid grid-cols-4 gap-1 px-2 pb-1">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setLanguage(lang.code)}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 py-1.5 rounded-md transition-colors",
+                  language === lang.code
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                <span className="text-base leading-none">{lang.flag}</span>
+                <span className="text-[10px] font-bold">{lang.label}</span>
+              </button>
+            ))}
+          </div>
 
           {user && (
             <>
