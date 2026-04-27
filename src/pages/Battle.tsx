@@ -82,9 +82,13 @@ const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; ico
 
 const SPOTIFY_GOAL = 9000;
 
-// Engagement requirements before user may pick a side.
-const ENGAGEMENT_CONTENT_TARGET = 2;
-const ENGAGEMENT_TOTAL_STEPS = 1 + ENGAGEMENT_CONTENT_TARGET; // trend view + N contents
+import {
+  ENGAGEMENT_CONTENT_TARGET,
+  ENGAGEMENT_TOTAL_STEPS,
+  summarizeEngagement,
+  isEngagementComplete as isEngagementCompletePure,
+} from "@/lib/engagement";
+import { pickActivePairIdx } from "@/lib/activePair";
 
 /* ── All Tickets Used Celebration Modal ── */
 function AllTicketsUsedModal({ open, onClose, language, userLevel, kPoints, totalTickets }: {
@@ -1063,16 +1067,12 @@ export default function Battle() {
   const [runEngagement, setRunEngagement] = useState<Record<string, RunEngagement>>({});
 
   function getEngagement(runId: string) {
-    const e = runEngagement[runId];
-    return {
-      trendViewed: !!e?.trendViewed,
-      contentCount: Math.min(e?.viewedItems.size ?? 0, ENGAGEMENT_CONTENT_TARGET),
-    };
+    const s = summarizeEngagement(runEngagement[runId]);
+    return { trendViewed: s.trendViewed, contentCount: s.contentCount };
   }
 
   function isEngagementComplete(runId: string) {
-    const { trendViewed, contentCount } = getEngagement(runId);
-    return trendViewed && contentCount >= ENGAGEMENT_CONTENT_TARGET;
+    return isEngagementCompletePure(runEngagement[runId]);
   }
 
   async function recordTrendView(runId: string) {
@@ -1403,23 +1403,11 @@ export default function Battle() {
     let raf = 0;
     function compute() {
       const vh = window.innerHeight;
-      // Anchor at ~40% from top so the picked pair feels "in focus" above the bar.
-      const anchorY = vh * 0.4;
-      let closestIdx: number | null = null;
-      let closestDist = Infinity;
-      const entries = Object.entries(pairRefs.current) as [string, HTMLDivElement | null][];
-      for (const [key, el] of entries) {
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        // Skip if entirely off-screen
-        if (rect.bottom < 0 || rect.top > vh) continue;
-        const elCenter = rect.top + rect.height / 2;
-        const dist = Math.abs(elCenter - anchorY);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestIdx = Number(key);
-        }
-      }
+      const candidates = (Object.entries(pairRefs.current) as [string, HTMLDivElement | null][])
+        .flatMap(([key, el]) =>
+          el ? [{ idx: Number(key), rect: el.getBoundingClientRect() }] : [],
+        );
+      const closestIdx = pickActivePairIdx(candidates, vh);
       if (closestIdx !== null) {
         setActivePairIdx((prev) => (prev === closestIdx ? prev : closestIdx));
       }
