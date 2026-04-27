@@ -1,18 +1,12 @@
 // settle-trend-vs: 배틀 정산 — batch_id 기반 round 1 vs round 2 성장률 비교
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { classifyBand, growthPct, settlePrediction } from "../_shared/settlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-const BAND_THRESHOLDS: Record<string, { min: number; reward: number }> = {
-  steady: { min: 15, reward: 100 },
-  rising: { min: 30, reward: 300 },
-  surge: { min: 80, reward: 1000 },
-};
-const CONSOLATION_REWARD = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,28 +108,20 @@ Deno.serve(async (req) => {
       // Calculate growth % (round 1 → round 2)
       const pickedOld = pickedR1.content_score || 1;
       const pickedNew = pickedR2.content_score || 0;
-      const pickedGrowth = ((pickedNew - pickedOld) / Math.max(pickedOld, 1)) * 100;
+      const pickedGrowth = growthPct(pickedOld, pickedNew);
 
       const opponentOld = opponentR1.content_score || 1;
       const opponentNew = opponentR2.content_score || 0;
-      const opponentGrowth = ((opponentNew - opponentOld) / Math.max(opponentOld, 1)) * 100;
+      const opponentGrowth = growthPct(opponentOld, opponentNew);
 
-      // Determine actual band
-      let actualBand = "flat";
-      if (pickedGrowth >= 80) actualBand = "surge";
-      else if (pickedGrowth >= 30) actualBand = "rising";
-      else if (pickedGrowth >= 15) actualBand = "steady";
-
-      // Win conditions:
-      // 1. Picked artist grew more than opponent
-      // 2. Growth matches or exceeds the predicted band
-      const pickedWonVs = pickedGrowth > opponentGrowth;
-      const bandConfig = BAND_THRESHOLDS[pred.band];
-      const bandMatched = pickedGrowth >= (bandConfig?.min ?? 999);
-
-      const won = pickedWonVs && bandMatched;
-      const status = won ? "won" : "lost";
-      const reward = won ? (bandConfig?.reward ?? 0) : CONSOLATION_REWARD;
+      const actualBand = classifyBand(pickedGrowth);
+      const settlement = settlePrediction({
+        pickedGrowth,
+        opponentGrowth,
+        predictedBand: pred.band,
+      });
+      const status = settlement.status;
+      const reward = settlement.reward;
 
       const { error: updateErr } = await sb
         .from("b2_predictions")
@@ -155,11 +141,10 @@ Deno.serve(async (req) => {
 
       // Award points: win reward or consolation
       if (reward > 0) {
-        const reason = won ? `battle_win_${pred.band}` : "battle_consolation";
         await sb.rpc("ktrenz_add_points" as any, {
           _user_id: pred.user_id,
           _amount: reward,
-          _reason: reason,
+          _reason: settlement.reason,
         }).catch(() => {});
       }
 

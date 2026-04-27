@@ -1,33 +1,12 @@
 // Reward-based settlement: fixed rewards, no betting multipliers
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { classifyTrendOutcome, trendBetReward } from "../_shared/settlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-// Reward amounts (T = K-Token)
-const REWARDS: Record<string, number> = {
-  mild: 100,
-  strong: 300,
-  explosive: 1000,
-};
-const CONSOLATION_REWARD = 10;
-
-/** Determine outcome based on % change from initial trend score.
- *  "flat" = loss zone (< +10%) — all predictions wrong, consolation 10T.
- */
-function determineOutcome(initialScore: number, currentScore: number): string {
-  const changePct = initialScore > 0
-    ? ((currentScore - initialScore) / initialScore) * 100
-    : currentScore > 0 ? 100 : 0;
-
-  if (changePct < 10) return "flat";       // loss zone
-  if (changePct < 15) return "mild";       // 소폭 상승 +10% ~ +15%
-  if (changePct < 50) return "strong";     // 강세 +15% ~ +50%
-  return "explosive";                       // 폭발 +50%+
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -65,7 +44,7 @@ Deno.serve(async (req) => {
     for (const market of markets) {
       const currentScore = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
       const initialScore = Number(market.initial_influence ?? 0);
-      const outcome = determineOutcome(initialScore, currentScore);
+      const outcome = classifyTrendOutcome(initialScore, currentScore);
 
       const { data: bets } = await sb
         .from("ktrenz_trend_bets")
@@ -84,17 +63,7 @@ Deno.serve(async (req) => {
       const rewardPromises: Promise<any>[] = [];
 
       for (const bet of bets) {
-        let reward: number;
-        if (outcome === "flat") {
-          // Loss zone: everyone gets consolation
-          reward = CONSOLATION_REWARD;
-        } else if (bet.outcome === outcome) {
-          // Correct prediction
-          reward = REWARDS[outcome] ?? CONSOLATION_REWARD;
-        } else {
-          // Wrong prediction
-          reward = CONSOLATION_REWARD;
-        }
+        const reward = trendBetReward(outcome, bet.outcome);
 
         rewardPromises.push(
           sb.rpc("ktrenz_increment_points" as any, {
