@@ -314,11 +314,11 @@ Deno.serve(async (req) => {
       const fullHtml = buildFullHtml(content, lang);
       const jsonLdHead = buildJsonLd(content, lang, todayStr);
 
-      // hreflang tags
+      // hreflang tags — must match the actual Ghost slug (`trend-report-...`)
       const hreflangHead = `
-<link rel="alternate" hreflang="ko" href="${MAIN_SITE_URL}/report/${todayStr}-ko/" />
-<link rel="alternate" hreflang="en" href="${MAIN_SITE_URL}/report/${todayStr}-en/" />
-<link rel="alternate" hreflang="x-default" href="${MAIN_SITE_URL}/report/${todayStr}-en/" />`;
+<link rel="alternate" hreflang="ko" href="${MAIN_SITE_URL}/report/trend-report-${todayStr}-ko/" />
+<link rel="alternate" hreflang="en" href="${MAIN_SITE_URL}/report/trend-report-${todayStr}-en/" />
+<link rel="alternate" hreflang="x-default" href="${MAIN_SITE_URL}/report/trend-report-${todayStr}-en/" />`;
 
       const codeinjection_head = `${jsonLdHead}\n${hreflangHead}`;
 
