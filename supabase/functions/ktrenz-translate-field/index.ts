@@ -31,7 +31,27 @@ const FIELD_MAP: Record<string, { source: string; targets: Record<string, string
     source: "title",
     targets: { en: "title_en", ja: "title_ja", zh: "title_zh", ko: "title_ko" },
   },
+  "ktrenz_b2_items.description": {
+    source: "description",
+    targets: { en: "description_en", ja: "description_ja", zh: "description_zh", ko: "description_ko" },
+  },
 };
+
+// Descriptions are much longer than titles — guard against translating
+// scraped JS/CSS leaks (which would waste OpenAI tokens) and trim length.
+const DESCRIPTION_MAX_CHARS = 600;
+const CODE_LEAK_PATTERNS: RegExp[] = [
+  /^\s*[.#][\w-]+\s*\{/,
+  /\{\{[\w#/]/,
+  /[\w.#-]+\s*\{[^}]*:[^}]*\}/,
+  /\$\(\s*(?:window|document|this|['"`])/,
+  /\bfunction\s*\([^)]*\)\s*\{/,
+  /^\s*\/\/\s/,
+];
+function looksLikeCodeLeak(text: string): boolean {
+  for (const re of CODE_LEAK_PATTERNS) if (re.test(text)) return true;
+  return (text.match(/\bvar\s+\w+\s*=/g) ?? []).length >= 2;
+}
 
 const langLabel: Record<Lang, string> = {
   en: "English",
@@ -106,6 +126,18 @@ Deno.serve(async (req) => {
     const rowsToTranslate = (rows ?? []).filter((row: any) => {
       const sourceValue = row[mapping.source];
       const targetValue = row[targetCol];
+
+      // Description-specific guard: skip rows whose source looks like a
+      // code/CSS leak — translating it just wastes OpenAI tokens. The
+      // frontend sanitizer hides them anyway.
+      if (
+        field === "description" &&
+        typeof sourceValue === "string" &&
+        looksLikeCodeLeak(sourceValue)
+      ) {
+        return false;
+      }
+
       const isEnglishContextStale =
         field === "context" &&
         lang === "en" &&
@@ -127,8 +159,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Batch translate via AI
-    const textsToTranslate = rowsToTranslate.map((r: any) => r[mapping.source] as string);
+    // Batch translate via AI. Trim long descriptions to keep token cost bounded.
+    const textsToTranslate = rowsToTranslate.map((r: any) => {
+      const raw = r[mapping.source] as string;
+      if (field === "description" && raw.length > DESCRIPTION_MAX_CHARS) {
+        return raw.slice(0, DESCRIPTION_MAX_CHARS);
+      }
+      return raw;
+    });
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 

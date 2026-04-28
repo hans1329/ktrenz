@@ -45,6 +45,10 @@ interface B2Item {
   title_zh: string | null;
   title_ko: string | null;
   description: string;
+  description_en: string | null;
+  description_ja: string | null;
+  description_zh: string | null;
+  description_ko: string | null;
   thumbnail: string | null;
   has_thumbnail: boolean;
   engagement_score: number;
@@ -622,6 +626,20 @@ function getLocalizedTitle(item: B2Item, lang: string): string {
   return item.title;
 }
 
+/** Returns { text, isTranslated }. When isTranslated is true the text is
+ *  already in the requested language, so the caller can skip the language
+ *  gate in sanitizeDescription. */
+function getLocalizedDescription(
+  item: B2Item,
+  lang: string,
+): { text: string | null; isTranslated: boolean } {
+  if (lang === "ko" && item.description_ko) return { text: item.description_ko, isTranslated: true };
+  if (lang === "ja" && item.description_ja) return { text: item.description_ja, isTranslated: true };
+  if (lang === "zh" && item.description_zh) return { text: item.description_zh, isTranslated: true };
+  if (lang === "en" && item.description_en) return { text: item.description_en, isTranslated: true };
+  return { text: item.description ?? null, isTranslated: false };
+}
+
 /* ── Artist Section: name bar + horizontal card carousel ── */
 function ArtistSection({
   runItems,
@@ -1044,6 +1062,20 @@ export default function Battle() {
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
   const [drawerPairIndex, setDrawerPairIndex] = useState<number>(0);
+
+  // When the detail modal opens, ensure the item's description is translated
+  // into the user's language (if missing). Refresh on success so the modal
+  // re-renders with the cached translation.
+  useEffect(() => {
+    if (!drawerItem) return;
+    translateIfNeeded("ktrenz_b2_items", "description", [drawerItem], () => {
+      battleCache.ts = 0;
+      loadBattleData(true);
+    });
+    // We intentionally only depend on the opened item's id — re-running on
+    // language change is handled by the hook itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerItem?.id]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
   const [showTicketInfo, setShowTicketInfo] = useState(false);
@@ -1284,7 +1316,7 @@ export default function Battle() {
       if (!allItems) {
         const { data } = await supabase
           .from("ktrenz_b2_items")
-          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata, run_id")
+          .select("id, source, title, title_en, title_ja, title_zh, title_ko, description, description_en, description_ja, description_zh, description_ko, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata, run_id")
           .in("run_id", allRunIds)
           .eq("has_thumbnail", true)
           .not("source", "eq", "naver_blog")
@@ -1622,6 +1654,8 @@ export default function Battle() {
         });
       }
     }
+    // NOTE: descriptions are translated lazily when the user opens the
+    // detail modal (see effect on `drawerItem`), to keep OpenAI cost bounded.
 
     setBattlePairs(validPairs);
     battleCache.data = validPairs;
@@ -2238,10 +2272,20 @@ export default function Battle() {
                 {/* Title */}
                 <h3 className="text-base font-semibold text-foreground leading-snug mb-2">{decodeHtml(getLocalizedTitle(drawerItem, language))}</h3>
 
-                {/* Description — sanitized + language-gated to user's UI lang */}
+                {/* Description — translated when available; otherwise the
+                    source text passes a language-gate so we never show a
+                    Korean blob in an English UI. */}
                 {(() => {
-                  const cleaned = sanitizeDescription(drawerItem.description, {
-                    uiLanguage: language as "en" | "ko" | "ja" | "zh",
+                  const { text, isTranslated } = getLocalizedDescription(
+                    drawerItem,
+                    language,
+                  );
+                  const cleaned = sanitizeDescription(text, {
+                    // Skip the language gate for translated text — by
+                    // construction it's already in the user's language.
+                    uiLanguage: isTranslated
+                      ? undefined
+                      : (language as "en" | "ko" | "ja" | "zh"),
                   });
                   if (!cleaned) return null;
                   return (

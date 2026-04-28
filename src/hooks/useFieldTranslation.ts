@@ -22,7 +22,7 @@ export const useFieldTranslation = () => {
   const translateIfNeeded = useCallback(
     async (
       table: "ktrenz_keywords" | "ktrenz_trend_triggers" | "ktrenz_b2_items",
-      field: "keyword" | "context" | "title",
+      field: "keyword" | "context" | "title" | "description",
       items: { id: string; [key: string]: any }[],
       onTranslated?: () => void
     ) => {
@@ -33,6 +33,7 @@ export const useFieldTranslation = () => {
         "ktrenz_trend_triggers.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
         "ktrenz_trend_triggers.context": { en: "context", ja: "context_ja", zh: "context_zh" },
         "ktrenz_b2_items.title": { en: "title_en", ja: "title_ja", zh: "title_zh", ko: "title_ko" },
+        "ktrenz_b2_items.description": { en: "description_en", ja: "description_ja", zh: "description_zh", ko: "description_ko" },
       };
 
       const key = `${table}.${field}`;
@@ -40,14 +41,23 @@ export const useFieldTranslation = () => {
       if (!targetCol) return;
 
       // Find items that need translation
-      const sourceCol = field === "keyword" ? "keyword_ko" : field === "title" ? "title" : "context_ko";
+      const sourceCol =
+        field === "keyword"
+          ? "keyword_ko"
+          : field === "title"
+            ? "title"
+            : field === "description"
+              ? "description"
+              : "context_ko";
       const needTranslation = items.filter((item) => {
         const sourceValue = item[sourceCol];
         const targetValue = item[targetCol];
 
-        // For Korean: only translate if source contains Japanese characters
+        // For Korean: only translate if source contains Japanese characters.
+        // Applies to b2_items.title and b2_items.description (the only fields
+        // whose source can legitimately be non-Korean).
         if (language === "ko") {
-          if (field !== "title") return false; // Only b2_items title can be non-Korean
+          if (field !== "title" && field !== "description") return false;
           return !!sourceValue && !targetValue && typeof sourceValue === "string" && containsJapanese(sourceValue) && !pendingRef.current.has(`${item.id}-${key}-${language}`);
         }
 
