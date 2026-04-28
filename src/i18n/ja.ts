@@ -647,6 +647,7 @@ const dict: Record<string, string> = {
   "battle.guideStepContentDesc": "コンテンツカードを2つ以上タップして内容を確認しましょう。",
   "common.gotIt": "OK",
   "battle.labelTrendBy": "トレンド",
+  "battle.voteForBattle": "バトル {n} に投票",
   "battle.viewTrend": "トレンドを見る",
   "battle.nextSettlement": "次の精算まで",
   "battle.contentScore": "スコア",

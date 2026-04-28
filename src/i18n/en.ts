@@ -647,6 +647,7 @@ const dict: Record<string, string> = {
   "battle.guideStepContentDesc": "Tap at least 2 content cards to read their details.",
   "common.gotIt": "Got it",
   "battle.labelTrendBy": "Trend by",
+  "battle.voteForBattle": "Vote for Battle {n}",
   "battle.viewTrend": "View trend",
   "battle.nextSettlement": "Next settlement in",
   "battle.contentScore": "Score",

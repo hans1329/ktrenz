@@ -647,6 +647,7 @@ const dict: Record<string, string> = {
   "battle.guideStepContentDesc": "点击至少 2 张内容卡片查看详情。",
   "common.gotIt": "知道了",
   "battle.labelTrendBy": "趋势",
+  "battle.voteForBattle": "为 Battle {n} 投票",
   "battle.viewTrend": "查看趋势",
   "battle.nextSettlement": "距下次结算",
   "battle.contentScore": "分数",

@@ -2583,7 +2583,7 @@ export default function Battle() {
                   bothLocked ? "text-muted-foreground" : "text-muted-foreground",
                 )}>
                   {bothLocked && <Lock className="w-3 h-3" />}
-                  Battle {activePairIdx + 1}
+                  {t("voteForBattle").replace("{n}", String(activePairIdx + 1))}
                 </span>
                 {state.pickedRunId && (
                   <button
@@ -2608,21 +2608,24 @@ export default function Battle() {
                         className={cn(
                           "flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all shadow-sm",
                           unlocked
-                            ? "bg-card hover:bg-muted/50 active:scale-[0.98]"
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]"
                             : "bg-muted/60 opacity-80 hover:opacity-100",
                         )}
                       >
-                        <span className="text-[10px] font-extrabold text-muted-foreground">
+                        <span className={cn(
+                          "text-[10px] font-extrabold",
+                          unlocked ? "text-primary-foreground/70" : "text-muted-foreground",
+                        )}>
                           {idx === 0 ? "A" : "B"}
                         </span>
                         <span className={cn(
                           "text-sm font-bold truncate max-w-full",
-                          unlocked ? "text-foreground" : "text-muted-foreground",
+                          unlocked ? "text-primary-foreground" : "text-muted-foreground",
                         )}>
                           {run.star?.display_name || "—"}
                         </span>
                         {unlocked ? (
-                          <span className="text-[9px] text-muted-foreground">
+                          <span className="text-[9px] text-primary-foreground/80">
                             {t("labelTrendBy")}
                           </span>
                         ) : (
