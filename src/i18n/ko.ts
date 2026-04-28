@@ -25,6 +25,7 @@ const dict: Record<string, string> = {
   "nav.openMenu": "메뉴 열기",
   "common.viewProfile": "프로필 보기",
   "common.change": "다시 선택",
+  "common.cancel": "취소",
   "search.placeholder": "아티스트, 그룹 검색...",
   "search.noResults": "결과 없음",
   "rankings.live": "🔥 실시간 화력",

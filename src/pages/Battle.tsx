@@ -2609,7 +2609,7 @@ export default function Battle() {
                     onClick={() => updatePairState(activePairIdx, { pickedRunId: null, selectedBand: null })}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {globalT("common.change")}
+                    {globalT("common.cancel")}
                   </button>
                 )}
               </div>
