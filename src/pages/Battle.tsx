@@ -843,22 +843,24 @@ function ArtistSection({
                 )}
               </div>
 
-              {/* Signal row — same white as header, separated by a subtle inset shadow */}
-              <div className="flex items-center justify-center gap-5 px-4 py-2.5 text-[11px] bg-card shadow-[inset_0_4px_8px_-4px_rgba(0,0,0,0.06)]">
-                <span className="inline-flex items-center gap-1">
+              {/* Signal row — same white as header, separated by a subtle inset shadow.
+                  flex-wrap + whitespace-nowrap on each metric so narrow phones can
+                  break to 2 rows cleanly instead of stacking each label on its own line. */}
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-x-5 px-3 py-2.5 text-[11px] bg-card shadow-[inset_0_4px_8px_-4px_rgba(0,0,0,0.06)]">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
                   <TrendingUp className="w-3 h-3 text-muted-foreground" />
                   <span className="font-bold text-foreground">{contentScore.toFixed(0)}</span>
                   <span className="text-muted-foreground opacity-70">{scoreLabel}</span>
                 </span>
                 {totalEng > 0 && (
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     <Activity className="w-3 h-3 text-muted-foreground" />
                     <span className="font-bold text-foreground">{formatEng(totalEng)}</span>
                     <span className="text-muted-foreground opacity-70">{lt("battle.signalEngagement")}</span>
                   </span>
                 )}
                 {sourceCount > 0 && (
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     <span className="font-bold text-foreground">{sourceCount}</span>
                     <span className="text-muted-foreground opacity-70">{lt("battle.signalSources")}</span>
                   </span>
@@ -868,7 +870,7 @@ function ArtistSection({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUnlockGuide(); }}
                   className={cn(
-                    "inline-flex items-center gap-1 transition-colors hover:opacity-80",
+                    "inline-flex items-center gap-1 whitespace-nowrap transition-colors hover:opacity-80",
                     engagement.complete ? "font-bold text-primary" : "text-muted-foreground",
                   )}
                   title={engagement.complete ? lt("battle.unlockedHint") : lt("battle.unlockHint")}
@@ -893,7 +895,7 @@ function ArtistSection({
                     </span>
                   ))}
                   {engagement.complete && (
-                    <span className="ml-1">{lt("battle.stepReady")}</span>
+                    <span className="ml-1 hidden sm:inline">{lt("battle.stepReady")}</span>
                   )}
                 </button>
               </div>
