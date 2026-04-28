@@ -1803,9 +1803,9 @@ export default function Battle() {
       <div className="relative min-h-screen bg-background">
         <div className="fixed top-0 left-0 right-0 z-50 bg-card">
           <V3Header rightSlot={
-            <div className="flex items-center gap-1">
-              <Ticket className="text-primary/40 h-[16px] w-[18px]" />
-              <Skeleton className="h-4 w-4" />
+            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/30 text-primary-foreground">
+              <Ticket className="h-[14px] w-[16px]" />
+              <Skeleton className="h-3 w-3 bg-primary-foreground/30" />
             </div>
           } />
         </div>
@@ -1855,9 +1855,12 @@ export default function Battle() {
       />
       <div className="fixed top-0 left-0 right-0 z-50 bg-card">
         <V3Header rightSlot={
-          <button onClick={() => setShowTicketInfo(true)} className="flex items-center gap-1 active:opacity-60 transition-opacity">
-            <Ticket className="text-primary h-[16px] w-[18px]" />
-            <span className="font-bold text-primary text-sm">{remainingTickets}</span>
+          <button
+            onClick={() => setShowTicketInfo(true)}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary text-primary-foreground active:opacity-80 transition-opacity"
+          >
+            <Ticket className="h-[14px] w-[16px]" />
+            <span className="font-bold text-sm leading-none">{remainingTickets}</span>
           </button>
         } />
       </div>
