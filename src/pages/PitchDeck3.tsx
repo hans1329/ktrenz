@@ -401,7 +401,7 @@ export default function PitchDeck3() {
               <div className="space-y-2.5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Pre-Mint Breakdown (750M)</h4>
                 {[
-                  { label: "ICO Sale @ VBI", pct: 30, value: "225M" },
+                  { label: "ICO Sale @ BVI", pct: 30, value: "225M" },
                   { label: "Treasury / Ops", pct: 25, value: "187.5M" },
                   { label: "Team & Advisors", pct: 15, value: "112.5M" },
                   { label: "DEX Liquidity", pct: 15, value: "112.5M" },
@@ -756,8 +756,8 @@ export default function PitchDeck3() {
               {
                 phase: "Phase 2",
                 status: "Q4 2026",
-                title: "VBI ICO + Activity Mint Live",
-                items: ["VBI ICO 225M", "DEX initial liquidity (Base)", "Merkle distributor live", "Battle Pass + Insurance/Boost sinks active"],
+                title: "BVI ICO + Activity Mint Live",
+                items: ["BVI ICO 225M", "DEX initial liquidity (Base)", "Merkle distributor live", "Battle Pass + Insurance/Boost sinks active"],
                 accent: true,
               },
               {
@@ -898,7 +898,7 @@ export default function PitchDeck3() {
         </div>
       </Section>
 
-      {/* ───── 13. ICO via VBI ───── */}
+      {/* ───── 13. ICO via BVI ───── */}
       <Section id="ico">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
@@ -906,7 +906,7 @@ export default function PitchDeck3() {
               <Rocket className="w-3.5 h-3.5" /> Token Sale
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              ICO via <span className="text-primary">VBI</span>
+              ICO via <span className="text-primary">BVI</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
               225M $KTNZ allocation across three rounds.
@@ -918,7 +918,7 @@ export default function PitchDeck3() {
             {[
               { round: "Seed", price: "$0.005", alloc: "50M", vest: "24mo linear", emphasis: false },
               { round: "Private", price: "$0.012", alloc: "75M", vest: "12mo linear", emphasis: false },
-              { round: "Public", price: "$0.025", alloc: "100M", vest: "6mo linear", emphasis: true, badge: "@ VBI" },
+              { round: "Public", price: "$0.025", alloc: "100M", vest: "6mo linear", emphasis: true, badge: "@ BVI" },
             ].map((r) => (
               <div
                 key={r.round}
@@ -1010,7 +1010,7 @@ export default function PitchDeck3() {
           </div>
 
           <p className="text-muted-foreground text-xs mt-16">
-            © 2026 K-TRENZ · $KTNZ on Base · ICO via VBI
+            © 2026 K-TRENZ · $KTNZ on Base · ICO via BVI
             <br />
             Built for K-Pop fans, by fans — soon, owned by fans.
           </p>
