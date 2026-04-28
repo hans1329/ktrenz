@@ -2384,14 +2384,25 @@ export default function Battle() {
 
       {/* Insight Report Drawer */}
       <Sheet open={!!insightDrawer?.open} onOpenChange={(open) => { if (!open) setInsightDrawer(null); }}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <SheetHeader>
-            <SheetTitle className="text-base font-bold flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              {insightDrawer?.starName} Trend Report
-            </SheetTitle>
-          </SheetHeader>
-          <div className="py-4 space-y-4">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl max-h-[85vh] p-0 flex flex-col sm:max-w-lg sm:mx-auto"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          {/* Fixed header: drag handle + title — never scrolls */}
+          <div className="flex-shrink-0 bg-card rounded-t-2xl border-b border-border/50">
+            <div className="flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            <SheetHeader className="px-6 pb-3">
+              <SheetTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                {insightDrawer?.starName} Trend Report
+              </SheetTitle>
+            </SheetHeader>
+          </div>
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`] ? (
               <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
