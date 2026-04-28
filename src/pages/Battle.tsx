@@ -2595,7 +2595,7 @@ export default function Battle() {
             )}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="max-w-md mx-auto px-4 py-3 space-y-2">
+            <div className="max-w-md mx-auto px-4 py-3.5 space-y-3">
               <div className="flex items-center justify-between text-[11px]">
                 <span className={cn(
                   "inline-flex items-center gap-1 font-semibold",
@@ -2657,8 +2657,8 @@ export default function Battle() {
                   })}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-1.5 text-xs">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-1.5 text-xs pt-0.5">
                     <Trophy className="w-3 h-3 text-primary" />
                     <span className="font-bold text-primary truncate max-w-[50%]">{pickedStar}</span>
                     <span className="text-muted-foreground">· {t("predictGrowth")}</span>
@@ -2676,16 +2676,16 @@ export default function Battle() {
                             })
                           }
                           className={cn(
-                            "flex flex-col items-center py-1.5 px-1 rounded-lg transition-all shadow-sm",
+                            "flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg transition-all shadow-sm",
                             isSelected
                               ? "bg-primary/10 ring-1 ring-primary"
                               : "bg-card hover:bg-muted/50",
                           )}
                         >
-                          <span className="text-sm leading-none">
+                          <span className="text-base leading-none">
                             {band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}
                           </span>
-                          <span className="text-[10px] font-medium mt-0.5">{bandLabel}</span>
+                          <span className="text-[10px] font-medium">{bandLabel}</span>
                           <span className="text-[9px] font-bold text-muted-foreground">+{band.reward.toLocaleString()}💎</span>
                         </button>
                       );
@@ -2693,7 +2693,7 @@ export default function Battle() {
                   </div>
                   <Button
                     size="sm"
-                    className="w-full h-9"
+                    className="w-full h-10 mt-1"
                     disabled={!state.selectedBand}
                     onClick={() => handleSubmit(activePairIdx)}
                   >
