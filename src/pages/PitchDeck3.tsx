@@ -4,11 +4,14 @@ import {
   Flame, Activity, BarChart3, Zap, Wand2, Bot, Sparkles,
   TrendingUp, Eye, Radio, Layers, Target, Shield, ArrowRight,
   ChevronDown, Music, Globe, Users, Coins, Lock, Vote, Rocket,
-  Award, Wallet, RefreshCw, Network, FileCheck, Map,
+  Award, Wallet, RefreshCw, Network, FileCheck, Map, Linkedin,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import BoxParticles from "@/components/v3/BoxParticles";
+import ceoHanKim from "@/assets/team/ceo-han-kim.jpg";
+import cfoChrisLee from "@/assets/team/cfo-chris-lee.jpg";
+import cooWilliamYang from "@/assets/team/coo-william-yang.jpg";
 
 /* ─────── Section wrapper ─────── */
 const Section = ({
@@ -812,7 +815,90 @@ export default function PitchDeck3() {
         </div>
       </Section>
 
-      {/* ───── 12. ICO via VBI ───── */}
+      {/* ───── 12. Team ───── */}
+      <Section id="team">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-12 md:mb-16">
+            <SectionTag>
+              <Users className="w-3.5 h-3.5" /> Team
+            </SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              Where K-Pop Insiders <br className="hidden md:inline" />
+              Meet <span className="text-primary">Web3 Builders</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                name: "Han Kim",
+                role: "CEO",
+                img: ceoHanKim,
+                bio: ["Platform Industry Veteran", "Smart Contract Specialist &", "Full-Stack Developer"],
+                linkedin: "https://www.linkedin.com/in/han-seok-kim-0057121aa/",
+              },
+              {
+                name: "Chris Lee",
+                role: "CFO",
+                img: cfoChrisLee,
+                bio: ["Strategy Lead", "Platform Architecture &", "Financial Design Expert"],
+                linkedin: "https://www.linkedin.com/in/chris-lee-73a4a74/",
+              },
+              {
+                name: "William Yang",
+                role: "COO",
+                img: cooWilliamYang,
+                bio: ["Community", "Fandom Network Specialist", "K-Culture Expert"],
+                linkedin: "https://www.linkedin.com/in/william-yang-vim/",
+              },
+            ].map((m) => (
+              <div
+                key={m.name}
+                className="rounded-2xl bg-card/60 border border-border/50 p-6 md:p-7 flex flex-col items-center"
+              >
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden mb-4 ring-2 ring-primary/30">
+                  <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
+                </div>
+                <h3 className="text-lg md:text-xl font-bold text-foreground text-center mb-1">
+                  {m.name}
+                </h3>
+                <p className="text-primary font-semibold text-sm md:text-base text-center mb-3">
+                  {m.role}
+                </p>
+                <p className="text-xs md:text-sm text-muted-foreground text-center leading-relaxed">
+                  {m.bio.map((line, i) => (
+                    <span key={i}>
+                      {line}
+                      {i < m.bio.length - 1 && <br />}
+                    </span>
+                  ))}
+                </p>
+                <a
+                  href={m.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-4 text-xs md:text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  <span>LinkedIn</span>
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs md:text-sm text-muted-foreground mt-10">
+            Get in touch:{" "}
+            <a
+              href="mailto:manager@k-trendz.com"
+              className="text-primary hover:underline font-semibold"
+            >
+              manager@k-trendz.com
+            </a>
+          </p>
+        </div>
+      </Section>
+
+      {/* ───── 13. ICO via VBI ───── */}
       <Section id="ico">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
