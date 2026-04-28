@@ -19,11 +19,11 @@ import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles, Lock, Check } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Activity, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Instagram, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket, Loader2, Gift, Star, Sparkles, Lock, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import V3Header from "@/components/v3/V3Header";
@@ -2388,11 +2388,17 @@ export default function Battle() {
           side="bottom"
           className="rounded-t-2xl max-h-[85vh] p-0 flex flex-col sm:max-w-lg sm:mx-auto"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          hideClose
         >
-          {/* Fixed header: drag handle + title — never scrolls */}
+          {/* Fixed header: handle + close on the same row, then title — never scrolls */}
           <div className="flex-shrink-0 bg-card rounded-t-2xl border-b border-border/50">
-            <div className="flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-2.5 pb-2">
+              <div />
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto" />
+              <SheetClose className="justify-self-end p-1.5 -mr-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                <X className="w-4 h-4" />
+                <span className="sr-only">Close</span>
+              </SheetClose>
             </div>
             <SheetHeader className="px-6 pb-3">
               <SheetTitle className="text-base font-bold flex items-center gap-2">
