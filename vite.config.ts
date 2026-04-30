@@ -34,8 +34,10 @@ export default defineConfig(() => ({
         ],
       },
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
+        // skipWaiting=false → wait for the in-page prompt (PWAUpdatePrompt)
+        // before activating the new SW. This prevents mid-session reloads.
+        skipWaiting: false,
+        clientsClaim: false,
         cleanupOutdatedCaches: true,
         cacheId: "ktrenz-pwa",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
@@ -74,6 +76,27 @@ export default defineConfig(() => ({
             options: {
               cacheName: "ktrenz-pwa-lazy-chunks",
               expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            // Supabase Storage images (article thumbnails, star photos) —
+            // long-lived assets keyed by hash, safe to cache aggressively.
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/.*$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "ktrenz-pwa-supabase-images",
+              expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // YouTube/CDN thumbnails referenced by content cards.
+            urlPattern: /^https:\/\/(i\.ytimg\.com|img\.youtube\.com|p16-sign-va\.tiktokcdn\.com)\/.*$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "ktrenz-pwa-cdn-images",
+              expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],

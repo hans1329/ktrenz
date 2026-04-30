@@ -1350,9 +1350,14 @@ export default function Battle() {
   }
 
   async function restoreSubmittedState(pairs: BattlePair[], battleDate?: string | null) {
-    setPairStates({});
-    setPredictions([]);
-    setCollapsedPairs(new Set());
+    // Don't wipe pairStates here: a freshly-submitted pair (optimistic
+    // submitted=true) would briefly flip back to "vote me" if we cleared and
+    // the DB read hasn't caught up. We MERGE server-derived state into
+    // existing pairStates below.
+    if (pairs.length === 0) {
+      setPredictions([]);
+      setCollapsedPairs(new Set());
+    }
 
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (!currentUser || pairs.length === 0 || !battleDate) return;
@@ -1363,7 +1368,7 @@ export default function Battle() {
       .eq("user_id", currentUser.id)
       .eq("battle_date", battleDate);
 
-    if (!existingPreds || existingPreds.length === 0) return;
+    if (!existingPreds) return;
 
     const restoredStates: Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }> = {};
     pairs.forEach((pair, idx) => {
@@ -1379,9 +1384,29 @@ export default function Battle() {
       }
     });
 
+    // Merge: keep any existing local state where we already have an
+    // optimistic submission, only fill in pairs that aren't yet submitted.
+    setPairStates((prev) => {
+      const next = { ...prev };
+      for (const [idxStr, restored] of Object.entries(restoredStates)) {
+        const idx = Number(idxStr);
+        const existing = prev[idx];
+        // Don't downgrade an optimistic submitted=true to "not submitted"
+        // because of a server lag. Only adopt the server state if local
+        // is empty or not yet submitted.
+        if (!existing || !existing.submitted) {
+          next[idx] = restored;
+        }
+      }
+      return next;
+    });
+
     if (Object.keys(restoredStates).length > 0) {
-      setPairStates(restoredStates);
-      setCollapsedPairs(new Set(Object.keys(restoredStates).map(Number)));
+      setCollapsedPairs((prev) => {
+        const next = new Set(prev);
+        Object.keys(restoredStates).forEach((k) => next.add(Number(k)));
+        return next;
+      });
     }
 
     const runIds = [...new Set(existingPreds.flatMap((p: any) => [p.picked_run_id, p.opponent_run_id]))];
