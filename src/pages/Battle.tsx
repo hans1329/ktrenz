@@ -2432,8 +2432,8 @@ export default function Battle() {
               </SheetTitle>
             </SheetHeader>
           </div>
-          {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Scrollable body — bottom padding accounts for iOS safe area + breathing room */}
+          <div className="flex-1 overflow-y-auto px-6 pt-4 pb-[calc(env(safe-area-inset-bottom)+2rem)] space-y-4">
             {insightLoading && !insightData[`${insightDrawer?.runId}-${insightDrawer?.starId}-${language}`] ? (
               <div className="flex flex-col items-center justify-center gap-3 min-h-[240px]">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />

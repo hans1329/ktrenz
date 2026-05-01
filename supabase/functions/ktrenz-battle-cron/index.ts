@@ -47,6 +47,68 @@ function hasExpectedRuns(runCount: number, totalPairs: number | null | undefined
   return runCount > 0;
 }
 
+/**
+ * Pre-warm Battle insight cache for every (run × language) of a freshly-opened
+ * battle. Without this, the *first* user to tap A/B for each star in each
+ * language pays a 5-10s OpenAI wait — and that user is exactly the most
+ * engaged analyzer we want to retain. Pre-warming flips first-user UX from
+ * "block on OpenAI" to "instant cache hit".
+ *
+ * Fire-and-forget: each invoke spins up its own function instance and
+ * caches into ktrenz_b2_insights. We wrap the dispatch in waitUntil so the
+ * cron's response can return immediately while the runtime keeps the work
+ * alive in the background.
+ *
+ * Cost: ~8 OpenAI calls per star (4 langs × insight) ≈ $0.001/call. With
+ * a few hundred stars per battle, that's <$1/day.
+ */
+async function prewarmBattleInsights(
+  sb: any, supabaseUrl: string, serviceKey: string, batchId: string,
+): Promise<number> {
+  const { data: runs } = await sb
+    .from("ktrenz_b2_runs")
+    .select("id, star_id")
+    .eq("batch_id", batchId)
+    .eq("search_round", 1);
+
+  if (!runs || runs.length === 0) return 0;
+
+  // ktrenz_b2_runs.star_id has no FK to ktrenz_stars, so resolve names manually.
+  const starIds = Array.from(new Set(runs.map((r: any) => r.star_id)));
+  const { data: stars } = await sb
+    .from("ktrenz_stars")
+    .select("id, display_name, name_ko")
+    .in("id", starIds);
+  const starById = new Map<string, { display_name?: string; name_ko?: string }>(
+    (stars || []).map((s: any) => [s.id, s]),
+  );
+
+  const LANGUAGES = ["ko", "en", "ja", "zh"] as const;
+  const tasks: Promise<unknown>[] = [];
+  for (const run of runs) {
+    const star = starById.get(run.star_id);
+    const starName = star?.display_name || star?.name_ko || "";
+    for (const lang of LANGUAGES) {
+      tasks.push(
+        callFunction(supabaseUrl, serviceKey, "ktrenz-battle-insight", {
+          run_id: run.id,
+          star_id: run.star_id,
+          star_name: starName,
+          language: lang,
+        }).catch((e) => console.error(`[prewarm] run=${run.id} lang=${lang} failed:`, e)),
+      );
+    }
+  }
+
+  const allDone = Promise.all(tasks);
+  // @ts-ignore — Supabase Edge Runtime global
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(allDone);
+  }
+  return tasks.length;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -261,11 +323,19 @@ Deno.serve(async (req) => {
 
       const expectedTodayRuns = Number(todayBattle.total_pairs || 0) * 2;
       if (hasExpectedRuns(todayRound1Count || 0, todayBattle.total_pairs)) {
-        await sb.from("ktrenz_b2_battles")
+        // Conditional UPDATE returning rows so we know whether *this* call
+        // performed the collecting→open transition. Concurrent cron ticks
+        // would otherwise each pre-warm.
+        const { data: opened } = await sb.from("ktrenz_b2_battles")
           .update({ status: "open", updated_at: new Date().toISOString() })
           .eq("id", todayBattle.id)
-          .eq("status", "collecting");
+          .eq("status", "collecting")
+          .select("id");
         log.push(`Phase 6.5: Opened today's betting (${today})`);
+        if (opened && opened.length > 0) {
+          const fired = await prewarmBattleInsights(sb, supabaseUrl, serviceKey, todayBatchId);
+          log.push(`Phase 6.5: Pre-warm dispatched ${fired} insight calls`);
+        }
         return respond(log);
       }
 

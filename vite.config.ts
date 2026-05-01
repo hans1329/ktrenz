@@ -39,7 +39,12 @@ export default defineConfig(() => ({
         skipWaiting: false,
         clientsClaim: false,
         cleanupOutdatedCaches: true,
-        cacheId: "ktrenz-pwa",
+        // Bumped to v2 to evict stale runtime caches from builds that did not
+        // have Supabase/CDN image runtime caching wired up. Old cached entries
+        // (incl. failed/opaque responses for cross-origin images) were causing
+        // images to silently 404 on mobile Chrome. Bumping the id forces a
+        // clean cache namespace on next SW activation.
+        cacheId: "ktrenz-pwa-v2",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],

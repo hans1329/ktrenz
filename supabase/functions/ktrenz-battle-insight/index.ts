@@ -146,60 +146,95 @@ Return JSON: { "headline": "...", "bullets": ["...", "..."], "lifestyle": [{"cat
       { onConflict: "run_id,star_id,language" }
     );
 
-    // Award 30 K-Cashes to the first analyzer
+    // Award 30 K-Cashes to the first analyzer.
+    //
+    // Two-phase split for latency:
+    //   1. Synchronously decide first_analyzer (1 cheap SELECT) so the
+    //      response carries the correct flag and triggers the celebration
+    //      modal on the client.
+    //   2. Background-credit the points via EdgeRuntime.waitUntil so the
+    //      response returns immediately. The trigger trg_ktrenz_credit_points
+    //      handles `points`; we only update `lifetime_points` ourselves.
+    //      (Previously we manually re-credited `points` after the trigger
+    //      had already done so → bonus paid 60 instead of 30.)
     let firstAnalyzer = false;
-    const authHeader = req.headers.get("authorization");
-    if (authHeader) {
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const anonClient = createClient(supabaseUrl, anonKey);
-      const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
-      if (user) {
-        const BONUS_AMOUNT = 30;
-        // Check if bonus was already given for this run+star combo
-        const { data: existingBonus } = await sb
-          .from("ktrenz_point_transactions")
-          .select("id")
-          .eq("reason", "first_trend_analysis")
-          .eq("metadata->>run_id", run_id)
-          .eq("metadata->>star_id", star_id)
-          .limit(1)
-          .maybeSingle();
+    let bonusUserId: string | null = null;
+    const BONUS_AMOUNT = 30;
+    // Wrapped: bonus eligibility check must never fail the insight response.
+    // (e.g. service-role tokens from pre-warm calls hit getUser → null user.)
+    try {
+      const authHeader = req.headers.get("authorization");
+      if (authHeader) {
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const anonClient = createClient(supabaseUrl, anonKey);
+        const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+        if (user) {
+          const { data: existingBonus } = await sb
+            .from("ktrenz_point_transactions")
+            .select("id")
+            .eq("reason", "first_trend_analysis")
+            .eq("metadata->>run_id", run_id)
+            .eq("metadata->>star_id", star_id)
+            .limit(1)
+            .maybeSingle();
+          if (!existingBonus) {
+            firstAnalyzer = true;
+            bonusUserId = user.id;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[bonus] eligibility check failed (response unaffected):", e);
+    }
 
-        if (!existingBonus) {
-          // Record transaction
-          await sb.from("ktrenz_point_transactions").insert({
-            user_id: user.id,
+    const responseBody = JSON.stringify({
+      insight_text: insightText,
+      insight_data: parsed,
+      first_analyzer: firstAnalyzer,
+    });
+
+    if (firstAnalyzer && bonusUserId) {
+      const userId = bonusUserId;
+      const creditTask = (async () => {
+        try {
+          // Trigger trg_ktrenz_credit_points fires on insert and adds
+          // BONUS_AMOUNT to ktrenz_user_points.points (creating the row
+          // via UPSERT if missing).
+          const { error: txErr } = await sb.from("ktrenz_point_transactions").insert({
+            user_id: userId,
             amount: BONUS_AMOUNT,
             reason: "first_trend_analysis",
             description: "First trend analysis bonus",
             metadata: { run_id, star_id, star_name },
           });
-          // Update balance
-          const { data: existing } = await sb
-            .from("ktrenz_user_points")
-            .select("points, lifetime_points")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (existing) {
-            await sb.from("ktrenz_user_points")
-              .update({
-                points: (existing.points || 0) + BONUS_AMOUNT,
-                lifetime_points: (existing.lifetime_points || 0) + BONUS_AMOUNT,
-              })
-              .eq("user_id", user.id);
-          } else {
-            await sb.from("ktrenz_user_points").insert({
-              user_id: user.id,
-              points: BONUS_AMOUNT,
-              lifetime_points: BONUS_AMOUNT,
-            });
+          if (txErr) {
+            console.error("[bonus] tx insert failed:", txErr);
+            return;
           }
-          firstAnalyzer = true;
+          // Trigger doesn't touch lifetime_points, so bump it ourselves.
+          // Read after trigger so the row exists; race risk is tiny since
+          // bonus is one-shot per (run, star).
+          const { data: cur } = await sb
+            .from("ktrenz_user_points")
+            .select("lifetime_points")
+            .eq("user_id", userId)
+            .maybeSingle();
+          await sb
+            .from("ktrenz_user_points")
+            .update({ lifetime_points: (cur?.lifetime_points || 0) + BONUS_AMOUNT })
+            .eq("user_id", userId);
+        } catch (e) {
+          console.error("[bonus] background credit failed:", e);
         }
+      })();
+      // @ts-ignore — Supabase Edge Runtime global; not in standard Deno types.
+      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(creditTask);
       }
     }
 
-    return new Response(JSON.stringify({ insight_text: insightText, insight_data: parsed, first_analyzer: firstAnalyzer }), {
+    return new Response(responseBody, {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

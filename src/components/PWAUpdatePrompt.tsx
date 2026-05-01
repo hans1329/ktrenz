@@ -5,15 +5,16 @@ import { ToastAction } from "@/components/ui/toast";
 /**
  * PWA service-worker update handler.
  *
- * Previously: when a new SW was detected we activated it after a 2s timer,
- * which fires `controllerchange` → `window.location.reload()` mid-session.
- * That caused users to lose in-progress state (a half-submitted battle pick,
- * an open modal) every time we shipped — and we ship a lot.
+ * Originally: new SW activated automatically → mid-session reload → users
+ * lost half-submitted battle picks every deploy. Bad for data yield.
  *
- * Now: we still register the SW and pre-fetch the new assets, but the actual
- * activation (and the reload) is gated on a user click in the toast. The new
- * version applies on the user's next natural reload, or whenever they tap
- * "Refresh now" — never as a surprise.
+ * Current policy: never reload while the user is actively interacting.
+ * Activation happens at one of two safe moments:
+ *   1. User taps "Refresh now" in the toast (explicit opt-in).
+ *   2. Tab transitions hidden → visible (user backgrounded the app and
+ *      came back; nothing in-flight to disrupt).
+ * Either way, fixes (incl. cache invalidations) propagate within hours
+ * for mobile users without interrupting any active session.
  */
 export function PWAUpdatePrompt() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
@@ -39,6 +40,23 @@ export function PWAUpdatePrompt() {
 
   useEffect(() => {
     if (!waitingWorker) return;
+
+    // Auto-activate when the tab transitions hidden → visible. This is a
+    // natural, low-disruption moment (user just returned to the app), so we
+    // can swap in the new SW + reload without interrupting an in-progress
+    // session. Critical for delivering image/cache fixes to mobile users
+    // who rarely hard-close tabs.
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      const onControllerChange = () => {
+        navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange);
+        window.location.reload();
+      };
+      navigator.serviceWorker?.addEventListener("controllerchange", onControllerChange);
+      waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     const { dismiss } = toast({
       title: "New version available",
       description: "Tap Refresh now to load the latest.",
@@ -47,8 +65,6 @@ export function PWAUpdatePrompt() {
         <ToastAction
           altText="Refresh now"
           onClick={() => {
-            // User opted in: register a one-shot reload on activation, then
-            // tell the waiting SW to take control.
             const onControllerChange = () => {
               navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange);
               window.location.reload();
@@ -62,6 +78,10 @@ export function PWAUpdatePrompt() {
         </ToastAction>
       ),
     });
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [waitingWorker]);
 
   return null;
