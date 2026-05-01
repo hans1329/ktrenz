@@ -1202,6 +1202,7 @@ export default function Battle() {
 
   async function openInsightDrawer(runId: string, starId: string, starName: string) {
     recordTrendView(runId);
+    recordAction("insight_open", { runId, starId, metadata: { language } });
     const key = `${runId}-${starId}-${language}`;
     setInsightDrawer({ open: true, runId, starId, starName });
 
@@ -1232,12 +1233,36 @@ export default function Battle() {
     }
   }
 
-  function toggleHot(pairIdx: number, itemId: string) {
+  // Optimistic toggle — flip local state immediately, persist via RPC.
+  // RPC returns the new server-side state; if it disagrees with our optimistic
+  // value (rare: race or auth issue), we revert. Failure surfaces silently in
+  // the console — the vote is a soft signal, not user-blocking.
+  async function toggleHot(pairIdx: number, itemId: string) {
     const state = getPairState(pairIdx);
-    const next = new Set(state.hotVotes);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
-    updatePairState(pairIdx, { hotVotes: next });
+    const wasOn = state.hotVotes.has(itemId);
+    const optimistic = new Set(state.hotVotes);
+    if (wasOn) optimistic.delete(itemId);
+    else optimistic.add(itemId);
+    updatePairState(pairIdx, { hotVotes: optimistic });
+
+    try {
+      const { data, error } = await supabase.rpc("ktrenz_toggle_hot_vote" as any, { p_item_id: itemId });
+      if (error) throw error;
+      const serverOn = !!data;
+      if (serverOn !== !wasOn) {
+        // Server disagreed — reconcile.
+        const reconciled = new Set(getPairState(pairIdx).hotVotes);
+        if (serverOn) reconciled.add(itemId);
+        else reconciled.delete(itemId);
+        updatePairState(pairIdx, { hotVotes: reconciled });
+      }
+    } catch (e) {
+      console.error("[hot-vote] persist failed, reverting:", e);
+      const reverted = new Set(getPairState(pairIdx).hotVotes);
+      if (wasOn) reverted.add(itemId);
+      else reverted.delete(itemId);
+      updatePairState(pairIdx, { hotVotes: reverted });
+    }
   }
 
   // Load ticket info (cached)
@@ -1622,6 +1647,73 @@ export default function Battle() {
     setTimeout(() => setShowSettlementModal(true), 500);
   }
 
+  // Telemetry: lightweight action log into ktrenz_b2_user_actions.
+  // Fire-and-forget so it never blocks the user. Used for funnel analytics
+  // (visit→pick→analyze→submit) and B2B "engaged user" segmentation later.
+  function recordAction(
+    actionType: string,
+    details?: { runId?: string; starId?: string; pairIdx?: number; metadata?: Record<string, unknown> },
+  ) {
+    if (!user) return;
+    (async () => {
+      try {
+        await (supabase.from("ktrenz_b2_user_actions") as any).insert({
+          user_id: user.id,
+          action_type: actionType,
+          battle_date: battleCache.battleDate || null,
+          run_id: details?.runId ?? null,
+          star_id: details?.starId ?? null,
+          pair_idx: details?.pairIdx ?? null,
+          metadata: details?.metadata || {},
+        });
+      } catch (e) {
+        // Telemetry must never affect the user — log and move on.
+        console.error("[telemetry] insert failed:", e);
+      }
+    })();
+  }
+
+  // Load this user's hot votes for the visible runs and seed pairStates.
+  // Fire-and-forget — hot votes are a soft signal, never block rendering.
+  async function loadHotVotes(pairs: BattlePair[]) {
+    if (pairs.length === 0) return;
+    const allRunIds = pairs.flatMap(p => p.runs.map(r => r.id));
+    if (allRunIds.length === 0) return;
+    try {
+      const { data, error } = await (supabase
+        .from("ktrenz_b2_hot_votes") as any)
+        .select("item_id, run_id")
+        .in("run_id", allRunIds);
+      if (error) throw error;
+      if (!data || data.length === 0) return;
+      const byRun = new Map<string, Set<string>>();
+      for (const v of data) {
+        let s = byRun.get(v.run_id);
+        if (!s) { s = new Set(); byRun.set(v.run_id, s); }
+        s.add(v.item_id);
+      }
+      setPairStates(prev => {
+        const next = { ...prev };
+        pairs.forEach((pair, idx) => {
+          const merged = new Set<string>();
+          for (const run of pair.runs) {
+            const items = byRun.get(run.id);
+            if (items) items.forEach(id => merged.add(id));
+          }
+          if (merged.size > 0) {
+            next[idx] = {
+              ...(next[idx] || { pickedRunId: null, selectedBand: null, submitted: false, hotVotes: new Set<string>() }),
+              hotVotes: merged,
+            };
+          }
+        });
+        return next;
+      });
+    } catch (e) {
+      console.error("[hot-vote] load failed:", e);
+    }
+  }
+
   async function loadBattleData(skipTranslation = false) {
    try {
     const { phase } = getTimerPhase();
@@ -1630,6 +1722,7 @@ export default function Battle() {
     if (battleCache.data && Date.now() - battleCache.ts < CACHE_TTL) {
       setBattlePairs(battleCache.data);
       await restoreSubmittedState(battleCache.data, battleCache.battleDate);
+      loadHotVotes(battleCache.data);
       setLoading(false);
       return;
     }
@@ -1685,6 +1778,7 @@ export default function Battle() {
     loadRunEngagement(validPairs.flatMap((p) => p.runs.map((r) => r.id)));
 
     await restoreSubmittedState(validPairs, battleCache.battleDate);
+    loadHotVotes(validPairs);
 
     // Fire-and-forget thumbnail preload — no await, so render isn't blocked.
     // Browsers will stream images in place as they arrive.
@@ -1724,7 +1818,11 @@ export default function Battle() {
       setShowEngageGuide(true);
       return;
     }
-    updatePairState(pairIdx, { pickedRunId: state.pickedRunId === runId ? null : runId, selectedBand: null });
+    const willPick = state.pickedRunId !== runId;
+    updatePairState(pairIdx, { pickedRunId: willPick ? runId : null, selectedBand: null });
+    if (willPick) {
+      recordAction("pick_set", { runId, pairIdx });
+    }
   }
 
   function handleBandSelect(pairIdx: number, band: Band) {
@@ -1787,6 +1885,12 @@ export default function Battle() {
     setPredictions((prev) => [...prev, prediction]);
     updatePairState(pairIdx, { submitted: true });
     setCollapsedPairs(prev => new Set(prev).add(pairIdx));
+
+    recordAction("submit", {
+      runId: state.pickedRunId,
+      pairIdx,
+      metadata: { band: state.selectedBand, opponent_run_id: opponentRun.id },
+    });
 
     const bandInfo = BANDS.find(b => b.key === state.selectedBand);
     setConfirmModal({
@@ -2673,48 +2777,58 @@ export default function Battle() {
                   })}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-center gap-1.5 text-xs py-1.5">
                     <Trophy className="w-3.5 h-3.5 text-primary" />
                     <span className="font-bold text-primary truncate max-w-[50%]">{pickedStar}</span>
                     <span className="text-muted-foreground">· {t("predictGrowth")}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {BANDS.map((band) => {
-                      const isSelected = state.selectedBand === band.key;
-                      const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
-                      return (
+                  {!state.selectedBand ? (
+                    // Step 2a: choose band — 3 equal options
+                    <div className="grid grid-cols-3 gap-2">
+                      {BANDS.map((band) => {
+                        const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                        return (
+                          <button
+                            key={band.key}
+                            onClick={() => updatePairState(activePairIdx, { selectedBand: band.key })}
+                            className="flex flex-col items-center gap-1 py-3.5 px-1 rounded-xl transition-all shadow-sm bg-card hover:bg-muted/50"
+                          >
+                            <span className="text-lg leading-none">
+                              {band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}
+                            </span>
+                            <span className="text-[11px] font-medium">{bandLabel}</span>
+                            <span className="text-[9px] font-bold text-muted-foreground">+{band.reward.toLocaleString()}💎</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (() => {
+                    // Step 2b: band selected — show ONE big confirm button (the band
+                    // itself becomes the commit affordance), plus a small "change" link.
+                    // Replaces 3-band-grid + separate Submit button (4 widgets → 1+1).
+                    const selBand = BANDS.find(b => b.key === state.selectedBand)!;
+                    const bandLabel = t(selBand.key === "steady" ? "bandSteady" : selBand.key === "rising" ? "bandRising" : "bandSurge");
+                    const emoji = selBand.key === "steady" ? "🌱" : selBand.key === "rising" ? "🔥" : "🚀";
+                    return (
+                      <div className="space-y-2">
                         <button
-                          key={band.key}
-                          onClick={() =>
-                            updatePairState(activePairIdx, {
-                              selectedBand: state.selectedBand === band.key ? null : band.key,
-                            })
-                          }
-                          className={cn(
-                            "flex flex-col items-center gap-1 py-3.5 px-1 rounded-xl transition-all shadow-sm",
-                            isSelected
-                              ? "bg-primary/10 ring-1 ring-primary"
-                              : "bg-card hover:bg-muted/50",
-                          )}
+                          onClick={() => handleSubmit(activePairIdx)}
+                          className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl bg-primary text-primary-foreground font-bold shadow-md hover:bg-primary/90 active:scale-[0.99] transition-all"
                         >
-                          <span className="text-lg leading-none">
-                            {band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}
-                          </span>
-                          <span className="text-[11px] font-medium">{bandLabel}</span>
-                          <span className="text-[9px] font-bold text-muted-foreground">+{band.reward.toLocaleString()}💎</span>
+                          <span className="text-xl leading-none">{emoji}</span>
+                          <span className="text-sm">{t("submitPrediction")}</span>
+                          <span className="text-xs opacity-90">· {bandLabel} · +{selBand.reward.toLocaleString()}💎</span>
                         </button>
-                      );
-                    })}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full h-10 mt-1"
-                    disabled={!state.selectedBand}
-                    onClick={() => handleSubmit(activePairIdx)}
-                  >
-                    {t("submitPrediction")}
-                  </Button>
+                        <button
+                          onClick={() => updatePairState(activePairIdx, { selectedBand: null })}
+                          className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1"
+                        >
+                          {globalT("common.changeBand") || globalT("common.change") || "Change band"}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

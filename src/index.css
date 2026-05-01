@@ -5,7 +5,7 @@
 html, body {
   overscroll-behavior: none;
   overflow-x: hidden;
-  background-color: hsl(220, 14%, 95%);
+  background-color: hsl(220, 14%, 91%);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -50,8 +50,11 @@ html {
 @layer base {
   :root {
     /* 3-tier surface system:
-       background = page (subtle gray) → card = elevated white → muted = nested gray */
-    --background: 220 14% 95%;
+       background = page (subtle gray) → card = elevated white → muted = nested gray
+       BG was 95% lightness — too close to card 100% → cards disappeared on
+       bright displays. Bumped down to 91% (and shadow strengthened) so card
+       elevation reads in any lighting. */
+    --background: 220 14% 91%;
     --foreground: 0 0% 15%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 15%;
@@ -59,20 +62,20 @@ html {
     --popover-foreground: 0 0% 15%;
     --primary: 290 65% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 94%;
+    --secondary: 220 14% 90%;
     --secondary-foreground: 220 15% 25%;
-    --muted: 220 14% 92%;
+    --muted: 220 14% 88%;
     --muted-foreground: 215 12% 45%;
     --accent: 290 65% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
+    --border: 220 13% 84%;
+    --input: 220 13% 84%;
     --ring: 290 65% 45%;
     --radius: 0.75rem;
-    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 6px 20px 0 hsl(290 65% 45% / 0.1);
+    --shadow-card: 0 2px 10px 0 hsl(0 0% 0% / 0.10);
+    --shadow-card-hover: 0 6px 22px 0 hsl(290 65% 45% / 0.14);
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 15%;
     --sidebar-primary: 290 65% 45%;
