@@ -652,7 +652,7 @@ const dict: Record<string, string> = {
   "battle.emptyOpeningTitle": "Today's battle opens soon",
   "battle.emptyResultsTitle": "Results coming in. New battle opens shortly",
   "battle.emptyClosingTitle": "Preparing today's battle data",
-  "battle.emptyTeaser": "Which trend will surge tomorrow?",
+  "battle.emptyTeaser": "Which trend wins tomorrow?",
   "common.gotIt": "Got it",
   "battle.labelTrendBy": "Trend by",
   "battle.voteForBattle": "Vote for Battle {n}",

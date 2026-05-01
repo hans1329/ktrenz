@@ -652,7 +652,7 @@ const dict: Record<string, string> = {
   "battle.emptyOpeningTitle": "今日 Battle 即将开始",
   "battle.emptyResultsTitle": "结果公布中，新一轮 Battle 即将开始",
   "battle.emptyClosingTitle": "今日 Battle 数据准备中",
-  "battle.emptyTeaser": "哪个趋势明天会更火爆？",
+  "battle.emptyTeaser": "明天哪个趋势会更火？",
   "common.gotIt": "知道了",
   "battle.labelTrendBy": "趋势",
   "battle.voteForBattle": "为 Battle {n} 投票",

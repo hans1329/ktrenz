@@ -652,7 +652,7 @@ const dict: Record<string, string> = {
   "battle.emptyOpeningTitle": "곧 오늘의 배틀이 열립니다",
   "battle.emptyResultsTitle": "결과 발표 중. 새 배틀이 곧 시작돼요",
   "battle.emptyClosingTitle": "오늘 배틀 데이터 준비 중",
-  "battle.emptyTeaser": "어떤 트렌드가 내일 더 터질까?",
+  "battle.emptyTeaser": "내일 더 유행할 트렌드는?",
   "common.gotIt": "확인",
   "battle.labelTrendBy": "트렌드",
   "battle.voteForBattle": "배틀 {n} 투표",
