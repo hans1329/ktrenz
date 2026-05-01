@@ -25,7 +25,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // Check cache first (language-aware)
+    // Check cache first (language-aware). NOTE: we no longer early-return on
+    // cache hit — the bonus eligibility check below must always run so a real
+    // user gets first_analyzer credit even when pre-warm has already populated
+    // the cache.
     const { data: cached } = await sb
       .from("ktrenz_b2_insights")
       .select("insight_text, insight_data")
@@ -34,13 +37,15 @@ serve(async (req) => {
       .eq("language", language)
       .maybeSingle();
 
-    if (cached) {
-      return new Response(JSON.stringify(cached), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let insightText: string;
+    let parsed: { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string };
 
-    // Fetch items for this run
+    if (cached) {
+      insightText = cached.insight_text;
+      parsed = cached.insight_data;
+    } else {
+      // Cache miss: generate via OpenAI.
+      // Fetch items for this run
     const { data: items } = await sb
       .from("ktrenz_b2_items")
       .select("source, title, description, engagement_score, url")
@@ -131,20 +136,20 @@ Return JSON: { "headline": "...", "bullets": ["...", "..."], "lifestyle": [{"cat
 
     const aiData = await aiResp.json();
     const content = aiData.choices?.[0]?.message?.content || "{}";
-    let parsed: { headline?: string; bullets?: string[]; lifestyle?: { category: string; text: string }[]; vibe?: string };
     try {
       parsed = JSON.parse(content);
     } catch {
       parsed = { headline: "Trend Update", bullets: [content], lifestyle: [], vibe: "steady" };
     }
 
-    const insightText = [parsed.headline || "", ...(parsed.bullets || [])].join("\n");
+    insightText = [parsed.headline || "", ...(parsed.bullets || [])].join("\n");
 
     // Cache in DB (per language)
     await sb.from("ktrenz_b2_insights").upsert(
       { run_id, star_id, language, insight_text: insightText, insight_data: parsed },
       { onConflict: "run_id,star_id,language" }
     );
+    } // end of cache-miss generation block
 
     // Award 30 K-Cashes to the first analyzer.
     //

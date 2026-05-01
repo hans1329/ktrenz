@@ -1209,20 +1209,11 @@ export default function Battle() {
 
     setInsightLoading(true);
     try {
-      const { data: cached } = await supabase
-        .from("ktrenz_b2_insights")
-        .select("insight_data")
-        .eq("run_id", runId)
-        .eq("star_id", starId)
-        .eq("language", language)
-        .maybeSingle();
-
-      if (cached?.insight_data) {
-        setInsightData(prev => ({ ...prev, [key]: cached.insight_data as any }));
-        setInsightLoading(false);
-        return;
-      }
-
+      // Always go through the Edge Function — it does its own DB cache lookup
+      // (~100ms) AND runs the first-analyzer eligibility check on every call.
+      // A previous client-side cache shortcut bypassed the function entirely
+      // when pre-warm had filled the cache, which silently broke the bonus
+      // modal for first analyzers.
       const { data, error } = await supabase.functions.invoke("ktrenz-battle-insight", {
         body: { run_id: runId, star_id: starId, star_name: starName, language },
       });
