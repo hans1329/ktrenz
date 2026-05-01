@@ -1096,6 +1096,21 @@ export default function Battle() {
   const [activePairIdx, setActivePairIdx] = useState<number | null>(null);
   const pairRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const [showEngageGuide, setShowEngageGuide] = useState(false);
+  // First-visit onboarding — shown once per device. v1 storage key so we can
+  // re-show if we materially change the framing later.
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    try {
+      if (localStorage.getItem("ktrenz-battle-onboarded-v1") !== "1") {
+        setShowOnboarding(true);
+      }
+    } catch { /* private mode etc. — skip silently */ }
+  }, [user]);
+  function dismissOnboarding() {
+    try { localStorage.setItem("ktrenz-battle-onboarded-v1", "1"); } catch { /* ignore */ }
+    setShowOnboarding(false);
+  }
 
   // Engagement gating: each run requires trend-view + 2 content views before pick.
   type RunEngagement = { trendViewed: boolean; viewedItems: Set<string> };
@@ -2292,7 +2307,32 @@ export default function Battle() {
             {t("noSettled")}
           </div>
         )}
-        {battleFilter === "live" && battlePairs.every((_, idx) => {
+        {battleFilter === "live" && battlePairs.length === 0 && (() => {
+          // Phase-aware empty state: when no battle pairs are loaded, show the
+          // *reason* + a teaser instead of just a generic skeleton/blank.
+          // Drives re-visit intent during opening/results windows where users
+          // would otherwise bounce thinking the app is broken.
+          const { phase } = getTimerPhase();
+          const titleKey = phase === "opening"
+            ? "battle.emptyOpeningTitle"
+            : phase === "results"
+            ? "battle.emptyResultsTitle"
+            : "battle.emptyClosingTitle";
+          return (
+            <div className="flex flex-col items-center justify-center text-center px-6 min-h-[50vh] gap-3">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 grid place-items-center">
+                <Sparkles className="w-8 h-8 text-primary" />
+              </div>
+              <p className="text-sm font-bold text-foreground max-w-[260px]">
+                {globalT(titleKey)}
+              </p>
+              <p className="text-xs text-muted-foreground italic">
+                {globalT("battle.emptyTeaser")}
+              </p>
+            </div>
+          );
+        })()}
+        {battleFilter === "live" && battlePairs.length > 0 && battlePairs.every((_, idx) => {
           const s = getPairState(idx);
           const p = predictions.find(pr => pr.pickedRunId === s.pickedRunId);
           return s.submitted && p?.status !== "pending";
@@ -2525,6 +2565,37 @@ export default function Battle() {
                 <FileText className="w-4 h-4 text-primary" />
                 {insightDrawer?.starName} Trend Report
               </SheetTitle>
+              {/* In-context engagement progress — drawer doubles as one of the
+                  3 engagement steps, so users shouldn't have to close it to
+                  check how close they are to unlocking the pick. */}
+              {(() => {
+                if (!insightDrawer?.runId) return null;
+                const eng = getEngagement(insightDrawer.runId);
+                const stepsDone = (eng.trendViewed ? 1 : 0) + Math.min(eng.contentCount, 2);
+                const total = ENGAGEMENT_TOTAL_STEPS;
+                const complete = stepsDone >= total;
+                return (
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="flex gap-1 flex-1">
+                      {Array.from({ length: total }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "h-1 flex-1 rounded-full transition-colors",
+                            i < stepsDone ? "bg-primary" : "bg-muted-foreground/20",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-bold tabular-nums",
+                      complete ? "text-primary" : "text-muted-foreground",
+                    )}>
+                      {complete ? `✓ ${total}/${total}` : `${stepsDone}/${total}`}
+                    </span>
+                  </div>
+                );
+              })()}
             </SheetHeader>
           </div>
           {/* Scrollable body — bottom padding accounts for iOS safe area + breathing room */}
@@ -2657,6 +2728,49 @@ export default function Battle() {
             </div>
             <Button className="w-full" onClick={() => setShowFirstAnalyzerModal(false)}>
               OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* First-visit onboarding — frames Battle as evidence-based prediction
+          (not popularity vote) before they touch the gate for the first time. */}
+      <Dialog open={showOnboarding} onOpenChange={(open) => { if (!open) dismissOnboarding(); }}>
+        <DialogContent className="max-w-md rounded-2xl mx-auto p-0 overflow-hidden">
+          <div className="bg-gradient-to-b from-primary/15 to-transparent px-6 pt-7 pb-5">
+            <div className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-primary/15 grid place-items-center">
+              <Sparkles className="w-7 h-7 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-lg font-bold text-foreground">
+              {globalT("battle.onboardingTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground mt-2 leading-relaxed">
+              {globalT("battle.onboardingHero")}
+            </DialogDescription>
+          </div>
+          <div className="px-6 pb-6 space-y-3">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold shrink-0">1</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepTrend")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepTrendDesc")}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold shrink-0">2</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepContent")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepContentDesc")}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-bold shrink-0">3</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{t("predictGrowth")}</p>
+              </div>
+            </div>
+            <Button onClick={dismissOnboarding} className="w-full h-11 mt-1 text-sm font-bold">
+              {globalT("battle.onboardingCTA")}
             </Button>
           </div>
         </DialogContent>
