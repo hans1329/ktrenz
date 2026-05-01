@@ -7,15 +7,36 @@
  * no esm.sh URL imports here).
  */
 
-export type Band = "steady" | "rising" | "surge";
+export type Band = "steady" | "rising" | "surge" | "mythic";
 
+// Sprint 2B economic rebalance (2026-05-01):
+//   surge: 80%/1000 → 50%/500 — surge was effectively a lottery (rare hits),
+//     now a meaningful skill tier
+//   mythic (NEW): 100%/2000 — the actual lottery, separated from skill
+//   steady, rising unchanged
 export const BAND_THRESHOLDS: Record<Band, { min: number; reward: number }> = {
   steady: { min: 15, reward: 100 },
   rising: { min: 30, reward: 300 },
-  surge: { min: 80, reward: 1000 },
+  surge: { min: 50, reward: 500 },
+  mythic: { min: 100, reward: 2000 },
 };
 
 export const CONSOLATION_REWARD = 10;
+
+// Streak / accuracy multiplier — separates top forecasters from casuals.
+// Sample-size threshold prevents 2/2 = 100% lucky streaks from triggering 2x.
+export const STREAK_MIN_SAMPLE = 5;
+export const STREAK_MULTIPLIER_HIGH = 2.0;  // hit_rate ≥ 0.80
+export const STREAK_MULTIPLIER_MID = 1.5;   // hit_rate ≥ 0.60
+
+export function streakMultiplier(hitRate7d: number | null | undefined, sampleSize: number | null | undefined): number {
+  const n = sampleSize ?? 0;
+  const r = hitRate7d ?? 0;
+  if (n < STREAK_MIN_SAMPLE) return 1.0;
+  if (r >= 0.80) return STREAK_MULTIPLIER_HIGH;
+  if (r >= 0.60) return STREAK_MULTIPLIER_MID;
+  return 1.0;
+}
 
 /** Percent growth from oldScore to newScore. Old is floored at 1 to avoid div-by-zero. */
 export function growthPct(oldScore: number | null | undefined, newScore: number | null | undefined): number {
@@ -27,6 +48,7 @@ export function growthPct(oldScore: number | null | undefined, newScore: number 
 
 /** Categorize a growth % into the actual band achieved. */
 export function classifyBand(growth: number): Band | "flat" {
+  if (growth >= BAND_THRESHOLDS.mythic.min) return "mythic";
   if (growth >= BAND_THRESHOLDS.surge.min) return "surge";
   if (growth >= BAND_THRESHOLDS.rising.min) return "rising";
   if (growth >= BAND_THRESHOLDS.steady.min) return "steady";
@@ -37,6 +59,8 @@ export type SettlementInput = {
   pickedGrowth: number;
   opponentGrowth: number;
   predictedBand: Band | string;
+  /** Multiplier applied to the WIN reward (not consolation). 1.0 = no streak. */
+  streakMultiplier?: number;
 };
 
 export type SettlementResult = {
@@ -45,6 +69,8 @@ export type SettlementResult = {
   reason: string;
   pickedWonVs: boolean;
   bandMatched: boolean;
+  /** Multiplier actually applied (1.0 if loss or none). */
+  appliedMultiplier: number;
 };
 
 /**
@@ -94,7 +120,8 @@ export function trendBetReward(outcome: TrendOutcome, betOutcome: string): numbe
 }
 
 export function settlePrediction(input: SettlementInput): SettlementResult {
-  const { pickedGrowth, opponentGrowth, predictedBand } = input;
+  const { pickedGrowth, opponentGrowth, predictedBand, streakMultiplier: rawMultiplier } = input;
+  const multiplier = rawMultiplier && rawMultiplier > 0 ? rawMultiplier : 1.0;
   const bandConfig = BAND_THRESHOLDS[predictedBand as Band];
   const pickedWonVs = pickedGrowth > opponentGrowth;
   // Unknown band → impossible threshold so it never matches.
@@ -103,10 +130,11 @@ export function settlePrediction(input: SettlementInput): SettlementResult {
   if (won) {
     return {
       status: "won",
-      reward: bandConfig.reward,
+      reward: Math.round(bandConfig.reward * multiplier),
       reason: `battle_win_${predictedBand}`,
       pickedWonVs,
       bandMatched,
+      appliedMultiplier: multiplier,
     };
   }
   return {
@@ -115,5 +143,6 @@ export function settlePrediction(input: SettlementInput): SettlementResult {
     reason: "battle_consolation",
     pickedWonVs,
     bandMatched,
+    appliedMultiplier: 1.0,
   };
 }

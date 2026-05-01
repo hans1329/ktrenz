@@ -68,7 +68,7 @@ interface B2Run {
   star?: { display_name: string; name_ko: string; image_url?: string | null };
 }
 
-type Band = "steady" | "rising" | "surge";
+type Band = "steady" | "rising" | "surge" | "mythic";
 
 interface InstagramMediaAsset {
   type: "video" | "image";
@@ -80,8 +80,9 @@ const instagramMediaCache = new Map<string, InstagramMediaAsset[]>();
 
 const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
   { key: "steady", label: "Steady", range: "15–30%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
-  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, iconColor: "text-orange-500", reward: 300 },
-  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, iconColor: "text-red-500", reward: 1000 },
+  { key: "rising", label: "Rising", range: "30–50%", icon: Flame, iconColor: "text-orange-500", reward: 300 },
+  { key: "surge", label: "Surge", range: "50–100%", icon: Rocket, iconColor: "text-red-500", reward: 500 },
+  { key: "mythic", label: "Mythic", range: "100%+", icon: Star, iconColor: "text-fuchsia-500", reward: 2000 },
 ];
 
 const SPOTIFY_GOAL = 9000;
@@ -222,7 +223,8 @@ function PredictionConfirmModal({ open, onClose, language, starName, band, rewar
   const BandIcon = bandInfo?.icon || Sprout;
   const bandLabel = band === "steady" ? { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" }
     : band === "rising" ? { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" }
-    : { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" };
+    : band === "surge" ? { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" }
+    : { en: "Mythic", ko: "전설", ja: "伝説", zh: "传奇" };
 
   const title = lang === "ko" ? "예측이 등록되었어요! ✅"
     : lang === "ja" ? "予測が登録されました！✅"
@@ -1062,6 +1064,39 @@ export default function Battle() {
   const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
   const [pairStates, setPairStates] = useState<Record<number, { pickedRunId: string | null; selectedBand: Band | null; submitted: boolean; hotVotes: Set<string> }>>({});
   const [loading, setLoading] = useState(true);
+
+  // Streak / hit-rate state — drives the win-multiplier badge in CommitBar.
+  // Loaded from ktrenz_user_points (RLS auto-scopes to current user).
+  const [streakStats, setStreakStats] = useState<{ hitRate7d: number | null; hitRate7dN: number; currentStreak: number }>({
+    hitRate7d: null, hitRate7dN: 0, currentStreak: 0,
+  });
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase
+        .from("ktrenz_user_points") as any)
+        .select("hit_rate_7d, hit_rate_7d_n, current_streak")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setStreakStats({
+          hitRate7d: typeof data.hit_rate_7d === "string" ? parseFloat(data.hit_rate_7d) : data.hit_rate_7d,
+          hitRate7dN: data.hit_rate_7d_n || 0,
+          currentStreak: data.current_streak || 0,
+        });
+      }
+    })();
+  }, [user]);
+
+  // Mirror of supabase/functions/_shared/settlement.ts streakMultiplier — kept
+  // tiny + inlined to avoid a Deno↔Node import. Update both together.
+  function getStreakMultiplier(): number {
+    const { hitRate7d, hitRate7dN } = streakStats;
+    if (hitRate7dN < 5) return 1.0;
+    if ((hitRate7d ?? 0) >= 0.80) return 2.0;
+    if ((hitRate7d ?? 0) >= 0.60) return 1.5;
+    return 1.0;
+  }
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
   const [drawerPairIndex, setDrawerPairIndex] = useState<number>(0);
 
@@ -2061,7 +2096,7 @@ export default function Battle() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {pred.battle_date && <span className="mr-1.5 opacity-60">{pred.battle_date}</span>}
-                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : "bandSurge")} · {BANDS.find((b) => b.key === pred.band)?.range}
+                    {t(pred.band === "steady" ? "bandSteady" : pred.band === "rising" ? "bandRising" : pred.band === "surge" ? "bandSurge" : "bandMythic")} · {BANDS.find((b) => b.key === pred.band)?.range}
                     {pred.reward_amount != null && pred.status === "won" && <span className="ml-1 text-primary font-bold">+{pred.reward_amount}💎</span>}
                   </p>
                 </div>
@@ -2257,7 +2292,8 @@ export default function Battle() {
                   const BandIcon = bandInfo?.icon || Sprout;
                   const bandLabel = pred.band === "steady" ? (language === "ko" ? "안정" : "Steady")
                     : pred.band === "rising" ? (language === "ko" ? "상승" : "Rising")
-                    : (language === "ko" ? "급등" : "Surge");
+                    : pred.band === "surge" ? (language === "ko" ? "급등" : "Surge")
+                    : (language === "ko" ? "전설" : "Mythic");
                   return (
                     <div key={i} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
                       <div className="flex items-center gap-2 min-w-0">
@@ -2897,22 +2933,34 @@ export default function Battle() {
                     <span className="font-bold text-primary truncate max-w-[50%]">{pickedStar}</span>
                     <span className="text-muted-foreground">· {t("predictGrowth")}</span>
                   </div>
+                  {(() => {
+                    const mult = getStreakMultiplier();
+                    if (mult <= 1.0) return null;
+                    return (
+                      <div className="flex items-center justify-center gap-1.5 -my-1">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold tabular-nums">
+                          🎯 {globalT("battle.streakBonus") || "Streak"} ×{mult.toFixed(1)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {!state.selectedBand ? (
-                    // Step 2a: choose band — 3 equal options
-                    <div className="grid grid-cols-3 gap-2">
+                    // Step 2a: choose band — 4 options (steady/rising/surge/mythic)
+                    <div className="grid grid-cols-4 gap-1.5">
                       {BANDS.map((band) => {
-                        const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : "bandSurge");
+                        const bandLabel = t(band.key === "steady" ? "bandSteady" : band.key === "rising" ? "bandRising" : band.key === "surge" ? "bandSurge" : "bandMythic");
+                        const emoji = band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : band.key === "surge" ? "🚀" : "✨";
+                        const mult = getStreakMultiplier();
+                        const effectiveReward = Math.round(band.reward * mult);
                         return (
                           <button
                             key={band.key}
                             onClick={() => updatePairState(activePairIdx, { selectedBand: band.key })}
-                            className="flex flex-col items-center gap-1 py-3.5 px-1 rounded-xl transition-all shadow-sm bg-card hover:bg-muted/50"
+                            className="flex flex-col items-center gap-1 py-3 px-1 rounded-xl transition-all shadow-sm bg-card hover:bg-muted/50"
                           >
-                            <span className="text-lg leading-none">
-                              {band.key === "steady" ? "🌱" : band.key === "rising" ? "🔥" : "🚀"}
-                            </span>
-                            <span className="text-[11px] font-medium">{bandLabel}</span>
-                            <span className="text-[9px] font-bold text-muted-foreground">+{band.reward.toLocaleString()}💎</span>
+                            <span className="text-base leading-none">{emoji}</span>
+                            <span className="text-[10px] font-medium leading-tight">{bandLabel}</span>
+                            <span className="text-[9px] font-bold text-muted-foreground tabular-nums">+{effectiveReward.toLocaleString()}</span>
                           </button>
                         );
                       })}
@@ -2920,10 +2968,12 @@ export default function Battle() {
                   ) : (() => {
                     // Step 2b: band selected — show ONE big confirm button (the band
                     // itself becomes the commit affordance), plus a small "change" link.
-                    // Replaces 3-band-grid + separate Submit button (4 widgets → 1+1).
+                    // Replaces 4-band-grid + separate Submit button (5 widgets → 1+1).
                     const selBand = BANDS.find(b => b.key === state.selectedBand)!;
-                    const bandLabel = t(selBand.key === "steady" ? "bandSteady" : selBand.key === "rising" ? "bandRising" : "bandSurge");
-                    const emoji = selBand.key === "steady" ? "🌱" : selBand.key === "rising" ? "🔥" : "🚀";
+                    const bandLabel = t(selBand.key === "steady" ? "bandSteady" : selBand.key === "rising" ? "bandRising" : selBand.key === "surge" ? "bandSurge" : "bandMythic");
+                    const emoji = selBand.key === "steady" ? "🌱" : selBand.key === "rising" ? "🔥" : selBand.key === "surge" ? "🚀" : "✨";
+                    const mult = getStreakMultiplier();
+                    const effectiveReward = Math.round(selBand.reward * mult);
                     return (
                       <div className="space-y-2">
                         <button
@@ -2932,7 +2982,7 @@ export default function Battle() {
                         >
                           <span className="text-xl leading-none">{emoji}</span>
                           <span className="text-sm">{t("submitPrediction")}</span>
-                          <span className="text-xs opacity-90">· {bandLabel} · +{selBand.reward.toLocaleString()}💎</span>
+                          <span className="text-xs opacity-90">· {bandLabel} · +{effectiveReward.toLocaleString()}💎{mult > 1 && <span className="ml-0.5">⚡</span>}</span>
                         </button>
                         <button
                           onClick={() => updatePairState(activePairIdx, { selectedBand: null })}

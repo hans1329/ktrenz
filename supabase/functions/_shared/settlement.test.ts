@@ -3,10 +3,12 @@ import {
   BAND_THRESHOLDS,
   CONSOLATION_REWARD,
   TREND_REWARDS,
+  STREAK_MIN_SAMPLE,
   classifyBand,
   classifyTrendOutcome,
   growthPct,
   settlePrediction,
+  streakMultiplier,
   trendBetReward,
 } from "./settlement";
 
@@ -46,9 +48,11 @@ describe("classifyBand", () => {
     [15, "steady"],
     [29.99, "steady"],
     [30, "rising"],
-    [79.99, "rising"],
-    [80, "surge"],
-    [200, "surge"],
+    [49.99, "rising"],
+    [50, "surge"],
+    [99.99, "surge"],
+    [100, "mythic"],
+    [500, "mythic"],
   ])("growth=%s → band=%s", (growth, expected) => {
     expect(classifyBand(growth)).toBe(expected);
   });
@@ -108,15 +112,37 @@ describe("settlePrediction", () => {
     expect(r.pickedWonVs).toBe(false);
   });
 
-  it("WIN: surge band with matching surge growth", () => {
+  it("WIN: surge band with matching surge growth (new threshold 50%)", () => {
     const r = settlePrediction({
-      pickedGrowth: 120,
-      opponentGrowth: 50,
+      pickedGrowth: 70,
+      opponentGrowth: 30,
       predictedBand: "surge",
     });
     expect(r.status).toBe("won");
-    expect(r.reward).toBe(1000);
+    expect(r.reward).toBe(BAND_THRESHOLDS.surge.reward);
     expect(r.reason).toBe("battle_win_surge");
+  });
+
+  it("WIN: mythic band requires 100%+ growth", () => {
+    const r = settlePrediction({
+      pickedGrowth: 150,
+      opponentGrowth: 30,
+      predictedBand: "mythic",
+    });
+    expect(r.status).toBe("won");
+    expect(r.reward).toBe(BAND_THRESHOLDS.mythic.reward);
+    expect(r.reason).toBe("battle_win_mythic");
+  });
+
+  it("LOSS: mythic predicted but only surge-level growth", () => {
+    const r = settlePrediction({
+      pickedGrowth: 80,
+      opponentGrowth: 20,
+      predictedBand: "mythic",
+    });
+    expect(r.status).toBe("lost");
+    expect(r.reward).toBe(CONSOLATION_REWARD);
+    expect(r.bandMatched).toBe(false);
   });
 
   it("WIN: steady band, low growth still meets threshold", () => {
@@ -153,9 +179,66 @@ describe("settlePrediction", () => {
   it("rewards table is consistent (sanity check)", () => {
     expect(BAND_THRESHOLDS.steady.min).toBeLessThan(BAND_THRESHOLDS.rising.min);
     expect(BAND_THRESHOLDS.rising.min).toBeLessThan(BAND_THRESHOLDS.surge.min);
+    expect(BAND_THRESHOLDS.surge.min).toBeLessThan(BAND_THRESHOLDS.mythic.min);
     expect(BAND_THRESHOLDS.steady.reward).toBeLessThan(BAND_THRESHOLDS.rising.reward);
     expect(BAND_THRESHOLDS.rising.reward).toBeLessThan(BAND_THRESHOLDS.surge.reward);
+    expect(BAND_THRESHOLDS.surge.reward).toBeLessThan(BAND_THRESHOLDS.mythic.reward);
     expect(CONSOLATION_REWARD).toBeLessThan(BAND_THRESHOLDS.steady.reward);
+  });
+
+  it("streak multiplier applies to win reward only", () => {
+    const win = settlePrediction({
+      pickedGrowth: 40,
+      opponentGrowth: 10,
+      predictedBand: "rising",
+      streakMultiplier: 1.5,
+    });
+    expect(win.status).toBe("won");
+    expect(win.reward).toBe(Math.round(BAND_THRESHOLDS.rising.reward * 1.5));
+    expect(win.appliedMultiplier).toBe(1.5);
+
+    const loss = settlePrediction({
+      pickedGrowth: 5,
+      opponentGrowth: 10,
+      predictedBand: "rising",
+      streakMultiplier: 2.0,
+    });
+    expect(loss.status).toBe("lost");
+    expect(loss.reward).toBe(CONSOLATION_REWARD);
+    expect(loss.appliedMultiplier).toBe(1.0);
+  });
+
+  it("missing/zero streak multiplier defaults to 1.0", () => {
+    const r1 = settlePrediction({ pickedGrowth: 40, opponentGrowth: 10, predictedBand: "rising" });
+    expect(r1.reward).toBe(BAND_THRESHOLDS.rising.reward);
+    expect(r1.appliedMultiplier).toBe(1.0);
+
+    const r2 = settlePrediction({ pickedGrowth: 40, opponentGrowth: 10, predictedBand: "rising", streakMultiplier: 0 });
+    expect(r2.reward).toBe(BAND_THRESHOLDS.rising.reward);
+    expect(r2.appliedMultiplier).toBe(1.0);
+  });
+});
+
+describe("streakMultiplier", () => {
+  it("returns 1.0 when sample size is below threshold", () => {
+    expect(streakMultiplier(0.95, STREAK_MIN_SAMPLE - 1)).toBe(1.0);
+    expect(streakMultiplier(0.99, 0)).toBe(1.0);
+    expect(streakMultiplier(null, null)).toBe(1.0);
+  });
+
+  it("returns 2.0 for hit_rate ≥ 0.80 with sufficient sample", () => {
+    expect(streakMultiplier(0.80, STREAK_MIN_SAMPLE)).toBe(2.0);
+    expect(streakMultiplier(1.0, 100)).toBe(2.0);
+  });
+
+  it("returns 1.5 for hit_rate ≥ 0.60", () => {
+    expect(streakMultiplier(0.60, STREAK_MIN_SAMPLE)).toBe(1.5);
+    expect(streakMultiplier(0.79, 50)).toBe(1.5);
+  });
+
+  it("returns 1.0 for hit_rate below 0.60", () => {
+    expect(streakMultiplier(0.59, 100)).toBe(1.0);
+    expect(streakMultiplier(0.0, 100)).toBe(1.0);
   });
 });
 

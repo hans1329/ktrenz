@@ -1,6 +1,6 @@
 // settle-trend-vs: 배틀 정산 — batch_id 기반 round 1 vs round 2 성장률 비교
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { classifyBand, growthPct, settlePrediction } from "../_shared/settlement.ts";
+import { classifyBand, growthPct, settlePrediction, streakMultiplier } from "../_shared/settlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,9 +79,26 @@ Deno.serve(async (req) => {
     }
 
     // 4. Settle each prediction
+    // ─── Pre-fetch streak stats for all involved users (single query) ───
+    // Multiplier comes from the user's PRE-settlement hit_rate. Refreshing
+    // streaks happens AFTER the loop so this batch's outcomes don't recurse.
+    const userIds = [...new Set(pending.map((p: any) => p.user_id))];
+    const { data: userStreaks } = await sb
+      .from("ktrenz_user_points")
+      .select("user_id, hit_rate_7d, hit_rate_7d_n")
+      .in("user_id", userIds);
+    const multiplierByUser = new Map<string, number>();
+    for (const s of (userStreaks || [])) {
+      multiplierByUser.set(
+        s.user_id,
+        streakMultiplier(s.hit_rate_7d as number | null, s.hit_rate_7d_n as number | null),
+      );
+    }
+
     let settledCount = 0;
     const results: any[] = [];
     const settledBatchIds = new Set<string>();
+    const settledUserIds = new Set<string>();
 
     for (const pred of pending) {
       const pickedR1 = round1Map.get(pred.picked_run_id);
@@ -115,10 +132,12 @@ Deno.serve(async (req) => {
       const opponentGrowth = growthPct(opponentOld, opponentNew);
 
       const actualBand = classifyBand(pickedGrowth);
+      const userMultiplier = multiplierByUser.get(pred.user_id) ?? 1.0;
       const settlement = settlePrediction({
         pickedGrowth,
         opponentGrowth,
         predictedBand: pred.band,
+        streakMultiplier: userMultiplier,
       });
       const status = settlement.status;
       const reward = settlement.reward;
@@ -149,6 +168,7 @@ Deno.serve(async (req) => {
       }
 
       settledCount++;
+      settledUserIds.add(pred.user_id);
       if (pickedR1.batch_id) settledBatchIds.add(pickedR1.batch_id);
 
       results.push({
@@ -159,8 +179,20 @@ Deno.serve(async (req) => {
         actualBand,
         predictedBand: pred.band,
         reward,
+        multiplier: settlement.appliedMultiplier,
       });
     }
+
+    // ─── Refresh streak stats for users whose predictions were settled ───
+    // Use Promise.all for parallelism — these are independent SQL function
+    // calls, no cross-user contention. Each call is fast (<50ms typically).
+    await Promise.all(
+      [...settledUserIds].map((uid) =>
+        sb.rpc("ktrenz_recompute_user_streak" as any, { p_user_id: uid }).catch((e: any) => {
+          console.error(`[streak] recompute failed for user=${uid}:`, e);
+        })
+      )
+    );
 
     // 5. Update battle status to "settled" for all affected batches
     for (const batchId of settledBatchIds) {
