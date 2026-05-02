@@ -2617,7 +2617,7 @@ export default function Battle() {
               return (
                 <div className="space-y-5">
                   {data.headline && (
-                    <div className="rounded-xl bg-muted border border-border p-4">
+                    <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
                       <p className="text-lg font-bold text-foreground">{data.headline}</p>
                     </div>
                   )}
@@ -2625,7 +2625,7 @@ export default function Battle() {
                     <div className="space-y-3">
                       {data.bullets.map((bullet, i) => (
                         <div key={i} className="flex gap-3 items-start">
-                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-6 h-6 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
                           </div>
                           <p className="text-sm text-foreground leading-relaxed">{bullet}</p>
@@ -2646,7 +2646,7 @@ export default function Battle() {
                             : item.category === "place" ? (language === "ko" ? "장소" : language === "ja" ? "スポット" : language === "zh" ? "地点" : "Place")
                             : (language === "ko" ? "활동" : language === "ja" ? "アクティビティ" : language === "zh" ? "活动" : "Activity");
                           return (
-                            <div key={i} className="rounded-lg bg-muted p-3 space-y-1">
+                            <div key={i} className="rounded-lg bg-muted/40 border border-border/40 p-3 space-y-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-base">{icon}</span>
                                 <span className="text-[10px] font-semibold text-muted-foreground uppercase">{catLabel}</span>
