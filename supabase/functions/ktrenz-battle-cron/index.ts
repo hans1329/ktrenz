@@ -83,13 +83,17 @@ async function prewarmBattleInsights(
     (stars || []).map((s: any) => [s.id, s]),
   );
 
+  // Build task FACTORIES (not started yet) so we can throttle concurrency.
+  // Pre-2026-05-02 we kicked all 80 (20 stars × 4 langs) in parallel — only
+  // ~7% landed in cache before the runtime killed the function (memory or
+  // OpenAI rate-limit). Chunked execution gets 100% with same total cost.
   const LANGUAGES = ["ko", "en", "ja", "zh"] as const;
-  const tasks: Promise<unknown>[] = [];
+  const factories: Array<() => Promise<unknown>> = [];
   for (const run of runs) {
     const star = starById.get(run.star_id);
     const starName = star?.display_name || star?.name_ko || "";
     for (const lang of LANGUAGES) {
-      tasks.push(
+      factories.push(() =>
         callFunction(supabaseUrl, serviceKey, "ktrenz-battle-insight", {
           run_id: run.id,
           star_id: run.star_id,
@@ -100,13 +104,21 @@ async function prewarmBattleInsights(
     }
   }
 
-  const allDone = Promise.all(tasks);
+  const CONCURRENCY = 4;
+  async function runChunked() {
+    for (let i = 0; i < factories.length; i += CONCURRENCY) {
+      await Promise.all(factories.slice(i, i + CONCURRENCY).map((f) => f()));
+    }
+  }
+
   // @ts-ignore — Supabase Edge Runtime global
   if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
     // @ts-ignore
-    EdgeRuntime.waitUntil(allDone);
+    EdgeRuntime.waitUntil(runChunked());
+  } else {
+    runChunked();
   }
-  return tasks.length;
+  return factories.length;
 }
 
 Deno.serve(async (req) => {
