@@ -172,6 +172,21 @@ Deno.serve(async (req) => {
         log.push(`Phase 1: Closed yesterday's betting (${yesterday})${recoveredFromCollecting ? " [recovered stale collecting battle]" : ""}`);
         return respond(log);
       }
+
+      // Stuck-collecting recovery: yesterday is 'collecting' with NO round-1
+      // data (collection never produced anything). Don't keep retrying — mark
+      // as 'failed' so Phase 2/3 don't get blocked. Pre-2026-05-02 these rows
+      // would re-trigger Phase 2's start_round2 which wiped today's queue
+      // (the 격일 stuck bug). With autobatch's batch_id-scoped delete fix,
+      // future days are safe; this just cleans up the long tail.
+      if (yesterdayBattle.status === "collecting" && (yesterdayRound1Count || 0) === 0) {
+        await sb.from("ktrenz_b2_battles")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", yesterdayBattle.id)
+          .eq("status", "collecting");
+        log.push(`Phase 1: Marked yesterday as failed (no round-1 data: ${yesterday})`);
+        return respond(log);
+      }
     }
 
     // ═══════════════════════════════════════════════════════════

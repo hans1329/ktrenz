@@ -129,8 +129,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // 4. Clear existing queue & insert paired items
-      await sb.from("ktrenz_b2_batch_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // 4. Clear existing queue items FOR THIS BATCH ONLY & insert paired items.
+      //    Pre-2026-05-02 this deleted ALL queue rows regardless of batch_id —
+      //    that stomped on yesterday's round-2 queue (or vice versa) and was
+      //    the root cause of the 격일 stuck-collecting bug. Filter by batch_id.
+      await sb.from("ktrenz_b2_batch_queue").delete().eq("batch_id", batchId);
 
       const queueItems = paired.map((p, idx) => ({
         star_id: p.starId,
@@ -215,8 +218,9 @@ Deno.serve(async (req) => {
         .eq("batch_id", prevBatchId);
       const prevMap = new Map((prevQueue || []).map((q: any) => [q.star_id, q]));
 
-      // 기존 큐 삭제 후 round 2 큐 삽입
-      await sb.from("ktrenz_b2_batch_queue").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // 기존 큐 삭제 후 round 2 큐 삽입 — batch_id 필터로 다른 배치 큐 보호.
+      // (격일 stuck-collecting 버그의 직접 원인이던 무차별 delete 제거.)
+      await sb.from("ktrenz_b2_batch_queue").delete().eq("batch_id", prevBatchId);
 
       const queueItems = starIds.map((sid, idx) => {
         const prev = prevMap.get(sid);
