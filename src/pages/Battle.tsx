@@ -2601,37 +2601,6 @@ export default function Battle() {
                 <FileText className="w-4 h-4 text-primary" />
                 {insightDrawer?.starName} Trend Report
               </SheetTitle>
-              {/* In-context engagement progress — drawer doubles as one of the
-                  3 engagement steps, so users shouldn't have to close it to
-                  check how close they are to unlocking the pick. */}
-              {(() => {
-                if (!insightDrawer?.runId) return null;
-                const eng = getEngagement(insightDrawer.runId);
-                const stepsDone = (eng.trendViewed ? 1 : 0) + Math.min(eng.contentCount, 2);
-                const total = ENGAGEMENT_TOTAL_STEPS;
-                const complete = stepsDone >= total;
-                return (
-                  <div className="flex items-center gap-2 pt-1">
-                    <div className="flex gap-1 flex-1">
-                      {Array.from({ length: total }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "h-1 flex-1 rounded-full transition-colors",
-                            i < stepsDone ? "bg-primary" : "bg-muted-foreground/20",
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <span className={cn(
-                      "text-[10px] font-bold tabular-nums",
-                      complete ? "text-primary" : "text-muted-foreground",
-                    )}>
-                      {complete ? `✓ ${total}/${total}` : `${stepsDone}/${total}`}
-                    </span>
-                  </div>
-                );
-              })()}
             </SheetHeader>
           </div>
           {/* Scrollable body — bottom padding accounts for iOS safe area + breathing room */}
