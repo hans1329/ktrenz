@@ -43,15 +43,15 @@ describe("growthPct", () => {
 describe("classifyBand", () => {
   it.each([
     [0, "flat"],
-    [10, "flat"],
-    [14.99, "flat"],
-    [15, "steady"],
-    [29.99, "steady"],
-    [30, "rising"],
-    [49.99, "rising"],
-    [50, "surge"],
-    [99.99, "surge"],
-    [100, "mythic"],
+    [3, "flat"],
+    [4.99, "flat"],
+    [5, "steady"],
+    [9.99, "steady"],
+    [10, "rising"],
+    [19.99, "rising"],
+    [20, "surge"],
+    [39.99, "surge"],
+    [40, "mythic"],
     [500, "mythic"],
   ])("growth=%s → band=%s", (growth, expected) => {
     expect(classifyBand(growth)).toBe(expected);
@@ -65,8 +65,8 @@ describe("classifyBand", () => {
 describe("settlePrediction", () => {
   it("WIN: picked grew more than opponent AND met band threshold", () => {
     const r = settlePrediction({
-      pickedGrowth: 40,
-      opponentGrowth: 10,
+      pickedGrowth: 15,
+      opponentGrowth: 3,
       predictedBand: "rising",
     });
     expect(r.status).toBe("won");
@@ -77,10 +77,10 @@ describe("settlePrediction", () => {
   });
 
   it("LOSS: picked grew more than opponent but BELOW predicted band", () => {
-    // predicted "rising" (≥30) but grew only 20%
+    // predicted "rising" (≥10) but grew only 7%
     const r = settlePrediction({
-      pickedGrowth: 20,
-      opponentGrowth: 5,
+      pickedGrowth: 7,
+      opponentGrowth: 2,
       predictedBand: "rising",
     });
     expect(r.status).toBe("lost");
@@ -92,8 +92,8 @@ describe("settlePrediction", () => {
 
   it("LOSS: picked met band but opponent grew MORE", () => {
     const r = settlePrediction({
-      pickedGrowth: 50,
-      opponentGrowth: 80,
+      pickedGrowth: 12,
+      opponentGrowth: 18,
       predictedBand: "rising",
     });
     expect(r.status).toBe("lost");
@@ -104,18 +104,18 @@ describe("settlePrediction", () => {
 
   it("LOSS: tie on growth (picked > opponent is strict)", () => {
     const r = settlePrediction({
-      pickedGrowth: 30,
-      opponentGrowth: 30,
+      pickedGrowth: 10,
+      opponentGrowth: 10,
       predictedBand: "rising",
     });
     expect(r.status).toBe("lost");
     expect(r.pickedWonVs).toBe(false);
   });
 
-  it("WIN: surge band with matching surge growth (new threshold 50%)", () => {
+  it("WIN: surge band with matching surge growth (threshold 20%)", () => {
     const r = settlePrediction({
-      pickedGrowth: 70,
-      opponentGrowth: 30,
+      pickedGrowth: 25,
+      opponentGrowth: 8,
       predictedBand: "surge",
     });
     expect(r.status).toBe("won");
@@ -123,10 +123,10 @@ describe("settlePrediction", () => {
     expect(r.reason).toBe("battle_win_surge");
   });
 
-  it("WIN: mythic band requires 100%+ growth", () => {
+  it("WIN: mythic band requires 40%+ growth", () => {
     const r = settlePrediction({
-      pickedGrowth: 150,
-      opponentGrowth: 30,
+      pickedGrowth: 50,
+      opponentGrowth: 10,
       predictedBand: "mythic",
     });
     expect(r.status).toBe("won");
@@ -136,8 +136,8 @@ describe("settlePrediction", () => {
 
   it("LOSS: mythic predicted but only surge-level growth", () => {
     const r = settlePrediction({
-      pickedGrowth: 80,
-      opponentGrowth: 20,
+      pickedGrowth: 30,
+      opponentGrowth: 5,
       predictedBand: "mythic",
     });
     expect(r.status).toBe("lost");
@@ -147,8 +147,8 @@ describe("settlePrediction", () => {
 
   it("WIN: steady band, low growth still meets threshold", () => {
     const r = settlePrediction({
-      pickedGrowth: 16,
-      opponentGrowth: 5,
+      pickedGrowth: 6,
+      opponentGrowth: 1,
       predictedBand: "steady",
     });
     expect(r.status).toBe("won");
@@ -188,8 +188,8 @@ describe("settlePrediction", () => {
 
   it("streak multiplier applies to win reward only", () => {
     const win = settlePrediction({
-      pickedGrowth: 40,
-      opponentGrowth: 10,
+      pickedGrowth: 15,
+      opponentGrowth: 3,
       predictedBand: "rising",
       streakMultiplier: 1.5,
     });
@@ -198,8 +198,8 @@ describe("settlePrediction", () => {
     expect(win.appliedMultiplier).toBe(1.5);
 
     const loss = settlePrediction({
-      pickedGrowth: 5,
-      opponentGrowth: 10,
+      pickedGrowth: 2,
+      opponentGrowth: 4,
       predictedBand: "rising",
       streakMultiplier: 2.0,
     });
@@ -209,11 +209,11 @@ describe("settlePrediction", () => {
   });
 
   it("missing/zero streak multiplier defaults to 1.0", () => {
-    const r1 = settlePrediction({ pickedGrowth: 40, opponentGrowth: 10, predictedBand: "rising" });
+    const r1 = settlePrediction({ pickedGrowth: 15, opponentGrowth: 3, predictedBand: "rising" });
     expect(r1.reward).toBe(BAND_THRESHOLDS.rising.reward);
     expect(r1.appliedMultiplier).toBe(1.0);
 
-    const r2 = settlePrediction({ pickedGrowth: 40, opponentGrowth: 10, predictedBand: "rising", streakMultiplier: 0 });
+    const r2 = settlePrediction({ pickedGrowth: 15, opponentGrowth: 3, predictedBand: "rising", streakMultiplier: 0 });
     expect(r2.reward).toBe(BAND_THRESHOLDS.rising.reward);
     expect(r2.appliedMultiplier).toBe(1.0);
   });

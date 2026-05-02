@@ -79,10 +79,10 @@ interface InstagramMediaAsset {
 const instagramMediaCache = new Map<string, InstagramMediaAsset[]>();
 
 const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; reward: number }[] = [
-  { key: "steady", label: "Steady", range: "15–30%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
-  { key: "rising", label: "Rising", range: "30–50%", icon: Flame, iconColor: "text-orange-500", reward: 300 },
-  { key: "surge", label: "Surge", range: "50–100%", icon: Rocket, iconColor: "text-red-500", reward: 500 },
-  { key: "mythic", label: "Mythic", range: "100%+", icon: Star, iconColor: "text-fuchsia-500", reward: 2000 },
+  { key: "steady", label: "Steady", range: "5–10%", icon: Sprout, iconColor: "text-emerald-500", reward: 100 },
+  { key: "rising", label: "Rising", range: "10–20%", icon: Flame, iconColor: "text-orange-500", reward: 300 },
+  { key: "surge", label: "Surge", range: "20–40%", icon: Rocket, iconColor: "text-red-500", reward: 500 },
+  { key: "mythic", label: "Mythic", range: "40%+", icon: Star, iconColor: "text-fuchsia-500", reward: 2000 },
 ];
 
 const SPOTIFY_GOAL = 9000;

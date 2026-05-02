@@ -9,16 +9,21 @@
 
 export type Band = "steady" | "rising" | "surge" | "mythic";
 
-// Sprint 2B economic rebalance (2026-05-01):
-//   surge: 80%/1000 → 50%/500 — surge was effectively a lottery (rare hits),
-//     now a meaningful skill tier
-//   mythic (NEW): 100%/2000 — the actual lottery, separated from skill
-//   steady, rising unchanged
+// Threshold calibration history:
+//   - Sprint 2B (2026-05-01): surge 80→50, added mythic 100. But analysis of
+//     107 settled predictions showed actual daily volatility had stddev 5-7%,
+//     avg |growth| 2.4%, max ~19%. Only 3 of 107 (2.8%) ever hit steady (15%);
+//     ZERO hit rising+. Reward power-law existed only on paper.
+//   - Session B (2026-05-03): recalibrated to actual volatility distribution.
+//     steady 15→5 (≈1σ), rising 30→10 (≈2σ), surge 50→20 (≈3σ), mythic 100→40
+//     (extreme outlier). Rewards unchanged — same payout per band, just
+//     reachable now. Expected hit-rate: steady ~16%, rising ~5%, surge ~1-2%,
+//     mythic ~0.5%.
 export const BAND_THRESHOLDS: Record<Band, { min: number; reward: number }> = {
-  steady: { min: 15, reward: 100 },
-  rising: { min: 30, reward: 300 },
-  surge: { min: 50, reward: 500 },
-  mythic: { min: 100, reward: 2000 },
+  steady: { min: 5, reward: 100 },
+  rising: { min: 10, reward: 300 },
+  surge: { min: 20, reward: 500 },
+  mythic: { min: 40, reward: 2000 },
 };
 
 export const CONSOLATION_REWARD = 10;
