@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
 import V3Footer from "@/components/v3/V3Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import kTrenzLogo from "@/assets/logo_nd.webp";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [mode, setMode] = useState<"select" | "email-login" | "email-signup">("select");
@@ -24,17 +25,25 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Sanitize the redirect param: only accept internal paths (starts with `/`,
+  // no `//` or `\\` to prevent open-redirect to external origins).
+  const rawRedirect = searchParams.get("redirect") ?? "";
+  const safeRedirect =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.startsWith("/\\")
+      ? rawRedirect
+      : "";
+
   useEffect(() => {
     if (!authLoading && user) {
       const isNewUser = sessionStorage.getItem("ktrenz-just-signed-up") === "1";
       if (isNewUser) {
         sessionStorage.removeItem("ktrenz-just-signed-up");
-        navigate("/?onboarding=1", { replace: true });
+        navigate(safeRedirect ? `${safeRedirect}${safeRedirect.includes("?") ? "&" : "?"}onboarding=1` : "/?onboarding=1", { replace: true });
       } else {
-        navigate("/", { replace: true });
+        navigate(safeRedirect || "/", { replace: true });
       }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, safeRedirect]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -58,10 +67,15 @@ const Login = () => {
         await Browser.open({ url: data.url, windowName: "_self" });
       }
     } else {
-      // Web: normal redirect
+      // Web: send OAuth callback back to /login so the redirect param is
+      // preserved across the round-trip — the post-login useEffect above
+      // then forwards to safeRedirect.
+      const callback = safeRedirect
+        ? `${window.location.origin}/login?redirect=${encodeURIComponent(safeRedirect)}`
+        : `${window.location.origin}/`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/` },
+        options: { redirectTo: callback },
       });
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });

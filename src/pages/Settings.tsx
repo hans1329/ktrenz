@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { LANGUAGES } from "@/i18n/translations";
 import SEO from "@/components/SEO";
 
-import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User, Check } from "lucide-react";
+import { ArrowLeft, CreditCard, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, Check, Flame, History, Trophy, Coins } from "lucide-react";
 import { getDefaultAvatar } from "@/lib/defaultAvatar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -154,19 +154,24 @@ const SettingsPage = () => {
     }
   };
 
+  const discoverShortcuts = [
+    { icon: History, label: "My calls", desc: "Vouch history & resolution status", onClick: () => navigate("/h1/history") },
+    { icon: Trophy, label: "Leaderboard", desc: "Where you rank against other callers", onClick: () => navigate("/h1/leaderboard") },
+    { icon: Coins, label: "K-Cash balance", desc: "Coming soon — earned from hits", comingSoon: true },
+  ];
+
   const sections = [
     {
-      title: "계정",
+      title: "Account",
       items: [
-        { icon: CreditCard, label: "K-Pass 멤버십", desc: "현재 플랜 확인 및 업그레이드", onClick: () => navigate("/kpass") },
-        { icon: Shield, label: "개인정보", desc: user?.email || "", onClick: () => {} },
+        { icon: CreditCard, label: "K-Pass membership", desc: "Plan & upgrade", onClick: () => navigate("/kpass") },
+        { icon: Shield, label: "Privacy", desc: user?.email || "", onClick: () => {} },
       ],
     },
     {
-title: "앱 설정",
+      title: "Notifications",
       items: [
-        { icon: Bell, label: "알림", desc: "푸시 알림 설정", comingSoon: true },
-        { icon: Moon, label: "다크 모드", desc: "자동 (시스템 설정 따름)", comingSoon: true },
+        { icon: Bell, label: "Push notifications", desc: "Daily drop reminders & resolution alerts", comingSoon: true },
       ],
     },
   ];
@@ -178,108 +183,154 @@ title: "앱 설정",
 
   return (
     <>
-      <SEO title="설정 – KTrenZ" description="KTrenZ 앱 설정" path="/settings" />
-      <div className="min-h-screen bg-background pb-24">
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+      <SEO title="Settings – KTrenZ" description="KTrenZ account & app settings" path="/settings" />
+      <div className="min-h-screen bg-neutral-950 text-white pb-24">
+        {/* Ambient backdrop — same brand wash used on /h1 */}
+        <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div className="absolute -top-1/3 -left-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-15 bg-rose-600" />
+          <div className="absolute -bottom-1/3 -right-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-10 bg-orange-500" />
+        </div>
+
+        <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
           <div className="flex items-center h-14 px-4 max-w-lg mx-auto">
-            <button onClick={() => fromProfile ? navigate("/", { state: { openProfile: true } }) : navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => fromProfile ? navigate("/", { state: { openProfile: true } }) : navigate(-1)}
+              className="p-2 -ml-2 text-white/55 hover:text-white"
+              aria-label="Back"
+            >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="flex-1 text-center font-bold text-lg">{t("common.settings")}</h1>
+            <h1 className="flex-1 text-center font-black text-base tracking-tight text-white">{t("common.settings")}</h1>
             <div className="w-9" />
           </div>
         </header>
 
         <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-          {/* Profile Edit Section */}
+          {/* Profile section */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
-              프로필
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1">
+              Profile
             </p>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
               <div className="flex items-center gap-4">
                 <label className="relative cursor-pointer group">
-                  <Avatar className="w-16 h-16 border-2 border-border">
+                  <Avatar className="w-16 h-16 ring-2 ring-white/10">
                     <AvatarImage src={profile?.avatar_url || getDefaultAvatar(user?.id)} />
+                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-orange-500 text-white font-black">
+                      {(profile?.display_name || profile?.username || "U").charAt(0).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
-                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 rounded-full bg-black/55 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
                   </div>
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
                 </label>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground truncate">
+                  <p className="font-bold text-white truncate">
                     {profile?.display_name || profile?.username || "User"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  <p className="text-xs text-white/55 truncate">{user?.email}</p>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">닉네임 (핸들)</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">Handle</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/45">@</span>
                     <Input
                       value={username}
                       onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
                       placeholder="username"
-                      className="h-9 text-sm pl-7"
+                      className="h-9 text-sm pl-7 bg-white/[0.04] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-rose-500/40"
                       maxLength={20}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">표시 이름</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">Display name</label>
                   <Input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Display Name"
-                    className="h-9 text-sm"
+                    className="h-9 text-sm bg-white/[0.04] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-rose-500/40"
                   />
                 </div>
                 <Button
                   size="sm"
                   onClick={handleSaveProfile}
                   disabled={saving}
-                  className="w-full"
+                  className="w-full bg-white text-black hover:bg-white/90 font-black"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  저장
+                  Save
                 </Button>
               </div>
             </div>
           </div>
 
+          {/* Discover shortcuts */}
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1 inline-flex items-center gap-1.5">
+              <Flame className="w-3 h-3 text-rose-400" /> Discover
+            </p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden divide-y divide-white/5">
+              {discoverShortcuts.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={(item as any).onClick}
+                  disabled={(item as any).comingSoon}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors",
+                    (item as any).comingSoon ? "opacity-50" : "hover:bg-white/5",
+                  )}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                    <item.icon className="w-4 h-4 text-white/70" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">{item.label}</p>
+                    <p className="text-[11px] text-white/45 truncate">{item.desc}</p>
+                  </div>
+                  {(item as any).comingSoon ? (
+                    <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">Soon</span>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {sections.map((section) => (
             <div key={section.title}>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1">
                 {section.title}
               </p>
-              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden divide-y divide-white/5">
                 {section.items.map((item) => (
                   <button
                     key={item.label}
-                    onClick={item.onClick}
-                    disabled={item.comingSoon}
+                    onClick={(item as any).onClick}
+                    disabled={(item as any).comingSoon}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors",
-                      item.comingSoon ? "opacity-50" : "hover:bg-muted/50"
+                      (item as any).comingSoon ? "opacity-50" : "hover:bg-white/5",
                     )}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                      <item.icon className="w-4 h-4 text-white/70" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{item.desc}</p>
+                      <p className="text-sm font-bold text-white">{item.label}</p>
+                      <p className="text-[11px] text-white/45 truncate">{item.desc}</p>
                     </div>
-                    {item.custom ? (
-                      <div onClick={(e) => e.stopPropagation()}>{item.custom}</div>
-                    ) : item.comingSoon ? (
-                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Soon</span>
+                    {(item as any).custom ? (
+                      <div onClick={(e) => e.stopPropagation()}>{(item as any).custom}</div>
+                    ) : (item as any).comingSoon ? (
+                      <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">Soon</span>
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
                     )}
                   </button>
                 ))}
@@ -289,24 +340,24 @@ title: "앱 설정",
 
           {/* Language */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1">
               Language
             </p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden divide-y divide-white/5">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => setLanguage(lang.code)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 text-base">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-base">
                     {lang.flag}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{lang.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{lang.code.toUpperCase()}</p>
+                    <p className="text-sm font-bold text-white">{lang.label}</p>
+                    <p className="text-[11px] text-white/45">{lang.code.toUpperCase()}</p>
                   </div>
-                  {language === lang.code && <Check className="w-4 h-4 text-primary shrink-0" />}
+                  {language === lang.code && <Check className="w-4 h-4 text-rose-400 shrink-0" />}
                 </button>
               ))}
             </div>
@@ -314,14 +365,14 @@ title: "앱 설정",
 
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/5 transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/10 bg-white/[0.02] text-white/65 hover:text-white hover:bg-white/[0.05] transition-colors text-sm font-bold"
           >
             <LogOut className="w-4 h-4" />
             {t("common.signOut")}
           </button>
 
-          <p className="text-center text-[10px] text-muted-foreground pt-2">
-            KTrenZ v3.0 · © 2025 KTrenZ
+          <p className="text-center text-[10px] text-white/30 pt-2 tracking-wider">
+            KTrenZ · © 2026
           </p>
         </div>
       </div>

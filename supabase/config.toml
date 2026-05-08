@@ -81,6 +81,15 @@ verify_jwt = false
 [functions.ktrenz-trend-cron]
 verify_jwt = false
 
+[functions.ktrenz-h1-curate-drop]
+verify_jwt = false
+
+[functions.ktrenz-h1-resolve-drop]
+verify_jwt = false
+
+[functions.ktrenz-h1-share-image]
+verify_jwt = false
+
 [functions.parse-namuwiki]
 verify_jwt = false
 

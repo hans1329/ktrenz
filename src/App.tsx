@@ -17,6 +17,10 @@ const KPass = lazy(() => import("./pages/KPass"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PitchDeck = lazy(() => import("./pages/PitchDeck"));
 const PitchDeck3 = lazy(() => import("./pages/PitchDeck3"));
+const H1Discover = lazy(() => import("./pages/H1Discover"));
+const H1SharedSlate = lazy(() => import("./pages/H1SharedSlate"));
+const H1History = lazy(() => import("./pages/H1History"));
+const H1Leaderboard = lazy(() => import("./pages/H1Leaderboard"));
 const Deck = lazy(() => import("./pages/Deck"));
 const SignalRadar = lazy(() => import("./pages/SignalRadar"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -119,6 +123,10 @@ const App = () => (
                   <Route path="/pitchdeck" element={<PitchDeck />} />
                   <Route path="/pd" element={<PitchDeck />} />
                   <Route path="/pd3" element={<PitchDeck3 />} />
+                  <Route path="/h1" element={<H1Discover />} />
+                  <Route path="/h1/share/:slateId" element={<H1SharedSlate />} />
+                  <Route path="/h1/history" element={<H1History />} />
+                  <Route path="/h1/leaderboard" element={<H1Leaderboard />} />
                   <Route path="/deck" element={<Deck />} />
                   <Route path="/signal" element={<SignalRadar />} />
 

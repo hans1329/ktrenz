@@ -10,6 +10,13 @@ function containsJapanese(text: string): boolean {
 }
 
 /**
+ * Detect if text contains Korean (Hangul) characters
+ */
+function containsKorean(text: string): boolean {
+  return /[\uAC00-\uD7AF]/.test(text);
+}
+
+/**
  * On-demand field translation hook.
  * When language is en/ja/zh and a field is null, triggers edge function
  * to translate and cache in DB. Also translates Japanese content to Korean.
@@ -53,12 +60,16 @@ export const useFieldTranslation = () => {
         const sourceValue = item[sourceCol];
         const targetValue = item[targetCol];
 
-        // For Korean: only translate if source contains Japanese characters.
-        // Applies to b2_items.title and b2_items.description (the only fields
-        // whose source can legitimately be non-Korean).
+        // For Korean: translate any b2_items title/description whose source is
+        // NOT already Korean. Broader than the original "Japanese only" rule —
+        // global Discover surfaces English/Chinese sources frequently and they
+        // need ko translations too.
         if (language === "ko") {
           if (field !== "title" && field !== "description") return false;
-          return !!sourceValue && !targetValue && typeof sourceValue === "string" && containsJapanese(sourceValue) && !pendingRef.current.has(`${item.id}-${key}-${language}`);
+          if (!sourceValue || targetValue) return false;
+          if (typeof sourceValue !== "string") return false;
+          if (containsKorean(sourceValue)) return false; // already Korean — skip
+          return !pendingRef.current.has(`${item.id}-${key}-${language}`);
         }
 
         const isEnglishContextStale =

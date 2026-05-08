@@ -5,6 +5,7 @@ import {
   TrendingUp, Eye, Radio, Layers, Target, Shield, ArrowRight,
   ChevronDown, Music, Globe, Users, Coins, Lock, Vote, Rocket,
   Award, Wallet, RefreshCw, Network, FileCheck, Map, Linkedin,
+  Megaphone, Building2, Banknote, HandCoins,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
@@ -354,7 +355,98 @@ export default function PitchDeck3() {
         </div>
       </Section>
 
-      {/* ───── 6. TOKENOMICS ───── */}
+      {/* ───── 6. BUSINESS MODEL ───── */}
+      <Section id="business-model">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-16">
+            <SectionTag>
+              <Banknote className="w-3.5 h-3.5" /> Business Model
+            </SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              How <span className="text-primary">K-TRENZ</span> Makes Money
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              Free-to-play product, ad-funded core, B2B data layer.
+              Token economy on top — not the only revenue.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5 mb-8">
+            <div className="relative bg-primary/10 border border-primary/30 rounded-2xl p-8 overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-[80px]" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+                  <Megaphone className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">PRIMARY</span>
+              </div>
+              <h3 className="text-foreground font-bold text-xl mb-3">Ad Revenue (B2C)</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-5">
+                Display + rewarded video ads across the daily Battle loop.
+                High-frequency, high-retention surface = premium fandom inventory.
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: "Watch ad → +1 extra Battle slot", note: "core sink" },
+                  { label: "Interstitials between battle settlements", note: "rewarded" },
+                  { label: "K-pop brand-safe display inventory", note: "CPM premium" },
+                ].map((it) => (
+                  <li key={it.label} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="flex items-start gap-2 text-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      <span>{it.label}</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">{it.note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-8 overflow-hidden">
+              <div className="absolute top-0 left-0 w-40 h-40 bg-primary/5 rounded-full blur-[80px]" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-secondary text-primary flex items-center justify-center">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-foreground border border-border">EXPANSION</span>
+              </div>
+              <h3 className="text-foreground font-bold text-xl mb-3">B2B Data &amp; API</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-5">
+                Trend score is the only real-time, multi-platform signal of K-pop firepower.
+                Sell it back to the people who need it most.
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: "Entertainment co. dashboards", note: "subscription" },
+                  { label: "Brand & agency campaign analytics", note: "tier" },
+                  { label: "Trend API for streaming / media", note: "metered" },
+                ].map((it) => (
+                  <li key={it.label} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="flex items-start gap-2 text-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      <span>{it.label}</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">{it.note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-card/40 border border-border/50 rounded-2xl p-6 text-center">
+            <p className="text-foreground text-base font-semibold mb-2">
+              💡 Three Revenue Streams, One Engine
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-3xl mx-auto">
+              <strong className="text-foreground">Ads</strong> fund the free-to-play core today.
+              <strong className="text-foreground"> B2B</strong> monetizes our proprietary trend signal as we scale.
+              <strong className="text-foreground"> Token treasury</strong> (buy-back &amp; burn) compounds long-term value.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 7. TOKENOMICS ───── */}
       <Section id="tokenomics">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
@@ -973,7 +1065,89 @@ export default function PitchDeck3() {
         </div>
       </Section>
 
-      {/* ───── 13. CTA ───── */}
+      {/* ───── 14. FUNDRAISING ASK ───── */}
+      <Section id="ask" className="bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-16">
+            <SectionTag>
+              <HandCoins className="w-3.5 h-3.5" /> The Ask
+            </SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              Raising <span className="text-primary">$1.15M</span> to Ship Phases 1–2
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              Two-stage raise to take us from live Web2 product to BVI ICO + activity-mint launch.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5 mb-10">
+            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-8">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-foreground font-bold text-xl">Seed</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-foreground border border-border">RAISING NOW</span>
+              </div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2 tabular-nums">$250K</div>
+              <p className="text-xs text-muted-foreground mb-5">50M $KTNZ @ $0.005 · 24-month linear vesting</p>
+              <ul className="space-y-2 text-sm text-foreground">
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>Battle product polish + retention loop tuning</span></li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>Initial user acquisition (KR + global K-pop fandom)</span></li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>BVI legal entity setup &amp; compliance counsel</span></li>
+              </ul>
+            </div>
+
+            <div className="relative bg-primary/10 border border-primary/30 rounded-2xl p-8 shadow-[0_0_30px_hsl(11_100%_46%/0.1)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-foreground font-bold text-xl">Private</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">NEXT</span>
+              </div>
+              <div className="text-4xl md:text-5xl font-black text-primary mb-2 tabular-nums">$900K</div>
+              <p className="text-xs text-muted-foreground mb-5">75M $KTNZ @ $0.012 · 12-month linear vesting</p>
+              <ul className="space-y-2 text-sm text-foreground">
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>Web3 infrastructure: wallet, KYC, on-chain activity layer</span></li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>Smart-contract audit (CertiK / OpenZeppelin)</span></li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>DEX liquidity bootstrap + Phase 2 ICO launch</span></li>
+                <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /><span>Engineering &amp; B2B sales hires</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-card/60 border border-border/50 rounded-2xl p-8 mb-6">
+            <h3 className="text-foreground font-bold text-base mb-6 text-center">Use of Funds (Total $1.15M)</h3>
+            <div className="space-y-4">
+              {[
+                { label: "Product & Engineering", pct: 40, desc: "Battle loop, Web3 client, on-chain activity layer" },
+                { label: "User Acquisition & Marketing", pct: 25, desc: "K-pop fandom growth, creator partnerships" },
+                { label: "Web3 Infrastructure", pct: 20, desc: "Smart-contract audit, BVI legal, KYC, DEX liquidity" },
+                { label: "Operations & Hires", pct: 15, desc: "Core team, B2B sales lead, runway" },
+              ].map((u) => (
+                <div key={u.label}>
+                  <div className="flex items-center justify-between mb-1.5 gap-3">
+                    <div className="min-w-0">
+                      <span className="text-foreground font-semibold text-sm">{u.label}</span>
+                      <span className="text-xs text-muted-foreground ml-2 hidden md:inline">— {u.desc}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5 md:hidden">{u.desc}</p>
+                    </div>
+                    <span className="text-primary font-black text-sm tabular-nums shrink-0">{u.pct}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full" style={{ width: `${u.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-card/40 border border-border/50 rounded-2xl p-6 text-center">
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-3xl mx-auto">
+              Closes us through <strong className="text-foreground">Phase 2 (Q4 2026)</strong> — at which point the
+              BVI ICO public round (100M @ $0.025 = <strong className="text-foreground">$2.5M</strong>) opens the path
+              to a self-sustaining treasury via buy-back &amp; burn.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 15. CTA ───── */}
       <Section id="cta">
         <div className="relative max-w-3xl mx-auto text-center z-10">
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
