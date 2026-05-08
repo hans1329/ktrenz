@@ -13,7 +13,7 @@ import {
   Sparkles, Clock, Eye, Share2, Trophy, History, Flame,
   Youtube, Music2, Newspaper, Play, X, ChevronRight, Check,
   Zap, TrendingUp, Users, Loader2, ExternalLink,
-  Sprout, Activity, Rocket,
+  Sprout, Activity, Rocket, HelpCircle,
 } from "lucide-react";
 import ktrenzLogo from "@/assets/logo_nd.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,6 +22,7 @@ import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackH1Event } from "@/lib/h1Telemetry";
 import H1AuthChip from "@/components/h1/H1AuthChip";
+import H1HowItWorksModal from "@/components/h1/H1HowItWorksModal";
 import { cn } from "@/lib/utils";
 
 /* ─────── Types ─────── */
@@ -484,12 +485,14 @@ function ContentCardFull({
   onVouch,
   onOpenDetail,
   onScrollNext,
+  onOpenHelp,
 }: {
   card: DiscoverCard;
   vouch: Vouch | undefined;
   onVouch: (v: Vouch) => void;
   onOpenDetail: () => void;
   onScrollNext: () => void;
+  onOpenHelp: () => void;
 }) {
   const { Icon, label } = sourceMeta(card.source);
   const decided = !!vouch;
@@ -551,9 +554,18 @@ function ContentCardFull({
         </button>
 
         <div className="mt-auto">
-          <div className="mb-2 inline-flex items-center gap-1.5 text-white/70 text-[10px] font-bold uppercase tracking-[0.18em]">
-            <TrendingUp className="w-3 h-3" />
-            Will this go viral in 7 days?
+          <div className="mb-2 flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 text-white/70 text-[10px] font-bold uppercase tracking-[0.18em]">
+              <TrendingUp className="w-3 h-3" />
+              Will this go viral in 7 days?
+            </div>
+            <button
+              onClick={onOpenHelp}
+              className="text-white/40 hover:text-white/80 transition-colors"
+              aria-label="How it works"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="flex gap-2">
@@ -1123,11 +1135,13 @@ function DesktopCard({
   vouch,
   onVouch,
   onOpenDetail,
+  onOpenHelp,
 }: {
   card: DiscoverCard;
   vouch: Vouch | undefined;
   onVouch: (v: Vouch) => void;
   onOpenDetail: () => void;
+  onOpenHelp: () => void;
 }) {
   const { Icon, label } = sourceMeta(card.source);
   const decided = !!vouch;
@@ -1196,8 +1210,17 @@ function DesktopCard({
       <div className="px-4 pb-3.5 pt-2 border-t border-white/5">
         {!decided ? (
           <>
-            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1.5">
-              Will it go viral?
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                Will it go viral?
+              </span>
+              <button
+                onClick={onOpenHelp}
+                className="text-white/40 hover:text-white/80 transition-colors"
+                aria-label="How it works"
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
             </div>
             <div className="flex gap-1.5">
               <DesktopVouchBtn level="low"  active={false} onClick={() => onVouch("low")} />
@@ -1276,6 +1299,7 @@ function DesktopShell({
   setDetail,
   handleVouch,
   handleShare,
+  onOpenHelp,
 }: {
   cards: DiscoverCard[];
   isLoading: boolean;
@@ -1286,6 +1310,7 @@ function DesktopShell({
   setDetail: (c: DiscoverCard | null) => void;
   handleVouch: (cardId: string, v: Vouch) => void;
   handleShare: () => void;
+  onOpenHelp: () => void;
 }) {
   const allDecided = cards.length > 0 && vouchedCount >= cards.length;
 
@@ -1333,6 +1358,7 @@ function DesktopShell({
                   vouch={vouches[card.id]}
                   onVouch={(v) => handleVouch(card.id, v)}
                   onOpenDetail={() => setDetail(card)}
+                  onOpenHelp={onOpenHelp}
                 />
               ))}
             </div>
@@ -1387,6 +1413,7 @@ function MobileShell({
   setDetail,
   handleVouch,
   handleShare,
+  onOpenHelp,
 }: {
   cards: DiscoverCard[];
   isLoading: boolean;
@@ -1397,6 +1424,7 @@ function MobileShell({
   setDetail: (c: DiscoverCard | null) => void;
   handleVouch: (cardId: string, v: Vouch) => void;
   handleShare: () => void;
+  onOpenHelp: () => void;
 }) {
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -1438,6 +1466,7 @@ function MobileShell({
               onVouch={(v) => handleVouch(card.id, v)}
               onOpenDetail={() => setDetail(card)}
               onScrollNext={() => scrollNext(card.id)}
+              onOpenHelp={onOpenHelp}
             />
           ))}
           <CompletionCard vouches={vouches} totalCards={cards.length} onShare={handleShare} />
@@ -1467,6 +1496,7 @@ export default function H1Discover() {
 
   const [vouches, setVouches] = useState<Record<string, Vouch>>(() => loadVouches());
   const [detail, setDetail] = useState<DiscoverCard | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [loginNudgeOpen, setLoginNudgeOpen] = useState<false | "share" | "quota">(false);
   const lastSyncedUserRef = useRef<string | null>(null);
   const quotaNudgedRef = useRef(false);
@@ -1609,6 +1639,7 @@ export default function H1Discover() {
     setDetail,
     handleVouch,
     handleShare,
+    onOpenHelp: () => setHelpOpen(true),
   };
 
   return (
@@ -1619,6 +1650,7 @@ export default function H1Discover() {
         path="/h1"
       />
       {isMobile ? <MobileShell {...shared} /> : <DesktopShell {...shared} />}
+      <H1HowItWorksModal open={helpOpen} onClose={() => setHelpOpen(false)} />
       <LoginNudge
         open={!!loginNudgeOpen}
         trigger={loginNudgeOpen || "share"}
