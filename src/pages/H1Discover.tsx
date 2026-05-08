@@ -437,11 +437,11 @@ function ImagePlate({ card }: { card: DiscoverCard }) {
 // Three levels of conviction — label + icon + color carry the meaning.
 // Earlier had abstract "1×/2×/4×" multipliers in the UI; testing showed
 // users read them as "min 1× ?" — meaningless in isolation. Removed.
-// Backend scoring still applies confidence weights internally.
+// Labels are i18n keys so callers translate at render-time.
 const VOUCH_META = {
-  low:  { label: "Hunch",  hint: "low conviction",  icon: Sprout,   shade: "from-amber-400 to-amber-500",  ring: "ring-amber-400/40",  glow: "shadow-amber-400/30" },
-  mid:  { label: "Likely", hint: "fair shot",        icon: Activity, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
-  high: { label: "Sure!",  hint: "going viral",      icon: Rocket,   shade: "from-rose-400 to-red-500",     ring: "ring-rose-400/50",   glow: "shadow-rose-500/40" },
+  low:  { labelKey: "h1.confidence.hunch",  hintKey: "h1.confidence.hunchHint",   icon: Sprout,   shade: "from-amber-400 to-amber-500",  ring: "ring-amber-400/40",  glow: "shadow-amber-400/30" },
+  mid:  { labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint",  icon: Activity, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
+  high: { labelKey: "h1.confidence.sure",   hintKey: "h1.confidence.sureHint",    icon: Rocket,   shade: "from-rose-400 to-red-500",     ring: "ring-rose-400/50",   glow: "shadow-rose-500/40" },
 } as const;
 
 function VouchPill({
@@ -453,6 +453,7 @@ function VouchPill({
   active: boolean;
   onClick: () => void;
 }) {
+  const { t } = useLanguage();
   const c = VOUCH_META[level];
   const Icon = c.icon;
   return (
@@ -473,7 +474,7 @@ function VouchPill({
         )}
         strokeWidth={active ? 2.5 : 2}
       />
-      <span className="text-[15px] font-black tracking-tight leading-none">{c.label}</span>
+      <span className="text-[15px] font-black tracking-tight leading-none">{t(c.labelKey)}</span>
     </button>
   );
 }
@@ -494,6 +495,7 @@ function ContentCardFull({
   onScrollNext: () => void;
   onOpenHelp: () => void;
 }) {
+  const { t } = useLanguage();
   const { Icon, label } = sourceMeta(card.source);
   const decided = !!vouch;
 
@@ -549,7 +551,7 @@ function ContentCardFull({
             {card.title}
           </h2>
           <div className="text-white/45 text-xs">
-            tap for details
+            {t("h1.tapForDetails")}
           </div>
         </button>
 
@@ -557,12 +559,12 @@ function ContentCardFull({
           <div className="mb-2 flex items-center justify-between">
             <div className="inline-flex items-center gap-1.5 text-white/70 text-[10px] font-bold uppercase tracking-[0.18em]">
               <TrendingUp className="w-3 h-3" />
-              Will this go viral in 7 days?
+              {t("h1.willGoViralFull")}
             </div>
             <button
               onClick={onOpenHelp}
               className="text-white/40 hover:text-white/80 transition-colors"
-              aria-label="How it works"
+              aria-label={t("h1.howItWorks")}
             >
               <HelpCircle className="w-3.5 h-3.5" />
             </button>
@@ -580,7 +582,7 @@ function ContentCardFull({
                 onClick={onScrollNext}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[11px] font-bold transition-all"
               >
-                Next <ChevronRight className="w-3 h-3" />
+                {t("h1.next")} <ChevronRight className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -802,6 +804,7 @@ function Header({
   vouchedCount: number;
   resolutionMs: number;
 }) {
+  const { t } = useLanguage();
   const { h, m, s } = useCountdown(resolutionMs);
   const quotaMet = vouchedCount >= DAILY_QUOTA_TARGET;
   // Pre-quota: progress vs target. Post-quota: progress vs full drop (bonus zone).
@@ -818,8 +821,8 @@ function Header({
         <div className="flex items-center gap-2.5">
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-4 w-auto" />
           <div className="flex items-center gap-1.5">
-            <span className="text-white text-[11px] font-black tracking-[0.22em] uppercase">Discover</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[8px] font-black tracking-wider uppercase border border-rose-400/30">Beta</span>
+            <span className="text-white text-[11px] font-black tracking-[0.22em] uppercase">{t("h1.brand.discover")}</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[8px] font-black tracking-wider uppercase border border-rose-400/30">{t("h1.brand.beta")}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -836,7 +839,7 @@ function Header({
       {/* Row 2 — context (today's drop · countdown · quota chip) */}
       <div className="flex items-center justify-between px-4 pt-2 pb-2.5">
         <div className="flex items-center gap-1.5 text-white">
-          <span className="text-[11px] font-bold tracking-wider uppercase">Today's Drop</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase">{t("h1.todaysDrop")}</span>
           <span className="text-white/30 mx-1">·</span>
           <span className="text-[11px] font-bold tabular-nums text-white/85">
             {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
@@ -869,16 +872,17 @@ function Header({
 
 /* ─────── Bottom nav ─────── */
 function BottomNav() {
+  const { t } = useLanguage();
   return (
     <nav
       className="absolute bottom-0 inset-x-0 z-40 bg-black/65 backdrop-blur-xl border-t border-white/10"
       style={{ height: BOTTOM_NAV_H, paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="grid grid-cols-4 h-full px-2">
-        <NavBtn icon={Flame} label="Discover" to="/h1" active />
-        <NavBtn icon={History} label="History" to="/h1/history" />
-        <NavBtn icon={Trophy} label="Ranks" to="/h1/leaderboard" />
-        <NavBtn icon={Zap} label="Pro" to="/" />
+        <NavBtn icon={Flame} label={t("h1.nav.discover")} to="/h1" active />
+        <NavBtn icon={History} label={t("h1.nav.myCalls")} to="/h1/history" />
+        <NavBtn icon={Trophy} label={t("h1.nav.ranks")} to="/h1/leaderboard" />
+        <NavBtn icon={Zap} label={t("h1.nav.pro")} to="/" />
       </div>
     </nav>
   );
@@ -989,6 +993,7 @@ function DesktopHeader({
   vouchedCount: number;
   resolutionMs: number;
 }) {
+  const { t } = useLanguage();
   const { h, m, s } = useCountdown(resolutionMs);
   const quotaMet = vouchedCount >= DAILY_QUOTA_TARGET;
 
@@ -999,14 +1004,14 @@ function DesktopHeader({
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" />
           <div className="h-5 w-px bg-white/15" />
           <div className="flex items-center gap-2">
-            <span className="text-white text-[12px] font-black tracking-[0.22em] uppercase">Discover</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[9px] font-black tracking-wider uppercase border border-rose-400/30">Beta</span>
+            <span className="text-white text-[12px] font-black tracking-[0.22em] uppercase">{t("h1.brand.discover")}</span>
+            <span className="px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[9px] font-black tracking-wider uppercase border border-rose-400/30">{t("h1.brand.beta")}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/85 text-xs font-medium">
-            <span className="hidden md:inline">Today's Drop ·</span>
+            <span className="hidden md:inline">{t("h1.todaysDrop")} ·</span>
             <span className="font-bold tabular-nums">
               {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
             </span>
@@ -1036,6 +1041,7 @@ function DesktopHeader({
 }
 
 function DesktopSidebar({ vouchedCount }: { vouchedCount: number }) {
+  const { t } = useLanguage();
   const quotaMet = vouchedCount >= DAILY_QUOTA_TARGET;
   // Pre-quota: progress vs target. Post-quota: progress vs full drop (bonus zone).
   const denom = quotaMet ? DROP_SIZE : DAILY_QUOTA_TARGET;
@@ -1045,10 +1051,10 @@ function DesktopSidebar({ vouchedCount }: { vouchedCount: number }) {
     <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-16 h-[calc(100vh-4rem)] border-r border-white/10 px-4 py-6 gap-5 overflow-y-auto scrollbar-hide">
       {/* Nav */}
       <nav className="flex flex-col gap-0.5">
-        <SidebarNavItem icon={Flame} label="Discover" to="/h1" active />
-        <SidebarNavItem icon={History} label="History" to="/h1/history" />
-        <SidebarNavItem icon={Trophy} label="Leaderboard" to="/h1/leaderboard" />
-        <SidebarNavItem icon={Users} label="Squads" hint="soon" disabled />
+        <SidebarNavItem icon={Flame} label={t("h1.nav.discover")} to="/h1" active />
+        <SidebarNavItem icon={History} label={t("h1.nav.myCalls")} to="/h1/history" />
+        <SidebarNavItem icon={Trophy} label={t("h1.nav.leaderboard")} to="/h1/leaderboard" />
+        <SidebarNavItem icon={Users} label={t("h1.nav.squads")} hint={t("h1.nav.soon")} disabled />
       </nav>
 
       {/* Quota card */}
@@ -1143,6 +1149,7 @@ function DesktopCard({
   onOpenDetail: () => void;
   onOpenHelp: () => void;
 }) {
+  const { t } = useLanguage();
   const { Icon, label } = sourceMeta(card.source);
   const decided = !!vouch;
 
@@ -1212,12 +1219,12 @@ function DesktopCard({
           <>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                Will it go viral?
+                {t("h1.willGoViralShort")}
               </span>
               <button
                 onClick={onOpenHelp}
                 className="text-white/40 hover:text-white/80 transition-colors"
-                aria-label="How it works"
+                aria-label={t("h1.howItWorks")}
               >
                 <HelpCircle className="w-3 h-3" />
               </button>
@@ -1232,8 +1239,8 @@ function DesktopCard({
           <div className="flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-1.5 text-xs">
               <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-white/55">Called:</span>
-              <span className="font-black text-white">{VOUCH_META[vouch].label}</span>
+              <span className="text-white/55">{t("h1.called")}</span>
+              <span className="font-black text-white">{t(VOUCH_META[vouch].labelKey)}</span>
             </div>
             <div className="flex gap-1">
               {(["low", "mid", "high"] as const).map((l) => {
@@ -1242,7 +1249,7 @@ function DesktopCard({
                   <button
                     key={l}
                     onClick={() => onVouch(l)}
-                    title={`Change to ${VOUCH_META[l].label}`}
+                    title={t(VOUCH_META[l].labelKey)}
                     className={`p-1.5 rounded transition-colors ${
                       vouch === l
                         ? "bg-rose-500/30 text-rose-200"
@@ -1270,6 +1277,7 @@ function DesktopVouchBtn({
   active: boolean;
   onClick: () => void;
 }) {
+  const { t } = useLanguage();
   const c = VOUCH_META[level];
   const Icon = c.icon;
   return (
@@ -1283,7 +1291,7 @@ function DesktopVouchBtn({
       )}
     >
       <Icon className="w-3.5 h-3.5 mb-0.5" strokeWidth={active ? 2.5 : 2} />
-      <span className="leading-none">{c.label}</span>
+      <span className="leading-none">{t(c.labelKey)}</span>
     </button>
   );
 }

@@ -10,12 +10,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { History, Settings as SettingsIcon, LogOut, ChevronDown } from "lucide-react";
 
 type Tone = "light" | "dark";   // light = white text on dark bg, dark = inverse
 
 export default function H1AuthChip({ tone = "light", compact = false }: { tone?: Tone; compact?: boolean }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -42,7 +44,7 @@ export default function H1AuthChip({ tone = "light", compact = false }: { tone?:
             : "inline-flex items-center px-3 py-1.5 rounded-full bg-black text-white text-xs font-black hover:scale-[1.02] transition-transform"
         }
       >
-        Sign in
+        {t("common.signIn")}
       </Link>
     );
   }
@@ -85,16 +87,16 @@ export default function H1AuthChip({ tone = "light", compact = false }: { tone?:
       {open && (
         <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[200px] rounded-xl bg-neutral-950 border border-white/10 shadow-2xl overflow-hidden">
           <div className="px-3.5 py-2.5 border-b border-white/10">
-            <div className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Signed in</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/40 font-bold">{t("common.signIn")}</div>
             <div className="text-sm text-white font-bold truncate">{displayName}</div>
           </div>
-          <MenuItem to="/h1/history" icon={History} label="My calls" onSelect={() => setOpen(false)} />
-          <MenuItem to="/settings" icon={SettingsIcon} label="Settings" onSelect={() => setOpen(false)} />
+          <MenuItem to="/h1/history" icon={History} label={t("h1.nav.myCalls")} onSelect={() => setOpen(false)} />
+          <MenuItem to="/settings" icon={SettingsIcon} label={t("common.settings")} onSelect={() => setOpen(false)} />
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left text-sm text-white/80 hover:bg-white/5 hover:text-white border-t border-white/10"
           >
-            <LogOut className="w-3.5 h-3.5" /> Sign out
+            <LogOut className="w-3.5 h-3.5" /> {t("common.signOut")}
           </button>
         </div>
       )}

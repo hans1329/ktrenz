@@ -6,6 +6,7 @@
  * — discoverable when needed, invisible when not.
  */
 import { X, Sparkles, Sprout, Activity, Rocket, Clock, Coins } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Props = {
   open: boolean;
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function H1HowItWorksModal({ open, onClose }: Props) {
+  const { t } = useLanguage();
   if (!open) return null;
   return (
     <div
@@ -26,63 +28,50 @@ export default function H1HowItWorksModal({ open, onClose }: Props) {
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-neutral-950/95 backdrop-blur border-b border-white/10">
           <div className="inline-flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-rose-400" />
-            <h2 className="text-base font-black text-white tracking-tight">How it works</h2>
+            <h2 className="text-base font-black text-white tracking-tight">{t("h1.howItWorks")}</h2>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-white/70 grid place-items-center"
-            aria-label="Close"
+            aria-label={t("common.back")}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="px-5 py-5 space-y-5">
-          <Block
-            label="Today's Drop"
-            body="24 K-pop contents curated each morning. Vouch on the ones you think will pop."
-          />
-
-          <Block
-            label="What 'viral' means here"
-            body="Your call hits if the pick lands in the top 8 by buzz growth 7 days from drop. Anything below = miss."
-          />
+          <Block label={t("h1.help.dropTitle")} body={t("h1.help.dropBody")} />
+          <Block label={t("h1.help.viralTitle")} body={t("h1.help.viralBody")} />
 
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2">
-              Calls scale
+              {t("h1.help.callsScale")}
             </p>
             <ul className="space-y-1.5">
-              <ScaleRow Icon={Sprout} label="Hunch" desc="low conviction · small reward, small loss" />
-              <ScaleRow Icon={Activity} label="Likely" desc="fair shot · medium upside and risk" />
-              <ScaleRow Icon={Rocket} label="Sure!" desc="going viral · biggest reward, biggest hit if wrong" />
+              <ScaleRow Icon={Sprout} label={t("h1.confidence.hunch")} desc={t("h1.help.hunchDesc")} />
+              <ScaleRow Icon={Activity} label={t("h1.confidence.likely")} desc={t("h1.help.likelyDesc")} />
+              <ScaleRow Icon={Rocket} label={t("h1.confidence.sure")} desc={t("h1.help.sureDesc")} />
             </ul>
           </div>
 
           <div className="flex items-start gap-3 rounded-2xl bg-white/[0.03] border border-white/10 p-4">
             <Clock className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-bold text-white mb-0.5">Earlier calls pay more</p>
-              <p className="text-xs text-white/55 leading-relaxed">
-                Day 1 picks earn 3× more than day 4+ picks. Calling something early — before it's
-                obviously hot — is the whole point.
-              </p>
+              <p className="text-sm font-bold text-white mb-0.5">{t("h1.help.earlyTitle")}</p>
+              <p className="text-xs text-white/55 leading-relaxed">{t("h1.help.earlyBody")}</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3 rounded-2xl bg-white/[0.03] border border-white/10 p-4">
             <Coins className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-bold text-white mb-0.5">K-Cash & ranks</p>
-              <p className="text-xs text-white/55 leading-relaxed">
-                Hits pay K-Cash, misses cost less than hits earn, skips are free.
-                Hit at least 30% of your daily drop to qualify for the leaderboard.
-              </p>
+              <p className="text-sm font-bold text-white mb-0.5">{t("h1.help.kcashTitle")}</p>
+              <p className="text-xs text-white/55 leading-relaxed">{t("h1.help.kcashBody")}</p>
             </div>
           </div>
 
           <p className="text-[11px] text-white/35 text-center pt-1">
-            Adjust your call any time before it resolves — but later changes earn less.
+            {t("h1.help.adjustNote")}
           </p>
         </div>
       </div>
