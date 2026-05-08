@@ -7,9 +7,9 @@ import {
 } from "./engagement";
 
 describe("ENGAGEMENT constants", () => {
-  it("requires trend view + 2 content views = 3 total steps", () => {
+  it("requires 2 content views to unlock (trend view no longer gates)", () => {
     expect(ENGAGEMENT_CONTENT_TARGET).toBe(2);
-    expect(ENGAGEMENT_TOTAL_STEPS).toBe(3);
+    expect(ENGAGEMENT_TOTAL_STEPS).toBe(2);
   });
 });
 
@@ -19,26 +19,26 @@ describe("summarizeEngagement", () => {
     expect(s).toEqual({
       trendViewed: false,
       contentCount: 0,
-      totalSteps: 3,
+      totalSteps: 2,
       completedSteps: 0,
       complete: false,
     });
   });
 
-  it("counts trend view alone as 1 step (incomplete)", () => {
+  it("trend view alone does not unlock", () => {
     const s = summarizeEngagement({ trendViewed: true, viewedItems: new Set() });
-    expect(s.completedSteps).toBe(1);
+    expect(s.completedSteps).toBe(0);
     expect(s.complete).toBe(false);
   });
 
-  it("counts content views alone (no trend) as incomplete even at full count", () => {
+  it("2 unique content views unlocks even without trend view", () => {
     const s = summarizeEngagement({
       trendViewed: false,
       viewedItems: new Set(["a", "b"]),
     });
     expect(s.contentCount).toBe(2);
     expect(s.completedSteps).toBe(2);
-    expect(s.complete).toBe(false);
+    expect(s.complete).toBe(true);
   });
 
   it("caps contentCount at ENGAGEMENT_CONTENT_TARGET (2) even if more viewed", () => {
@@ -47,21 +47,13 @@ describe("summarizeEngagement", () => {
       viewedItems: new Set(["a", "b", "c", "d", "e"]),
     });
     expect(s.contentCount).toBe(2);
-    expect(s.completedSteps).toBe(3);
-    expect(s.complete).toBe(true);
-  });
-
-  it("trend + 2 contents = complete", () => {
-    const s = summarizeEngagement({
-      trendViewed: true,
-      viewedItems: new Set(["a", "b"]),
-    });
+    expect(s.completedSteps).toBe(2);
     expect(s.complete).toBe(true);
   });
 
   it("accepts an array of item ids and dedupes", () => {
     const s = summarizeEngagement({
-      trendViewed: true,
+      trendViewed: false,
       viewedItems: ["a", "a", "b"],
     });
     expect(s.contentCount).toBe(2);
@@ -73,10 +65,11 @@ describe("isEngagementComplete", () => {
   it.each([
     [false, [], false],
     [true, [], false],
-    [false, ["a", "b"], false],
+    [false, ["a"], false],
     [true, ["a"], false],
+    [false, ["a", "b"], true],
     [true, ["a", "b"], true],
-    [true, ["a", "b", "c"], true],
+    [false, ["a", "b", "c"], true],
   ])("trendViewed=%s items=%j → complete=%s", (trendViewed, items, expected) => {
     expect(
       isEngagementComplete({ trendViewed, viewedItems: items as string[] }),

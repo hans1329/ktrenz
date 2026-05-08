@@ -877,14 +877,6 @@ function ArtistSection({
                   )}
                   title={engagement.complete ? lt("battle.unlockedHint") : lt("battle.unlockHint")}
                 >
-                  <span
-                    className={cn(
-                      "inline-flex items-center justify-center w-3 h-3 rounded-full",
-                      engagement.trendViewed ? "bg-primary text-primary-foreground" : "bg-muted-foreground/25",
-                    )}
-                  >
-                    {engagement.trendViewed && <Check className="w-2 h-2" strokeWidth={3} />}
-                  </span>
                   {Array.from({ length: ENGAGEMENT_CONTENT_TARGET }).map((_, i) => (
                     <span
                       key={i}
@@ -2791,15 +2783,8 @@ export default function Battle() {
             {globalT("battle.guideDescription")}
           </DialogDescription>
           <div className="space-y-2 mt-2">
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
-              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">1</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepTrend")}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepTrendDesc")}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/40">
-              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">2</div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/10 border border-primary/30">
+              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">✓</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-foreground">{globalT("battle.guideStepContent")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{globalT("battle.guideStepContentDesc")}</p>
@@ -2858,7 +2843,7 @@ export default function Battle() {
                   {[runA, runB].map((run, idx) => {
                     const eng = getEngagement(run.id);
                     const unlocked = isEngagementComplete(run.id);
-                    const stepsDone = (eng.trendViewed ? 1 : 0) + eng.contentCount;
+                    const stepsDone = eng.contentCount;
                     return (
                       <button
                         key={run.id}

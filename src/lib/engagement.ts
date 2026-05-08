@@ -1,13 +1,14 @@
 /**
  * Engagement gating for Battle picks.
  *
- * Users must view the trend insight AND at least N content items before they
- * can pick a side. Pure logic only — no React/state — so it can be unit tested
- * and reused (Battle.tsx, server-side checks, etc.).
+ * Users must view at least N unique content items before they can pick a side.
+ * Trend insight view is tracked but no longer required for unlock — it's an
+ * optional enrichment surface. Pure logic only — no React/state — so it can be
+ * unit tested and reused (Battle.tsx, server-side checks, etc.).
  */
 
 export const ENGAGEMENT_CONTENT_TARGET = 2;
-export const ENGAGEMENT_TOTAL_STEPS = 1 + ENGAGEMENT_CONTENT_TARGET;
+export const ENGAGEMENT_TOTAL_STEPS = ENGAGEMENT_CONTENT_TARGET;
 
 export type EngagementInput = {
   trendViewed: boolean;
@@ -30,13 +31,12 @@ export function summarizeEngagement(input: EngagementInput | undefined): Engagem
   const trendViewed = !!input?.trendViewed;
   const rawCount = input ? sizeOf(input.viewedItems) : 0;
   const contentCount = Math.min(rawCount, ENGAGEMENT_CONTENT_TARGET);
-  const completedSteps = (trendViewed ? 1 : 0) + contentCount;
   return {
     trendViewed,
     contentCount,
     totalSteps: ENGAGEMENT_TOTAL_STEPS,
-    completedSteps,
-    complete: trendViewed && contentCount >= ENGAGEMENT_CONTENT_TARGET,
+    completedSteps: contentCount,
+    complete: contentCount >= ENGAGEMENT_CONTENT_TARGET,
   };
 }
 
