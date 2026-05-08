@@ -1500,6 +1500,36 @@ export default function H1Discover() {
   const [loginNudgeOpen, setLoginNudgeOpen] = useState<false | "share" | "quota">(false);
   const lastSyncedUserRef = useRef<string | null>(null);
   const quotaNudgedRef = useRef(false);
+  const helpAutoTriggerRef = useRef(false);
+
+  // First-visit help: pop the modal once so the cold UA isn't dropped onto
+  // unexplained cards. Sticky via localStorage so returning users don't get
+  // re-onboarded; clearing storage re-arms it (acceptable for v1).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("ktrenz-h1-help-seen")) return;
+    } catch { return; }
+    const t = setTimeout(() => {
+      helpAutoTriggerRef.current = true;
+      setHelpOpen(true);
+      trackH1Event("h1_help_opened", { trigger: "first_visit" });
+    }, 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  const closeHelp = () => {
+    setHelpOpen(false);
+    try { localStorage.setItem("ktrenz-h1-help-seen", "1"); } catch { /* ignore */ }
+    trackH1Event("h1_help_dismissed", {
+      trigger: helpAutoTriggerRef.current ? "first_visit" : "manual",
+    });
+    helpAutoTriggerRef.current = false;
+  };
+  const openHelp = () => {
+    helpAutoTriggerRef.current = false;
+    setHelpOpen(true);
+    trackH1Event("h1_help_opened", { trigger: "manual" });
+  };
 
   // Persist vouches to localStorage on every change (scoped per day).
   // Acts as offline cache + non-auth fallback. When the user is authed,
@@ -1639,7 +1669,7 @@ export default function H1Discover() {
     setDetail,
     handleVouch,
     handleShare,
-    onOpenHelp: () => setHelpOpen(true),
+    onOpenHelp: openHelp,
   };
 
   return (
@@ -1650,7 +1680,7 @@ export default function H1Discover() {
         path="/h1"
       />
       {isMobile ? <MobileShell {...shared} /> : <DesktopShell {...shared} />}
-      <H1HowItWorksModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <H1HowItWorksModal open={helpOpen} onClose={closeHelp} />
       <LoginNudge
         open={!!loginNudgeOpen}
         trigger={loginNudgeOpen || "share"}
