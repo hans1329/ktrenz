@@ -431,6 +431,16 @@ function ImagePlate({ card }: { card: DiscoverCard }) {
 }
 
 /* ─────── Vouch button ─────── */
+// Confidence levels are stake-style — the label tells the user how strongly
+// they're calling it, and the reward chip makes the upside concrete. Multi-
+// pliers are normalized so low = 1× (rather than the 0.5× absolute weight)
+// — small numbers feel like a penalty in UI even when they aren't.
+const VOUCH_META = {
+  low:  { label: "Hunch",  reward: "1×", hint: "small bet",  shade: "from-amber-400 to-amber-500" },
+  mid:  { label: "Likely", reward: "2×", hint: "fair shot",  shade: "from-orange-400 to-orange-500" },
+  high: { label: "Sure!",  reward: "4×", hint: "going viral", shade: "from-rose-400 to-red-500" },
+} as const;
+
 function VouchPill({
   level,
   active,
@@ -440,12 +450,7 @@ function VouchPill({
   active: boolean;
   onClick: () => void;
 }) {
-  const cfg = {
-    low:  { label: "Low",  hint: "weak call",   shade: "from-amber-400 to-amber-500" },
-    mid:  { label: "Mid",  hint: "fair shot",   shade: "from-orange-400 to-orange-500" },
-    high: { label: "High", hint: "going viral", shade: "from-rose-400 to-red-500" },
-  } as const;
-  const c = cfg[level];
+  const c = VOUCH_META[level];
   return (
     <button
       onClick={onClick}
@@ -455,9 +460,13 @@ function VouchPill({
           : "bg-white/10 backdrop-blur-md text-white hover:bg-white/15 active:scale-95"
       }`}
     >
-      <span className="text-base font-black tracking-tight">{c.label}</span>
-      <span className={`text-[10px] mt-0.5 ${active ? "text-white/85" : "text-white/55"}`}>
-        {c.hint}
+      <span className="text-[15px] font-black tracking-tight leading-none">{c.label}</span>
+      <span
+        className={`text-[10px] font-black mt-1 px-1.5 py-0.5 rounded-full tabular-nums tracking-wider ${
+          active ? "bg-white/20 text-white" : "bg-white/10 text-white/70"
+        }`}
+      >
+        {c.reward} reward
       </span>
     </button>
   );
@@ -543,9 +552,14 @@ function ContentCardFull({
         </button>
 
         <div className="mt-auto">
-          <div className="mb-2 inline-flex items-center gap-1.5 text-white/70 text-[10px] font-bold uppercase tracking-[0.18em]">
-            <TrendingUp className="w-3 h-3" />
-            Will this go viral in 7 days?
+          <div className="mb-2 flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 text-white/70 text-[10px] font-bold uppercase tracking-[0.18em]">
+              <TrendingUp className="w-3 h-3" />
+              Will this go viral in 7 days?
+            </div>
+            <span className="text-[10px] text-white/45 font-medium">
+              Bigger call = bigger reward
+            </span>
           </div>
 
           <div className="flex gap-2">
@@ -1192,28 +1206,39 @@ function DesktopCard({
       {/* ── Section 3: Vouch row ── */}
       <div className="px-4 pb-3.5 pt-2 border-t border-white/5">
         {!decided ? (
-          <div className="flex gap-2">
-            <DesktopVouchBtn level="low"  active={false} onClick={() => onVouch("low")} />
-            <DesktopVouchBtn level="mid"  active={false} onClick={() => onVouch("mid")} />
-            <DesktopVouchBtn level="high" active={false} onClick={() => onVouch("high")} />
-          </div>
+          <>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                Will it go viral?
+              </span>
+              <span className="text-[10px] text-white/35">bigger call · bigger reward</span>
+            </div>
+            <div className="flex gap-1.5">
+              <DesktopVouchBtn level="low"  active={false} onClick={() => onVouch("low")} />
+              <DesktopVouchBtn level="mid"  active={false} onClick={() => onVouch("mid")} />
+              <DesktopVouchBtn level="high" active={false} onClick={() => onVouch("high")} />
+            </div>
+          </>
         ) : (
           <div className="flex items-center justify-between gap-2">
-            <div className="text-xs text-white/60">
-              Locked at <span className="font-bold text-white/85 tabular-nums">{formatViews(card.currentViews)}</span>
+            <div className="inline-flex items-center gap-1.5 text-xs">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-white/55">Your call:</span>
+              <span className="font-black text-white">{VOUCH_META[vouch].label}</span>
             </div>
             <div className="flex gap-1">
               {(["low", "mid", "high"] as const).map((l) => (
                 <button
                   key={l}
                   onClick={() => onVouch(l)}
-                  className={`px-2 py-1 rounded text-[11px] font-bold transition-colors ${
+                  title={`Change to ${VOUCH_META[l].label} (${VOUCH_META[l].reward})`}
+                  className={`px-2 py-1 rounded text-[11px] font-black transition-colors tabular-nums ${
                     vouch === l
                       ? "bg-rose-500/30 text-rose-200"
                       : "text-white/35 hover:text-white/70 hover:bg-white/5"
                   }`}
                 >
-                  {l[0].toUpperCase()}
+                  {VOUCH_META[l].reward}
                 </button>
               ))}
             </div>
@@ -1233,22 +1258,24 @@ function DesktopVouchBtn({
   active: boolean;
   onClick: () => void;
 }) {
-  const cfg = {
-    low:  { label: "Low",  shade: "from-amber-400 to-amber-500" },
-    mid:  { label: "Mid",  shade: "from-orange-400 to-orange-500" },
-    high: { label: "High", shade: "from-rose-400 to-red-500" },
-  } as const;
-  const c = cfg[level];
+  const c = VOUCH_META[level];
   return (
     <button
       onClick={onClick}
-      className={`flex-1 py-2 rounded-lg text-xs font-black tracking-tight transition-all active:scale-95 ${
+      className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-black tracking-tight transition-all active:scale-95 ${
         active
           ? `bg-gradient-to-b ${c.shade} text-white shadow`
           : "bg-white/5 text-white/75 hover:bg-white/10 hover:text-white"
       }`}
     >
-      {c.label}
+      <span>{c.label}</span>
+      <span
+        className={`text-[10px] font-black px-1 py-0.5 rounded-md tabular-nums ${
+          active ? "bg-white/25 text-white" : "bg-white/10 text-white/60"
+        }`}
+      >
+        {c.reward}
+      </span>
     </button>
   );
 }
