@@ -103,6 +103,15 @@ function hoursAgo(iso: string | null): number {
   return Math.max(0, Math.floor((Date.now() - t) / 3_600_000));
 }
 
+// Convert an "W / H" aspect-ratio string to a padding-bottom percentage so we
+// can size cross-origin iframes via the legacy aspect-ratio hack (which works
+// reliably across browsers, unlike the modern `aspect-ratio` CSS prop).
+function aspectToPadding(aspect: string): string {
+  const [w, h] = aspect.split("/").map((s) => parseFloat(s.trim()));
+  if (!w || !h || isNaN(w) || isNaN(h)) return "56.25%"; // 16:9 fallback
+  return `${((h / w) * 100).toFixed(3)}%`;
+}
+
 function formatAge(iso: string | null): string {
   const h = hoursAgo(iso);
   if (h < 1) return "<1h ago";
@@ -126,25 +135,12 @@ function getEmbed(card: DiscoverCard): EmbedInfo | null {
   const ytId = youtubeVideoId(card.url);
   if (ytId && (card.source === "youtube" || card.source === "shorts")) {
     const isShorts = card.source === "shorts" || /youtube\.com\/shorts\//.test(card.url);
-    // youtube-nocookie.com is the privacy-enhanced embed host. It's broadly
-    // more permissive about autoplay + cross-origin embedding than the
-    // standard youtube.com player and avoids consent/cookie banners that
-    // block initial playback on some videos. enablejsapi + origin lets the
-    // player report state back if we ever wire postMessage. playsinline
-    // keeps it inline on iOS instead of forcing fullscreen.
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const params = new URLSearchParams({
-      autoplay: "1",
-      mute: "1",
-      playsinline: "1",
-      rel: "0",
-      modestbranding: "1",
-      enablejsapi: "1",
-      ...(origin ? { origin } : {}),
-    });
+    // Mirror Battle.tsx's working embed config exactly — anything more clever
+    // (nocookie host, enablejsapi, playsinline, referrerPolicy) silently
+    // breaks playback on a chunk of videos. Keep it minimal.
     return {
       kind: "youtube",
-      src: `https://www.youtube-nocookie.com/embed/${ytId}?${params.toString()}`,
+      src: `https://www.youtube.com/embed/${ytId}?rel=0&autoplay=1&mute=1`,
       aspect: isShorts ? "9 / 16" : "16 / 9",
     };
   }
@@ -626,19 +622,21 @@ function DetailDrawer({
 
         {/* Hero — embed when supported, otherwise thumbnail.
             Each embed renders at its native aspect (declared in getEmbed).
+            Uses padding-bottom (not aspectRatio CSS) because aspectRatio
+            doesn't always size cross-origin iframes correctly — this is the
+            same pattern Battle.tsx uses for its working YouTube embeds.
             shrink-0 prevents flex compression when description is long. */}
         <div
           className="relative w-full shrink-0 bg-black overflow-hidden"
-          style={{ aspectRatio: embed?.aspect ?? "16 / 9" }}
+          style={{ paddingBottom: aspectToPadding(embed?.aspect ?? "16 / 9") }}
         >
           {embed ? (
             <iframe
               src={embed.src}
               title={card.title}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              className="absolute inset-0 w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
             />
           ) : card.thumbnail ? (
             <img
