@@ -13,6 +13,7 @@ import {
   Sparkles, Clock, Eye, Share2, Trophy, History, Flame,
   Youtube, Music2, Newspaper, Play, X, ChevronRight, Check,
   Zap, TrendingUp, Users, Loader2, ExternalLink,
+  Sprout, Activity, Rocket,
 } from "lucide-react";
 import ktrenzLogo from "@/assets/logo_nd.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -21,6 +22,7 @@ import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackH1Event } from "@/lib/h1Telemetry";
 import H1AuthChip from "@/components/h1/H1AuthChip";
+import { cn } from "@/lib/utils";
 
 /* ─────── Types ─────── */
 type Source = "youtube" | "tiktok" | "shorts" | "spotify" | "news" | "naver_news" | "naver_blog" | "instagram" | "reddit" | string;
@@ -432,13 +434,14 @@ function ImagePlate({ card }: { card: DiscoverCard }) {
 
 /* ─────── Vouch button ─────── */
 // Confidence levels are stake-style — the label tells the user how strongly
-// they're calling it, and the reward chip makes the upside concrete. Multi-
-// pliers are normalized so low = 1× (rather than the 0.5× absolute weight)
-// — small numbers feel like a penalty in UI even when they aren't.
+// they're calling it, the reward chip makes the upside concrete, and the
+// icon gives instant scan recognition. Multipliers are normalized so low =
+// 1× (rather than the 0.5× absolute weight) — small numbers feel like a
+// penalty in UI even when they aren't.
 const VOUCH_META = {
-  low:  { label: "Hunch",  reward: "1×", hint: "small bet",  shade: "from-amber-400 to-amber-500" },
-  mid:  { label: "Likely", reward: "2×", hint: "fair shot",  shade: "from-orange-400 to-orange-500" },
-  high: { label: "Sure!",  reward: "4×", hint: "going viral", shade: "from-rose-400 to-red-500" },
+  low:  { label: "Hunch",  reward: "1×", hint: "small bet",   icon: Sprout, shade: "from-amber-400 to-amber-500", ring: "ring-amber-400/40", glow: "shadow-amber-400/30" },
+  mid:  { label: "Likely", reward: "2×", hint: "fair shot",   icon: Activity, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
+  high: { label: "Sure!",  reward: "4×", hint: "going viral", icon: Rocket, shade: "from-rose-400 to-red-500", ring: "ring-rose-400/50", glow: "shadow-rose-500/40" },
 } as const;
 
 function VouchPill({
@@ -451,22 +454,43 @@ function VouchPill({
   onClick: () => void;
 }) {
   const c = VOUCH_META[level];
+  const Icon = c.icon;
   return (
     <button
       onClick={onClick}
-      className={`relative flex-1 flex flex-col items-center justify-center py-3 rounded-2xl transition-all overflow-hidden ${
+      className={cn(
+        "relative flex-1 flex flex-col items-center justify-center pt-3 pb-3 rounded-2xl transition-all overflow-hidden border",
         active
-          ? `bg-gradient-to-b ${c.shade} text-white shadow-lg scale-[1.02]`
-          : "bg-white/10 backdrop-blur-md text-white hover:bg-white/15 active:scale-95"
-      }`}
+          ? `bg-gradient-to-b ${c.shade} text-white shadow-xl ${c.glow} border-white/30 scale-[1.04] ring-2 ${c.ring}`
+          : "bg-white/[0.06] backdrop-blur-md text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95",
+      )}
     >
+      {/* Reward chip — top-right corner, always visible */}
+      <span
+        className={cn(
+          "absolute top-1.5 right-1.5 text-[9px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-wider leading-none",
+          active ? "bg-white/25 text-white" : "bg-white/10 text-white/65",
+        )}
+      >
+        {c.reward}
+      </span>
+
+      <Icon
+        className={cn(
+          "w-6 h-6 mb-1 transition-transform",
+          active ? "drop-shadow-lg" : "opacity-80",
+          level === "high" && active && "animate-pulse",
+        )}
+        strokeWidth={active ? 2.5 : 2}
+      />
       <span className="text-[15px] font-black tracking-tight leading-none">{c.label}</span>
       <span
-        className={`text-[10px] font-black mt-1 px-1.5 py-0.5 rounded-full tabular-nums tracking-wider ${
-          active ? "bg-white/20 text-white" : "bg-white/10 text-white/70"
-        }`}
+        className={cn(
+          "text-[10px] mt-1 leading-none",
+          active ? "text-white/80" : "text-white/45",
+        )}
       >
-        {c.reward} reward
+        {c.hint}
       </span>
     </button>
   );
@@ -568,13 +592,18 @@ function ContentCardFull({
             <VouchPill level="high" active={vouch === "high"} onClick={() => onVouch("high")} />
           </div>
 
-          <div className="mt-2 flex items-center justify-center min-h-[32px]">
+          <div className="mt-2 flex items-center justify-between gap-2 min-h-[32px]">
+            <span className="text-[10px] text-white/40 leading-snug">
+              {decided
+                ? "Tap to adjust · later changes earn less"
+                : "Pick once, you can fine-tune later"}
+            </span>
             {decided && (
               <button
                 onClick={onScrollNext}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[11px] font-bold transition-all"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[11px] font-bold transition-all shrink-0"
               >
-                Locked in · next <ChevronRight className="w-3 h-3" />
+                Next <ChevronRight className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -1220,28 +1249,36 @@ function DesktopCard({
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1.5 text-xs">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-white/55">Your call:</span>
-              <span className="font-black text-white">{VOUCH_META[vouch].label}</span>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 text-xs">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-white/55">Your call:</span>
+                <span className="font-black text-white">{VOUCH_META[vouch].label}</span>
+                <span className="text-[10px] font-black px-1 py-0.5 rounded bg-white/10 text-white/65 tabular-nums">
+                  {VOUCH_META[vouch].reward}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                {(["low", "mid", "high"] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => onVouch(l)}
+                    title={`Change to ${VOUCH_META[l].label} (${VOUCH_META[l].reward})`}
+                    className={`px-2 py-1 rounded text-[11px] font-black transition-colors tabular-nums ${
+                      vouch === l
+                        ? "bg-rose-500/30 text-rose-200"
+                        : "text-white/35 hover:text-white/70 hover:bg-white/5"
+                    }`}
+                  >
+                    {VOUCH_META[l].reward}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-1">
-              {(["low", "mid", "high"] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => onVouch(l)}
-                  title={`Change to ${VOUCH_META[l].label} (${VOUCH_META[l].reward})`}
-                  className={`px-2 py-1 rounded text-[11px] font-black transition-colors tabular-nums ${
-                    vouch === l
-                      ? "bg-rose-500/30 text-rose-200"
-                      : "text-white/35 hover:text-white/70 hover:bg-white/5"
-                  }`}
-                >
-                  {VOUCH_META[l].reward}
-                </button>
-              ))}
-            </div>
+            <p className="text-[10px] text-white/35 leading-snug">
+              Adjustable until resolution — but later changes earn less.
+            </p>
           </div>
         )}
       </div>
@@ -1259,23 +1296,27 @@ function DesktopVouchBtn({
   onClick: () => void;
 }) {
   const c = VOUCH_META[level];
+  const Icon = c.icon;
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-black tracking-tight transition-all active:scale-95 ${
+      className={cn(
+        "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95",
         active
-          ? `bg-gradient-to-b ${c.shade} text-white shadow`
-          : "bg-white/5 text-white/75 hover:bg-white/10 hover:text-white"
-      }`}
+          ? `bg-gradient-to-b ${c.shade} text-white shadow-lg ${c.glow} border-white/25 ring-1 ${c.ring}`
+          : "bg-white/[0.04] text-white/80 border-white/10 hover:bg-white/[0.08] hover:border-white/20 hover:text-white",
+      )}
     >
-      <span>{c.label}</span>
       <span
-        className={`text-[10px] font-black px-1 py-0.5 rounded-md tabular-nums ${
-          active ? "bg-white/25 text-white" : "bg-white/10 text-white/60"
-        }`}
+        className={cn(
+          "absolute top-1 right-1 text-[9px] font-black px-1 py-0.5 rounded leading-none tabular-nums",
+          active ? "bg-white/25 text-white" : "bg-white/10 text-white/60",
+        )}
       >
         {c.reward}
       </span>
+      <Icon className="w-3.5 h-3.5 mb-0.5" strokeWidth={active ? 2.5 : 2} />
+      <span className="leading-none">{c.label}</span>
     </button>
   );
 }
