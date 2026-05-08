@@ -34,6 +34,10 @@ type HistoryRow = {
   url: string;
   star_display_name: string | null;
   star_image_url: string | null;
+  // Added by 20260509120000_h1_my_history_with_rank migration. Optional so
+  // the client renders gracefully on stale RPCs (just shows "pending").
+  current_rank: number | null;
+  cohort_size: number | null;
 };
 
 function useMyHistory(enabled: boolean) {
@@ -164,6 +168,24 @@ function HistoryCard({ row }: { row: HistoryRow }) {
 
 function ResolutionBadge({ row }: { row: HistoryRow }) {
   if (!row.resolved) {
+    // Interim signal: show current cohort rank so the 7-day wait isn't a
+    // black box. Top 30% of the cohort is the resolution threshold (PRD §6),
+    // so highlight provisional hits in green and stragglers in plain pending.
+    if (row.current_rank != null && row.cohort_size != null && row.cohort_size > 0) {
+      const provisionallyHit = row.current_rank / row.cohort_size <= 0.3;
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums ${
+            provisionallyHit
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-white/5 text-white/55"
+          }`}
+        >
+          <Clock className="w-3 h-3" />
+          #{row.current_rank}/{row.cohort_size}
+        </span>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-white/45 font-medium">
         <Clock className="w-3 h-3" /> pending
