@@ -277,55 +277,24 @@ function KCashBox({ className = "" }: { className?: string }) {
 }
 
 function TierGuide() {
-  // Visual breakdown of the three vouch tiers — fills the column under
-  // How it works to match the sample card's height on desktop, and gives
-  // first-timers a quick mental model of risk/reward.
-  const tiers: Array<{
-    mult: string;
-    label: string;
-    sub: string;
-    detail: string;
-    chip: string;
-  }> = [
-    {
-      mult: "×1",
-      label: "Hunch",
-      sub: "가볍게",
-      detail: "무료 슬롯 · 미스해도 차감 없음",
-      chip: "bg-amber-400/15 text-amber-200 border-amber-400/30",
-    },
-    {
-      mult: "×2",
-      label: "Pick",
-      sub: "확신 있는",
-      detail: "💎 차감 · 적중시 보통 보상",
-      chip: "bg-orange-400/15 text-orange-200 border-orange-400/30",
-    },
-    {
-      mult: "×4",
-      label: "Lock",
-      sub: "강한 확신",
-      detail: "💎 더 차감 · 적중/미스 모두 큰 폭",
-      chip: "bg-rose-400/15 text-rose-200 border-rose-400/30",
-    },
+  // Compact 3-col tier chip row — sits under How it works on desktop just
+  // to top up the column height. Single line per tier; no body copy.
+  const tiers: Array<{ mult: string; label: string; hint: string; chip: string }> = [
+    { mult: "×1", label: "Hunch", hint: "무료", chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
+    { mult: "×2", label: "Pick",  hint: "보통", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
+    { mult: "×4", label: "Lock",  hint: "큰 폭", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
-    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-3">
-        예측 강도 가이드
+    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 text-center">
+        예측 강도
       </p>
-      <div className="space-y-2">
+      <div className="grid grid-cols-3 gap-2">
         {tiers.map((t) => (
-          <div key={t.mult} className="flex items-center gap-3">
-            <div className={`inline-flex items-center justify-center w-12 h-9 rounded-lg border font-black text-sm ${t.chip}`}>
-              {t.mult}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-black text-white leading-tight">
-                {t.label} <span className="text-white/45 font-bold text-xs">· {t.sub}</span>
-              </div>
-              <div className="text-[11px] text-white/55 leading-tight mt-0.5">{t.detail}</div>
-            </div>
+          <div key={t.mult} className={`rounded-lg border ${t.chip} px-2 py-1.5 text-center`}>
+            <div className="text-sm font-black leading-none">{t.mult}</div>
+            <div className="text-[10px] font-bold opacity-80 mt-0.5">{t.label}</div>
+            <div className="text-[9px] opacity-60 mt-0.5">{t.hint}</div>
           </div>
         ))}
       </div>
