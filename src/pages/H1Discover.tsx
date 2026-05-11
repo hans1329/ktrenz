@@ -530,22 +530,22 @@ const VOUCH_META = {
     labelKey: "h1.confidence.hunch", hintKey: "h1.confidence.hunchHint", icon: Sprout, mult: 1, hit: 10, miss: 5,
     shade: "from-amber-400 to-amber-500", ring: "ring-amber-400/40", glow: "shadow-amber-400/30",
     text: "text-zinc-100",
-    bgIdle: "bg-amber-400/10 border-amber-400/25 hover:bg-amber-400/20 hover:border-amber-400/40",
-    bgActive: "bg-amber-400/30 border-amber-300/60 ring-1 ring-amber-300/40 shadow-lg shadow-amber-500/20",
+    bgIdle: "bg-amber-400/[0.04] border-amber-400/15 hover:bg-amber-400/10 hover:border-amber-400/25",
+    bgActive: "bg-amber-400/15 border-amber-300/35 ring-1 ring-amber-300/25 shadow-lg shadow-amber-500/15",
   },
   mid: {
     labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint", icon: Activity, mult: 2, hit: 20, miss: 10,
     shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30",
     text: "text-zinc-100",
-    bgIdle: "bg-orange-400/10 border-orange-400/25 hover:bg-orange-400/20 hover:border-orange-400/40",
-    bgActive: "bg-orange-400/30 border-orange-300/60 ring-1 ring-orange-300/40 shadow-lg shadow-orange-500/20",
+    bgIdle: "bg-orange-400/[0.04] border-orange-400/15 hover:bg-orange-400/10 hover:border-orange-400/25",
+    bgActive: "bg-orange-400/15 border-orange-300/35 ring-1 ring-orange-300/25 shadow-lg shadow-orange-500/15",
   },
   high: {
     labelKey: "h1.confidence.sure", hintKey: "h1.confidence.sureHint", icon: Rocket, mult: 4, hit: 40, miss: 20,
     shade: "from-rose-400 to-red-500", ring: "ring-rose-400/50", glow: "shadow-rose-500/40",
     text: "text-zinc-100",
-    bgIdle: "bg-rose-400/10 border-rose-400/25 hover:bg-rose-400/20 hover:border-rose-400/40",
-    bgActive: "bg-rose-400/30 border-rose-300/60 ring-1 ring-rose-300/40 shadow-lg shadow-rose-500/20",
+    bgIdle: "bg-rose-400/[0.04] border-rose-400/15 hover:bg-rose-400/10 hover:border-rose-400/25",
+    bgActive: "bg-rose-400/15 border-rose-300/35 ring-1 ring-rose-300/25 shadow-lg shadow-rose-500/15",
   },
 } as const;
 
