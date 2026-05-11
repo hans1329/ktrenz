@@ -238,17 +238,12 @@ function Step({
 function KCashBox({ className = "" }: { className?: string }) {
   return (
     <div className={`rounded-2xl bg-gradient-to-br from-sky-500/15 via-violet-500/10 to-rose-500/10 border border-sky-400/25 p-5 ${className}`}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-xl bg-sky-400/20 grid place-items-center">
-          <Coins className="w-4 h-4 text-sky-300" />
+      <div className="mb-4">
+        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/80 mb-1">
+          K-Cash 💎
         </div>
-        <div className="flex-1">
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/80">
-            K-Cash 💎
-          </div>
-          <div className="text-sm font-black text-white">
-            모아서 진짜 보상으로 교환
-          </div>
+        <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+          모아서 진짜 보상으로 교환
         </div>
       </div>
 
@@ -405,22 +400,19 @@ function ProTeaser({ className = "" }: { className?: string }) {
       to="/pro"
       className={`block rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/15 border border-amber-400/25 p-5 hover:scale-[1.005] transition-transform ${className}`}
     >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-amber-400/20 grid place-items-center shrink-0">
-          <Zap className="w-5 h-5 text-amber-300" />
-        </div>
+      <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300/80 mb-0.5">
+          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300/80 mb-1">
             Pro Mode
           </div>
-          <div className="text-sm font-black text-white mb-0.5">
+          <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight mb-1">
             상수만의 1:1 배틀, Pro Battle
           </div>
           <div className="text-xs text-white/60">
             픽 둘 중 더 뜰 사람을 즉시 골라보기. 토너먼트 방식.
           </div>
         </div>
-        <ArrowRight className="w-4 h-4 text-white/40 shrink-0" />
+        <ArrowRight className="w-4 h-4 text-white/40 shrink-0 mt-1.5" />
       </div>
     </Link>
   );
