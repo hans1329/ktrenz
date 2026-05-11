@@ -10,6 +10,49 @@
 
 ## Revision history
 
+### v2.1 (2026-05-12) — payout doubled · UX simplification · landing for anon
+
+UX polish session: reward labeling switched from abstract ×N multiplier to concrete K-Cash amounts (10/20/40 💎), since the game has no variable wager mechanic; ×N read as "stake size" and was misleading. Misc copy and visual cleanup.
+
+| Area | v2 | v2.1 |
+|---|---|---|
+| Hit payout per tier | floor(weight × 10) = 5 / 10 / 20 💎 | **floor(weight × 20) = 10 / 20 / 40 💎** |
+| Miss penalty per tier | 2 / 5 / 10 💎 | **5 / 10 / 20 💎** (proportional bump) |
+| Vouch button label | `×1 / ×2 / ×4` + Sprout/Activity/Rocket icon | **`+10💎 / +20💎 / +40💎`**, no icons; tier-tinted backgrounds match Call Strength chips |
+| Confirm dialog title | "Call this ×N?" + tier icon | **"적중시 +N 💎"** ("Hit it · +N 💎"); icon removed; "오늘의 라운드 (1 of 24)" line removed |
+| Confirm dialog slots strip | per-tier shows `×N` | per-tier shows `+N💎` (hit amount keyed) |
+| Post-vouch card | separate "called ×N" box at bottom + small +N buttons | top chip shows just `✓ CALLED`; vouch row shows the SAME 3 buttons with the selected tier in active state (no separate box) |
+| Quota target | fixed `7` (hardcoded) | scales to cohort size: `floor(cohortSize × 7 / 24)`. 24-card cohort → 7; 12-card → 3 |
+| Per-artist cap | 2 / day | **1 / day** (highest-scoring representative wins; "same artist twice" eliminated) |
+| Curate cross-day dedup | none | items used in any drop within last 7d are excluded from new curation |
+| Curate existing-row dedup | only new candidates compared | seeds dedup sets with rows already in today's drop (vouch-protected survivors) so fillers don't dup them |
+| Curate fingerprints | thumbnail (host+path) | + filename fingerprint (catches same image on different CDN hosts); cross-artist title Jaccard (Dino vs Seventeen "피철인" case) |
+| Slot consumption on tier change | implicit | **Same-day tier swap on same card consumes no new slot** (UPSERT on (user_id, drop_id), `vouched_at = now()` just shifts which tier's bucket the row belongs to). **D+1 change moves the row into the new day's slot count.** |
+| Ad unlock daily cap | 2 | **5** (server cap); client further gates by `min(serverRemaining, cards.length - vouchedCount)` so cohorts smaller than the cap don't strand unused ad watches |
+| Logged-out experience | full discover feed visible to anon | **dedicated landing**: hero + sample card (real DesktopCard, opens DetailDrawer) + 3-step + Call Strength + 5-source strip + stats + K-Cash uses + more picks grid + Pro Mode teaser + 8-question accordion FAQ + CTA "지금 가입시 1,000 💎 즉시 지급" |
+| Landing localization | n/a | full i18n (50 keys) across en/ko/ja/zh |
+| Anon vouching | localStorage write that gets replayed to server on first login | **removed** — anon clicks open login nudge instead. Eliminates cross-account leak via shared `ktrenz-h1-vouches-{date}` key (now keyed by `ktrenz-h1-vouches-{userId-or-anon}-{date}` with owner ref to prevent stale-data race on auth flip) |
+| Card prompt copy | "Top 7 of today's 24 in 7 days?" + "More confidence, bigger reward" | "7일 후 상위 30% 진입 예측" + "적중하면 최대 4배 보상" — same string for full + short variants |
+| Quota current digit color | white | **violet-500** (highlights how far user is along) |
+| Header nav redundancy | tabs always shown md+ even when sidebar present at lg+ | tabs shown **only md range** (`hidden md:flex lg:hidden`); lg+ uses sidebar alone |
+| Header height | 48 px | **56 px**; logo / tabs / balance chip all bumped one tailwind step |
+| Landing CTA | "Sign in to start" | "지금 가입시 1,000 💎 즉시 지급" — surfaces the welcome bonus value directly |
+| Buzz now metric on detail | shown as `engagement_score` (per-artist run total for legacy items) | unified label "Buzz"; engagement_score now per-item via `metadata.{views,plays,likes,ups}` from content-search; YouTube `videos.list` enrichment added for per-video viewCount |
+| Detail drawer stats | Buzz · Posted (2-col) | Buzz · Rank (`#N / cohortSize`, client-sorted) · Velocity (`views/hour`) · Posted (2×2 grid) |
+| IG modal load time | DB cache 25 min + sequential prefetch | DB cache **4 h** + parallel prefetch with `<link rel="preload">` priming for first 3 images; SW CacheFirst registered for `cdninstagram.com`/`fbcdn.net` (6 h) |
+| PWA refresh button | `updateServiceWorker(true)` (didn't actually reload — `controllerchange` not firing under autoUpdate+clientsClaim) | explicit `window.location.reload()` after SW update |
+| Daily drop fallback | strict `drop_date = current_date` (broken when cron late or DELETE+regen partial) | RPC picks **latest unresolved drop** for the region; clients see content even mid-cron or after manual regen |
+| time_decay legacy copy | "Earlier calls earn more / 늦게 바꾸면 적게 받습니다" remnants | sweeped from all locales, SEO description, shared slate, help modal — explicit "변경 시점 페널티 없음" stated |
+| Cron timing | daily 00:15 UTC = 09:15 KST | **unchanged** — user opted to keep 15-min content lag rather than move cron (quota resets at UTC 00:00 = KST 09:00; content arrives 15 min later) |
+| CI/CD | manual `npx wrangler pages deploy` | automated: `.github/workflows/ci.yml` deploys dist on main push (CLOUDFLARE_API_TOKEN + ACCOUNT_ID secrets) |
+| K-Pass copy on landing | n/a | inline mentions ×2 slots, 30-day trend insights, Pro Studio API as redemption use cases |
+
+Migrations applied (in order this session):
+1. `20260511120000_h1_ad_unlocks.sql` — base ad unlock table + RPCs (cap=2)
+2. `20260511140000_h1_ad_unlock_cap_5.sql` — cap 2→5 + `my_status` reflects new cap
+3. `20260511150000_b2_items_engagement_backfill.sql` — backfill per-item engagement from metadata
+4. `20260511160000_h1_get_latest_active_drop.sql` — RPC returns most recent unresolved drop instead of strict `current_date`
+
 ### v2 (2026-05-10) — snap-judgment + multi-round editing
 Operating philosophy reframed: trend prediction is snap judgment, not observation. Time-decay early-bird bonus removed. Users now edit picks any day until resolution. Round terminology adopted (KO).
 
