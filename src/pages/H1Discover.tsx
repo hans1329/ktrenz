@@ -557,7 +557,9 @@ function VouchPill({
             : "bg-white/[0.06] backdrop-blur-md text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95",
       )}
     >
-      <span className="text-[19px] font-black tabular-nums tracking-tight leading-none">+{c.hit}💎</span>
+      <span className="text-[17px] font-black tabular-nums tracking-tight leading-none">
+        +{c.hit}&nbsp;💎
+      </span>
     </button>
   );
 }
@@ -1822,7 +1824,9 @@ function DesktopVouchBtn({
             : "bg-white/[0.04] text-white/80 border-white/10 hover:bg-white/[0.08] hover:border-white/20 hover:text-white",
       )}
     >
-      <span className="text-[17px] font-black tabular-nums leading-none">+{c.hit}💎</span>
+      <span className="text-[15px] font-black tabular-nums leading-none">
+        +{c.hit}&nbsp;💎
+      </span>
     </button>
   );
 }
