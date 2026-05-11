@@ -912,6 +912,13 @@ const dict: Record<string, string> = {
   "h1.landing.faq.a8": "集合预测结果用于 B2B Trend Intelligence (厂牌·品牌·媒体) 洞察。个人信息分离·匿名化处理。",
   "h1.landing.cta.button": "立即注册获得 1,000 💎",
   "h1.landing.cta.fineprint": "已有账号也可通过此按钮登录",
+  "h1.completion.badge": "今日完成",
+  "h1.completion.headline": "今天的预测全部完成了!",
+  "h1.completion.body": "7天后结算。分享你的选择,命中了就来炫耀。",
+  "h1.completion.stat.vouches": "预测",
+  "h1.completion.stat.passed": "略过",
+  "h1.completion.stat.total": "全部",
+  "h1.completion.share": "分享我的选择",
 };
 
 export default dict;

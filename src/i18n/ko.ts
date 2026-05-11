@@ -912,6 +912,13 @@ const dict: Record<string, string> = {
   "h1.landing.faq.a8": "집합 예측 결과는 B2B Trend Intelligence (레이블·브랜드·미디어용) 인사이트로 활용. 개인 정보는 분리·익명화 처리.",
   "h1.landing.cta.button": "지금 가입시 1,000 💎 즉시 지급",
   "h1.landing.cta.fineprint": "이미 계정이 있으면 동일 버튼으로 로그인",
+  "h1.completion.badge": "오늘 완료",
+  "h1.completion.headline": "오늘의 예측을 모두 끝내셨어요!",
+  "h1.completion.body": "7일 후 결과 정산. 픽을 공유해서 적중하면 자랑해보세요.",
+  "h1.completion.stat.vouches": "예측",
+  "h1.completion.stat.passed": "패스",
+  "h1.completion.stat.total": "전체",
+  "h1.completion.share": "내 픽 공유",
 };
 
 export default dict;

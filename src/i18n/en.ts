@@ -912,6 +912,13 @@ const dict: Record<string, string> = {
   "h1.landing.faq.a8": "Aggregate prediction outcomes power B2B Trend Intelligence (labels, brands, media). Personal data is decoupled and anonymized.",
   "h1.landing.cta.button": "Sign up & get 1,000 💎 instantly",
   "h1.landing.cta.fineprint": "Same button signs you in if you already have an account",
+  "h1.completion.badge": "Today, done",
+  "h1.completion.headline": "You wrapped up today's picks!",
+  "h1.completion.body": "Resolves in 7 days. Share your picks to flex if they hit.",
+  "h1.completion.stat.vouches": "Picks",
+  "h1.completion.stat.passed": "Passed",
+  "h1.completion.stat.total": "Total",
+  "h1.completion.share": "Share my picks",
 };
 
 export default dict;

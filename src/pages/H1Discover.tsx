@@ -1202,29 +1202,28 @@ function CompletionCard({
   const passed = totalCards - vouched;
   const canUnlock = !!onUnlockMore && typeof unlockRemaining === "number" && unlockRemaining > 0;
   return (
-    <section className="snap-start shrink-0 h-full w-full relative bg-gradient-to-br from-rose-900 via-neutral-950 to-orange-900 flex items-center justify-center">
+    <section className="snap-start shrink-0 h-full w-full relative bg-gradient-to-br from-violet-900 via-neutral-950 to-purple-900 flex items-center justify-center">
       <div className="text-center px-8 max-w-md">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur text-white text-xs font-bold tracking-wider uppercase mb-6">
-          <Sparkles className="w-3.5 h-3.5" /> Today's calls in
+          <Sparkles className="w-3.5 h-3.5" /> {t("h1.completion.badge")}
         </div>
-        <h2 className="text-5xl font-black text-white tracking-tight leading-[1.05] mb-6">
-          You're all in.
+        <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-[1.15] mb-6">
+          {t("h1.completion.headline")}
         </h2>
         <div className="flex justify-center gap-6 mb-8 text-white">
-          <Stat label="vouches" value={vouched} />
-          <Stat label="passed" value={passed} />
-          <Stat label="total" value={totalCards} />
+          <Stat label={t("h1.completion.stat.vouches")} value={vouched} />
+          <Stat label={t("h1.completion.stat.passed")} value={passed} />
+          <Stat label={t("h1.completion.stat.total")} value={totalCards} />
         </div>
         <p className="text-white/70 text-sm leading-relaxed mb-6">
-          Resolves at midnight. Share your calls now to flex when they hit —
-          early callers get bragging rights.
+          {t("h1.completion.body")}
         </p>
         <div className="flex flex-col gap-2.5 items-center">
           <button
             onClick={onShare}
             className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-black font-black text-sm hover:scale-[1.02] transition-transform shadow-2xl"
           >
-            <Share2 className="w-4 h-4" /> Share my calls
+            <Share2 className="w-4 h-4" /> {t("h1.completion.share")}
           </button>
           {canUnlock && (
             <button
@@ -2046,15 +2045,21 @@ function MobileShell({
               slotState={slotState}
             />
           ))}
-          <CompletionCard
-            vouches={vouches}
-            totalCards={cards.length}
-            onShare={handleShare}
-            activePicksCount={activePicksCount}
-            onUnlockMore={onUnlockMore}
-            unlockRemaining={unlockRemaining}
-            unlockMax={unlockMax}
-          />
+          {/* Completion only when user actually finished today's quota or
+              decided every card. Previously appended unconditionally so the
+              card showed prematurely when users scrolled to the end of a
+              partial set. */}
+          {(vouchedCount >= quotaTarget || vouchedCount >= cards.length) && (
+            <CompletionCard
+              vouches={vouches}
+              totalCards={cards.length}
+              onShare={handleShare}
+              activePicksCount={activePicksCount}
+              onUnlockMore={onUnlockMore}
+              unlockRemaining={unlockRemaining}
+              unlockMax={unlockMax}
+            />
+          )}
         </div>
       )}
 
