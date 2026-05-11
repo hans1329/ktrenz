@@ -130,7 +130,7 @@ const App = () => (
                   <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                   <Route path="/fes-engine" element={<FesEngine />} />
                   <Route path="/agent" element={<FanAgent />} />
-                  <Route path="/login" element={<Login />} />
+                  <Route path="/login" element={<Suspense fallback={<H1RouteFallback />}><Login /></Suspense>} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/k-pass" element={<Suspense fallback={<H1RouteFallback />}><KPass /></Suspense>} />
                   <Route path="/kpass" element={<Suspense fallback={<H1RouteFallback />}><KPass /></Suspense>} />
