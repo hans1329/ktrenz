@@ -14,7 +14,7 @@
 // caller; this component just calls onComplete and lets the parent refetch.
 
 import { useEffect, useRef, useState } from "react";
-import { Activity, Rocket, Play, X as XIcon } from "lucide-react";
+import { Activity, Rocket, X as XIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -24,6 +24,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import H1MockAdSlot from "@/components/h1/H1MockAdSlot";
 
 type Tier = "mid" | "high";
 
@@ -128,7 +129,6 @@ export default function H1AdUnlockDialog({
 
   const remainingUnlocks = Math.max(0, unlocksMax - unlocksUsed);
   const dailyCapHit = remainingUnlocks <= 0;
-  const progressPct = ((AD_DURATION_S - remaining) / AD_DURATION_S) * 100;
 
   return (
     <AlertDialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -173,29 +173,10 @@ export default function H1AdUnlockDialog({
           </div>
         )}
 
-        {/* Ad placeholder + countdown */}
+        {/* Ad slot (mock) + countdown */}
         {tier !== null && (
           <div className="px-6 pb-6">
-            <div className={cn(
-              "relative aspect-video rounded-2xl overflow-hidden bg-gradient-to-br",
-              TIER_META[tier].gradient,
-            )}>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
-                <Play className="w-10 h-10 opacity-80" />
-                <div className="text-xs font-black uppercase tracking-[0.2em] opacity-80">
-                  {t("h1.adUnlock.placeholder")}
-                </div>
-                <div className="text-5xl font-black tabular-nums">
-                  {remaining}
-                </div>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-black/30">
-                <div
-                  className="h-full bg-white/90 transition-[width] duration-200"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </div>
+            <H1MockAdSlot remaining={remaining} durationSec={AD_DURATION_S} />
 
             {error && (
               <div className="mt-3 text-sm text-rose-300 text-center">
