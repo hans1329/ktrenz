@@ -6,7 +6,7 @@
 
 import { Link } from "react-router-dom";
 import {
-  Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift,
+  Sparkles, ArrowRight, LogIn, Music2, Gift,
   Youtube, Music, Newspaper, MessageCircle, Image as ImageIcon,
   Zap,
 } from "lucide-react";
@@ -28,6 +28,18 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// {key} placeholder substitution — t() in this project is pure dict lookup.
+function tFmt(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
+}
+
+// Renders i18n strings that may contain `<b>...</b>` for emphasis without
+// pulling a full markdown parser. Translations are author-controlled so
+// raw innerHTML is safe here.
+function RichText({ html }: { html: string }) {
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export default function H1Landing({
   sample,
   extraCards,
@@ -41,8 +53,7 @@ export default function H1Landing({
   onOpenDetail: (card: DiscoverCard) => void;
   onVouchAttempt: () => void;
 }) {
-  const { t: _t } = useLanguage();
-  const _ = _t;
+  const { t } = useLanguage();
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -54,27 +65,29 @@ export default function H1Landing({
           className="px-5"
           style={{ paddingTop: 24, paddingBottom: BOTTOM_NAV_H + 32 }}
         >
-          <Hero />
+          <Hero t={t} />
 
-          {/* Mobile: sample card → 3-step stacked */}
           <div className="mb-8">
-            <SectionLabel>오늘의 샘플</SectionLabel>
+            <SectionLabel>{t("h1.landing.section.sample")}</SectionLabel>
             <SampleCardSlot
               sample={sample}
               isLoading={isLoading}
               onOpenDetail={onOpenDetail}
               onVouchAttempt={onVouchAttempt}
+              emptyLabel={t("h1.landing.sample.empty")}
             />
           </div>
-          <Steps onVouchAttempt={onVouchAttempt} className="mb-8" />
+          <SectionLabel>{t("h1.landing.section.howItWorks")}</SectionLabel>
+          <Steps t={t} className="mb-3" />
+          <TierGuide t={t} className="mb-8" />
 
-          <SourcesStrip className="mb-8" />
-          <StatsRow className="mb-8" />
-          <KCashBox className="mb-8" />
-          <MoreCardsStrip extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-8" />
-          <ProTeaser className="mb-8" />
-          <FAQ className="mb-8" />
-          <CTA />
+          <SourcesStrip t={t} className="mb-8" />
+          <StatsRow t={t} className="mb-8" />
+          <KCashBox t={t} className="mb-8" />
+          <MoreCardsStrip t={t} extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-8" />
+          <ProTeaser t={t} className="mb-8" />
+          <FAQ t={t} className="mb-8" />
+          <CTA t={t} />
         </main>
         <BottomNav active="discover" position="fixed" signedIn={false} />
       </div>
@@ -91,7 +104,7 @@ export default function H1Landing({
 
         <main className="flex-1 px-5 lg:px-8 py-8 min-w-0">
           <div className="max-w-3xl mx-auto">
-            <Hero />
+            <Hero t={t} />
 
             {/* Desktop: 2-col — card on left, steps + tier guide on right.
                 items-stretch (grid default) + flex column on right pushes
@@ -99,29 +112,30 @@ export default function H1Landing({
                 card's height regardless of card aspect / title length. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div>
-                <SectionLabel>오늘의 샘플</SectionLabel>
+                <SectionLabel>{t("h1.landing.section.sample")}</SectionLabel>
                 <SampleCardSlot
                   sample={sample}
                   isLoading={isLoading}
                   onOpenDetail={onOpenDetail}
                   onVouchAttempt={onVouchAttempt}
+                  emptyLabel={t("h1.landing.sample.empty")}
                 />
               </div>
               <div className="flex flex-col">
-                <SectionLabel>How it works</SectionLabel>
-                <Steps onVouchAttempt={onVouchAttempt} />
-                <TierGuide className="mt-3 md:mt-auto md:pt-3" />
+                <SectionLabel>{t("h1.landing.section.howItWorks")}</SectionLabel>
+                <Steps t={t} />
+                <TierGuide t={t} className="mt-3 md:mt-auto md:pt-3" />
               </div>
             </div>
 
-            <SourcesStrip className="mb-10" />
-            <StatsRow className="mb-10" />
-            <KCashBox className="mb-10" />
-            <MoreCardsStrip extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-10" />
-            <ProTeaser className="mb-10" />
-            <FAQ className="mb-10" />
+            <SourcesStrip t={t} className="mb-10" />
+            <StatsRow t={t} className="mb-10" />
+            <KCashBox t={t} className="mb-10" />
+            <MoreCardsStrip t={t} extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-10" />
+            <ProTeaser t={t} className="mb-10" />
+            <FAQ t={t} className="mb-10" />
             <div className="max-w-md mx-auto">
-              <CTA />
+              <CTA t={t} />
             </div>
           </div>
         </main>
@@ -129,6 +143,8 @@ export default function H1Landing({
     </div>
   );
 }
+
+type TFn = (key: string) => string;
 
 function Backdrop() {
   return (
@@ -139,17 +155,17 @@ function Backdrop() {
   );
 }
 
-function Hero() {
+function Hero({ t }: { t: TFn }) {
   return (
     <div className="text-center mb-8">
       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-400/25 text-rose-300 text-[10px] font-black tracking-[0.18em] uppercase mb-4">
-        <Sparkles className="w-3 h-3" /> KTrenZ Discover
+        <Sparkles className="w-3 h-3" /> {t("h1.landing.heroBadge")}
       </div>
       <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-[1.05] mb-3 whitespace-nowrap">
-        K 트렌드를 예측해보세요!
+        {t("h1.landing.heroHeadline")}
       </h1>
       <p className="text-sm text-white/65 leading-relaxed">
-        매일 아침 K-컨텐츠 24장이 올라옵니다. 7일 뒤 이중 상위 7개를<br className="hidden sm:inline" /> 맞추는 트렌드 예측 게임.
+        {t("h1.landing.heroSub")}
       </p>
     </div>
   );
@@ -168,11 +184,13 @@ function SampleCardSlot({
   isLoading,
   onOpenDetail,
   onVouchAttempt,
+  emptyLabel,
 }: {
   sample: DiscoverCard | null;
   isLoading: boolean;
   onOpenDetail: (card: DiscoverCard) => void;
   onVouchAttempt: () => void;
+  emptyLabel: string;
 }) {
   if (isLoading) {
     return <div className="aspect-[4/5] rounded-2xl bg-white/[0.03] border border-white/10 animate-pulse" />;
@@ -180,11 +198,10 @@ function SampleCardSlot({
   if (!sample) {
     return (
       <div className="aspect-[4/5] rounded-2xl bg-white/[0.03] border border-white/10 grid place-items-center text-white/40 text-sm">
-        오늘 드롭 준비 중
+        {emptyLabel}
       </div>
     );
   }
-  // Anon vouches all route to the login nudge — never actually save state.
   const handleVouch = (_v: Vouch) => onVouchAttempt();
   return (
     <DesktopCard
@@ -197,98 +214,55 @@ function SampleCardSlot({
   );
 }
 
-function Steps({
-  onVouchAttempt: _onVouchAttempt,
-  className = "",
-}: {
-  onVouchAttempt: () => void;
-  className?: string;
-}) {
+function Steps({ t, className = "" }: { t: TFn; className?: string }) {
   return (
     <ol className={`space-y-3 ${className}`}>
-      <Step num={1} title="예측하기"     body="24개 컨텐츠 중 상승할 트렌드라 확신하는 카드에 ×1 / ×2 / ×4 강도로 예측" />
-      <Step num={2} title="7일간 트래킹"  body="당신의 픽이 실시간 cohort 순위에서 어떻게 움직이는지 확인." />
-      <Step num={3} title="적중 시 K-Cash" body="7일 후 상위 7개 (top 30%)에 든 픽은 💎 보상, 빗나가면 소액 차감." />
+      <Step num={1} t={t} titleKey="h1.landing.step1.title" bodyKey="h1.landing.step1.body" />
+      <Step num={2} t={t} titleKey="h1.landing.step2.title" bodyKey="h1.landing.step2.body" />
+      <Step num={3} t={t} titleKey="h1.landing.step3.title" bodyKey="h1.landing.step3.body" />
     </ol>
   );
 }
 
 function Step({
   num,
-  title,
-  body,
+  t,
+  titleKey,
+  bodyKey,
 }: {
   num: number;
-  Icon?: React.ElementType;
-  title: string;
-  body: string;
+  t: TFn;
+  titleKey: string;
+  bodyKey: string;
 }) {
   return (
     <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
       <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-1">
-        Step {num}
+        {tFmt(t("h1.landing.stepNum"), { n: String(num) })}
       </div>
-      <div className="text-base font-black text-white mb-1">{title}</div>
-      <p className="text-xs text-white/65 leading-relaxed">{body}</p>
+      <div className="text-base font-black text-white mb-1">{t(titleKey)}</div>
+      <p className="text-xs text-white/65 leading-relaxed">{t(bodyKey)}</p>
     </li>
   );
 }
 
-function KCashBox({ className = "" }: { className?: string }) {
-  return (
-    <div className={`rounded-2xl bg-gradient-to-br from-sky-500/15 via-violet-500/10 to-rose-500/10 border border-sky-400/25 p-5 ${className}`}>
-      <div className="mb-4">
-        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/80 mb-1">
-          K-Cash 💎
-        </div>
-        <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-          모아서 진짜 보상으로 교환
-        </div>
-      </div>
-
-      <ul className="space-y-2 text-xs text-white/75 leading-relaxed">
-        <li className="flex items-start gap-2">
-          <Music2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-300" />
-          <span>
-            <b className="text-white">10,000 💎</b> → Spotify Premium 1개월 (≈ $10 상당)
-          </span>
-        </li>
-        <li className="flex items-start gap-2">
-          <Gift className="w-3.5 h-3.5 mt-0.5 shrink-0 text-rose-300" />
-          <span>
-            <b className="text-white">K-Pass 멤버십</b> 업그레이드 · 슬롯 ×2, 30일 트렌드 인사이트 등
-          </span>
-        </li>
-        <li className="flex items-start gap-2">
-          <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-300" />
-          <span>
-            매일 1번 이상 예측 시 <b className="text-white">+10 💎</b> 자동 적립 · 적중 시 강도 비례 보상
-          </span>
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-function TierGuide({ className = "" }: { className?: string }) {
-  // Compact 3-col tier chip row — sits under How it works on desktop just
-  // to top up the column height. Single line per tier; no body copy.
-  const tiers: Array<{ mult: string; label: string; hint: string; chip: string }> = [
-    { mult: "×1", label: "Hunch", hint: "+5💎",  chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
-    { mult: "×2", label: "Pick",  hint: "+10💎", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
-    { mult: "×4", label: "Lock",  hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
+function TierGuide({ t, className = "" }: { t: TFn; className?: string }) {
+  const tiers: Array<{ mult: string; labelKey: string; hint: string; chip: string }> = [
+    { mult: "×1", labelKey: "h1.landing.tier.x1.label", hint: "+5💎",  chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
+    { mult: "×2", labelKey: "h1.landing.tier.x2.label", hint: "+10💎", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
+    { mult: "×4", labelKey: "h1.landing.tier.x4.label", hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
     <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-3 ${className}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 text-center">
-        예측 강도
+        {t("h1.landing.section.tier")}
       </p>
       <div className="grid grid-cols-3 gap-2">
-        {tiers.map((t) => (
-          <div key={t.mult} className={`rounded-lg border ${t.chip} px-2 py-1.5 text-center`}>
-            <div className="text-sm font-black leading-none">{t.mult}</div>
-            <div className="text-[10px] font-bold opacity-80 mt-0.5">{t.label}</div>
-            <div className="text-[9px] opacity-65 mt-0.5">{t.hint}</div>
+        {tiers.map((tier) => (
+          <div key={tier.mult} className={`rounded-lg border ${tier.chip} px-2 py-1.5 text-center`}>
+            <div className="text-sm font-black leading-none">{tier.mult}</div>
+            <div className="text-[10px] font-bold opacity-80 mt-0.5">{t(tier.labelKey)}</div>
+            <div className="text-[9px] opacity-65 mt-0.5">{tier.hint}</div>
           </div>
         ))}
       </div>
@@ -296,19 +270,18 @@ function TierGuide({ className = "" }: { className?: string }) {
   );
 }
 
-function SourcesStrip({ className = "" }: { className?: string }) {
-  // Where the trending signal actually comes from — credibility first.
+function SourcesStrip({ t, className = "" }: { t: TFn; className?: string }) {
   const sources: Array<{ Icon: React.ElementType; label: string; tint: string }> = [
-    { Icon: Youtube, label: "YouTube",   tint: "text-red-400" },
-    { Icon: Music,   label: "TikTok",    tint: "text-pink-400" },
-    { Icon: ImageIcon, label: "Instagram", tint: "text-fuchsia-400" },
-    { Icon: Newspaper, label: "Naver",    tint: "text-emerald-400" },
-    { Icon: MessageCircle, label: "Reddit", tint: "text-orange-400" },
+    { Icon: Youtube,     label: "YouTube",   tint: "text-red-400" },
+    { Icon: Music,       label: "TikTok",    tint: "text-pink-400" },
+    { Icon: ImageIcon,   label: "Instagram", tint: "text-fuchsia-400" },
+    { Icon: Newspaper,   label: "Naver",     tint: "text-emerald-400" },
+    { Icon: MessageCircle, label: "Reddit",  tint: "text-orange-400" },
   ];
   return (
     <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-5 ${className}`}>
       <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
-        5개 소스 통합 신호
+        {t("h1.landing.section.sources")}
       </p>
       <div className="flex items-center justify-center flex-wrap gap-3">
         {sources.map((s) => (
@@ -322,20 +295,18 @@ function SourcesStrip({ className = "" }: { className?: string }) {
   );
 }
 
-function StatsRow({ className = "" }: { className?: string }) {
-  // Placeholder static numbers — replace with live counters when we expose
-  // the metrics RPCs. Even rough numbers establish "real platform" vibe.
-  const stats = [
-    { value: "24", label: "매일 새 컨텐츠" },
-    { value: "7", label: "정산 일수" },
-    { value: "30%", label: "상위 적중 기준" },
+function StatsRow({ t, className = "" }: { t: TFn; className?: string }) {
+  const stats: Array<{ value: string; labelKey: string }> = [
+    { value: "24",  labelKey: "h1.landing.stats.cards" },
+    { value: "7",   labelKey: "h1.landing.stats.days" },
+    { value: "30%", labelKey: "h1.landing.stats.cutoff" },
   ];
   return (
     <div className={`grid grid-cols-3 gap-2 ${className}`}>
       {stats.map((s) => (
-        <div key={s.label} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-center">
+        <div key={s.labelKey} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-center">
           <div className="text-2xl sm:text-3xl font-black text-white tabular-nums leading-none mb-1">{s.value}</div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-white/50 leading-tight">{s.label}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-white/50 leading-tight">{t(s.labelKey)}</div>
         </div>
       ))}
     </div>
@@ -343,10 +314,12 @@ function StatsRow({ className = "" }: { className?: string }) {
 }
 
 function MoreCardsStrip({
+  t,
   extraCards,
   onOpenDetail,
   className = "",
 }: {
+  t: TFn;
   extraCards: DiscoverCard[];
   onOpenDetail: (card: DiscoverCard) => void;
   className?: string;
@@ -356,7 +329,7 @@ function MoreCardsStrip({
   return (
     <div className={className}>
       <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
-        오늘 함께 올라온 픽
+        {t("h1.landing.section.morePicks")}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {cards.map((c) => (
@@ -387,13 +360,43 @@ function MoreCardsStrip({
         ))}
       </div>
       <p className="text-[10px] text-white/35 text-center mt-2.5">
-        탭하면 상세 미리보기 · 예측은 로그인 후
+        {t("h1.landing.morePicks.foot")}
       </p>
     </div>
   );
 }
 
-function ProTeaser({ className = "" }: { className?: string }) {
+function KCashBox({ t, className = "" }: { t: TFn; className?: string }) {
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br from-sky-500/15 via-violet-500/10 to-rose-500/10 border border-sky-400/25 p-5 ${className}`}>
+      <div className="mb-4">
+        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/80 mb-1">
+          {t("h1.landing.kcash.label")}
+        </div>
+        <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+          {t("h1.landing.kcash.title")}
+        </div>
+      </div>
+
+      <ul className="space-y-2 text-xs text-white/75 leading-relaxed">
+        <li className="flex items-start gap-2">
+          <Music2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-300" />
+          <RichText html={t("h1.landing.kcash.spotify")} />
+        </li>
+        <li className="flex items-start gap-2">
+          <Gift className="w-3.5 h-3.5 mt-0.5 shrink-0 text-rose-300" />
+          <RichText html={t("h1.landing.kcash.kpass")} />
+        </li>
+        <li className="flex items-start gap-2">
+          <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-300" />
+          <RichText html={t("h1.landing.kcash.daily")} />
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function ProTeaser({ t, className = "" }: { t: TFn; className?: string }) {
   return (
     <Link
       to="/pro"
@@ -402,13 +405,13 @@ function ProTeaser({ className = "" }: { className?: string }) {
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300/80 mb-1">
-            Pro Mode
+            {t("h1.landing.pro.label")}
           </div>
           <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight mb-1">
-            선수만의 1:1 배틀, Pro Battle
+            {t("h1.landing.pro.title")}
           </div>
           <div className="text-xs text-white/60">
-            픽 둘 중 더 뜰 사람을 즉시 골라보기. 토너먼트 방식.
+            {t("h1.landing.pro.body")}
           </div>
         </div>
         <ArrowRight className="w-4 h-4 text-white/40 shrink-0 mt-1.5" />
@@ -417,58 +420,34 @@ function ProTeaser({ className = "" }: { className?: string }) {
   );
 }
 
-function FAQ({ className = "" }: { className?: string }) {
-  const items: Array<{ q: string; a: string }> = [
-    {
-      q: "언제 새 카드가 올라오나요?",
-      a: "매일 KST 09:15 자동 발행. 한국 출근시간에 맞춰 24장이 한 번에 드랍됩니다.",
-    },
-    {
-      q: "어떻게 적중이 정해지나요?",
-      a: "7일 뒤 24장 중 상위 7개(top 30%)에 든 카드를 적중으로 판정. 누적 buzz·views 등 종합 점수 기준.",
-    },
-    {
-      q: "K-Cash는 진짜 돈인가요?",
-      a: "앱 내 포인트지만 10,000 모으면 Spotify Premium 1개월(약 $10)로 교환 가능. K-Pass 업그레이드에도 사용.",
-    },
-    {
-      q: "하루에 몇 번 예측할 수 있나요?",
-      a: "기본 7개 슬롯 (×1 1개 + ×2 4개 + ×4 2개). 광고 시청으로 하루 최대 5개 슬롯까지 추가 가능.",
-    },
-    {
-      q: "예측한 카드는 바꿀 수 있나요?",
-      a: "정산 전(7일 내)에 언제든 강도(×1/×2/×4) 변경 가능. 단, 바꾸는 시점이 늦을수록 보상은 조금 줄어요.",
-    },
-    {
-      q: "K-Pass 멤버십은 뭔가요?",
-      a: "프리미엄 등급. 슬롯 ×2, 30일 트렌드 인사이트, Pro Studio API 등 제공. K-Cash 또는 결제로 업그레이드.",
-    },
-    {
-      q: "5개 소스는 어떻게 활용되나요?",
-      a: "YouTube · TikTok · Instagram · Naver · Reddit에서 K-pop 컨텐츠 신호를 매일 수집·정규화해 24장으로 큐레이션.",
-    },
-    {
-      q: "데이터는 어디에 쓰이나요?",
-      a: "집합 예측 결과는 B2B Trend Intelligence (레이블·브랜드·미디어용) 인사이트로 활용. 개인 정보는 분리·익명화 처리.",
-    },
+function FAQ({ t, className = "" }: { t: TFn; className?: string }) {
+  const items: Array<{ qKey: string; aKey: string }> = [
+    { qKey: "h1.landing.faq.q1", aKey: "h1.landing.faq.a1" },
+    { qKey: "h1.landing.faq.q2", aKey: "h1.landing.faq.a2" },
+    { qKey: "h1.landing.faq.q3", aKey: "h1.landing.faq.a3" },
+    { qKey: "h1.landing.faq.q4", aKey: "h1.landing.faq.a4" },
+    { qKey: "h1.landing.faq.q5", aKey: "h1.landing.faq.a5" },
+    { qKey: "h1.landing.faq.q6", aKey: "h1.landing.faq.a6" },
+    { qKey: "h1.landing.faq.q7", aKey: "h1.landing.faq.a7" },
+    { qKey: "h1.landing.faq.q8", aKey: "h1.landing.faq.a8" },
   ];
   return (
     <div className={className}>
       <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
-        자주 묻는 질문
+        {t("h1.landing.section.faq")}
       </p>
       <Accordion type="single" collapsible className="space-y-2">
         {items.map((it, idx) => (
           <AccordionItem
-            key={it.q}
+            key={it.qKey}
             value={`faq-${idx}`}
             className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-1 border-b"
           >
             <AccordionTrigger className="text-sm font-bold text-white hover:no-underline text-left py-3">
-              {it.q}
+              {t(it.qKey)}
             </AccordionTrigger>
             <AccordionContent className="text-xs text-white/65 leading-relaxed pb-3">
-              {it.a}
+              {t(it.aKey)}
             </AccordionContent>
           </AccordionItem>
         ))}
@@ -477,7 +456,7 @@ function FAQ({ className = "" }: { className?: string }) {
   );
 }
 
-function CTA() {
+function CTA({ t }: { t: TFn }) {
   const redirect = encodeURIComponent("/h1");
   const signInHref = `/login?redirect=${redirect}`;
   return (
@@ -487,12 +466,16 @@ function CTA() {
         className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-sky-400 to-violet-500 text-white font-black text-sm hover:scale-[1.01] transition-transform shadow-2xl"
       >
         <LogIn className="w-4 h-4" />
-        지금 가입시 1,000 💎 즉시 지급
+        {t("h1.landing.cta.button")}
         <ArrowRight className="w-4 h-4" />
       </Link>
       <p className="text-[11px] text-white/40 text-center">
-        이미 계정이 있으면 동일 버튼으로 로그인
+        {t("h1.landing.cta.fineprint")}
       </p>
     </div>
   );
 }
+
+// `Zap` is referenced for future Pro Mode icon usage; kept exported via
+// the import to avoid the unused-import lint while we wait on design.
+export const _zapKeep = Zap;
