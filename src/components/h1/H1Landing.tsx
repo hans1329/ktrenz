@@ -104,7 +104,7 @@ export default function H1Landing({
                   onVouchAttempt={onVouchAttempt}
                 />
               </div>
-              <div className="space-y-5">
+              <div className="space-y-3">
                 <div>
                   <SectionLabel>How it works</SectionLabel>
                   <Steps onVouchAttempt={onVouchAttempt} />
@@ -204,7 +204,7 @@ function Steps({
   className?: string;
 }) {
   return (
-    <ol className={`space-y-3 ${className}`}>
+    <ol className={`space-y-2 ${className}`}>
       <Step num={1} title="예측하기"     body="24개 컨텐츠 중 상승할 트렌드라 확신하는 카드에 ×1 / ×2 / ×4 강도로 예측" />
       <Step num={2} title="7일간 트래킹"  body="당신의 픽이 실시간 cohort 순위에서 어떻게 움직이는지 확인." />
       <Step num={3} title="적중 시 K-Cash" body="7일 후 상위 7개 (top 30%)에 든 픽은 💎 보상, 빗나가면 소액 차감." />
@@ -223,12 +223,12 @@ function Step({
   body: string;
 }) {
   return (
-    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-5">
-      <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-1.5">
+    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-3.5">
+      <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-0.5">
         Step {num}
       </div>
-      <div className="text-base font-black text-white mb-1.5">{title}</div>
-      <p className="text-sm text-white/70 leading-relaxed">{body}</p>
+      <div className="text-sm font-black text-white mb-0.5">{title}</div>
+      <p className="text-[11px] text-white/65 leading-snug">{body}</p>
     </li>
   );
 }
@@ -278,16 +278,16 @@ function TierGuide() {
     { mult: "×4", label: "Lock",  hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
-    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 text-center">
         예측 강도
       </p>
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-3 gap-2">
         {tiers.map((t) => (
-          <div key={t.mult} className={`rounded-xl border ${t.chip} px-2 py-3 text-center`}>
-            <div className="text-lg font-black leading-none">{t.mult}</div>
-            <div className="text-[11px] font-bold opacity-80 mt-1.5">{t.label}</div>
-            <div className="text-[10px] opacity-65 mt-1">{t.hint}</div>
+          <div key={t.mult} className={`rounded-lg border ${t.chip} px-2 py-1.5 text-center`}>
+            <div className="text-sm font-black leading-none">{t.mult}</div>
+            <div className="text-[10px] font-bold opacity-80 mt-0.5">{t.label}</div>
+            <div className="text-[9px] opacity-65 mt-0.5">{t.hint}</div>
           </div>
         ))}
       </div>
