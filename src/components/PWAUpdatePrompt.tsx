@@ -25,17 +25,31 @@ export function PWAUpdatePrompt() {
     },
   });
 
+  // Helper: drive SW update AND force a page reload. We can't rely on
+  // updateServiceWorker(true) to reload on its own — vite-plugin-pwa only
+  // triggers a reload when `controllerchange` fires, and with `autoUpdate`
+  // mode + clientsClaim the new SW often takes control silently without a
+  // controllerchange event (it's already controlling by the time we get
+  // here), so the implicit reload never happens. Explicit reload is the
+  // only reliable path.
+  const applyUpdate = async () => {
+    try { await updateServiceWorker(true); } catch { /* ignore */ }
+    // Also clear sessionStorage flags that might cause loops, then hard reload.
+    window.location.reload();
+  };
+
   // Auto-update when tab returns to foreground from background. Low-disruption
   // moment to swap in the new SW + reload.
   useEffect(() => {
     if (!needRefresh) return;
     const onVisibilityChange = () => {
       if (document.visibilityState !== "visible") return;
-      void updateServiceWorker(true);
+      void applyUpdate();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [needRefresh, updateServiceWorker]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needRefresh]);
 
   // Show toast for explicit user-driven refresh.
   useEffect(() => {
@@ -48,9 +62,9 @@ export function PWAUpdatePrompt() {
         <ToastAction
           altText="Refresh now"
           onClick={() => {
-            void updateServiceWorker(true);
             setNeedRefresh(false);
             dismiss();
+            void applyUpdate();
           }}
         >
           Refresh now
@@ -58,7 +72,8 @@ export function PWAUpdatePrompt() {
       ),
     });
     return () => { dismiss(); };
-  }, [needRefresh, updateServiceWorker, setNeedRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needRefresh, setNeedRefresh]);
 
   return null;
 }
