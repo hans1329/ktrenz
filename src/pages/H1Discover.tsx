@@ -541,15 +541,15 @@ function VouchPill({
   onClick: () => void;
   disabled?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t: _t } = useLanguage();
+  void _t;
   const c = VOUCH_META[level];
-  const Icon = c.icon;
   return (
     <button
       onClick={onClick}
       disabled={disabled && !active}
       className={cn(
-        "relative flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all overflow-hidden border",
+        "relative flex-1 inline-flex items-center justify-center py-3 rounded-xl transition-all overflow-hidden border",
         active
           ? `bg-gradient-to-b ${c.shade} text-white shadow-lg ${c.glow} border-white/30 scale-[1.03] ring-1 ${c.ring}`
           : disabled
@@ -557,15 +557,7 @@ function VouchPill({
             : "bg-white/[0.06] backdrop-blur-md text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95",
       )}
     >
-      <Icon
-        className={cn(
-          "w-4 h-4 transition-transform shrink-0",
-          active ? "drop-shadow" : disabled ? "opacity-40" : "opacity-80",
-          level === "high" && active && "animate-pulse",
-        )}
-        strokeWidth={active ? 2.5 : 2}
-      />
-      <span className="text-[15px] font-black tabular-nums tracking-tight leading-none">+{c.hit}💎</span>
+      <span className="text-[19px] font-black tabular-nums tracking-tight leading-none">+{c.hit}💎</span>
     </button>
   );
 }
@@ -1814,15 +1806,15 @@ function DesktopVouchBtn({
   onClick: () => void;
   disabled?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t: _t } = useLanguage();
+  void _t;
   const c = VOUCH_META[level];
-  const Icon = c.icon;
   return (
     <button
       onClick={onClick}
       disabled={disabled && !active}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95",
+        "relative flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95",
         active
           ? `bg-gradient-to-b ${c.shade} text-white shadow-lg ${c.glow} border-white/25 ring-1 ${c.ring}`
           : disabled
@@ -1830,8 +1822,7 @@ function DesktopVouchBtn({
             : "bg-white/[0.04] text-white/80 border-white/10 hover:bg-white/[0.08] hover:border-white/20 hover:text-white",
       )}
     >
-      <Icon className="w-3 h-3 mb-0.5" strokeWidth={active ? 2.5 : 2} />
-      <span className="text-[13px] font-black tabular-nums leading-none">+{c.hit}💎</span>
+      <span className="text-[17px] font-black tabular-nums leading-none">+{c.hit}💎</span>
     </button>
   );
 }
