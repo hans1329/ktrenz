@@ -2079,6 +2079,12 @@ export default function H1Discover() {
   // (authed user uuid or "anon"). The auth-change effect below re-loads
   // when user.id flips.
   const [vouches, setVouches] = useState<Record<string, Vouch>>(() => loadVouches(user?.id));
+  // Tracks which owner the current in-memory `vouches` belongs to. Used by
+  // the save effect to skip writes during the brief window where user.id
+  // has changed but the auth-change effect hasn't yet reloaded state —
+  // otherwise the prior user's vouches get flushed into the new owner's
+  // localStorage bucket.
+  const vouchesOwnerRef = useRef<string | null>(user?.id ?? null);
   const [detail, setDetail] = useState<DiscoverCard | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [loginNudgeOpen, setLoginNudgeOpen] = useState<false | "share" | "quota">(false);
@@ -2117,11 +2123,13 @@ export default function H1Discover() {
     trackH1Event("h1_help_opened", { trigger: "manual" });
   };
 
-  // Persist vouches to localStorage on every change (scoped per day + owner).
-  // Acts as offline cache + non-auth fallback. When the user is authed,
-  // the server is source of truth and localStorage just mirrors.
+  // Persist vouches to localStorage. Gated on ownerRef matching the current
+  // user — otherwise a logout/account-switch flush could write the prior
+  // session's data into the new owner's bucket.
   useEffect(() => {
-    saveVouches(user?.id, vouches);
+    const currentOwner = user?.id ?? null;
+    if (vouchesOwnerRef.current !== currentOwner) return;
+    saveVouches(currentOwner, vouches);
   }, [vouches, user?.id]);
 
   // Page-view telemetry (fires once per session per refresh).
@@ -2144,8 +2152,10 @@ export default function H1Discover() {
   // localStorage scheme.
   useEffect(() => {
     const ownerId = user?.id ?? null;
-    // Always reset state to whatever this owner has stored. Logout flushes
-    // the in-memory `vouches` to anon's bucket (could be empty).
+    // Update the owner ref BEFORE setVouches so the save effect (which
+    // depends on the same user.id) sees the aligned state on the next tick.
+    vouchesOwnerRef.current = ownerId;
+    // Reset in-memory state to whatever this owner has stored.
     setVouches(loadVouches(ownerId));
 
     // Anon-only or unchanged user: nothing more to do.
