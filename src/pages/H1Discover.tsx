@@ -1047,16 +1047,9 @@ function DetailDrawer({
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-white/10 shrink-0" />
                 )}
-                <div className="min-w-0 flex-1">
-                  {card.artist && (
-                    <div className="text-[10px] font-black tracking-[0.15em] uppercase text-white/55 truncate leading-tight">
-                      {card.artist}
-                    </div>
-                  )}
-                  <SheetTitle className="text-sm font-bold text-white truncate m-0 leading-tight mt-0.5">
-                    {card.title}
-                  </SheetTitle>
-                </div>
+                <SheetTitle className="text-base font-black text-white truncate m-0 tracking-tight">
+                  {card.artist}
+                </SheetTitle>
               </div>
               <button
                 onClick={onClose}
