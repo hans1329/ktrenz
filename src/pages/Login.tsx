@@ -45,6 +45,13 @@ const Login = () => {
     }
   }, [user, authLoading, navigate, safeRedirect]);
 
+  // Scroll to top on mount — React Router preserves scroll position across
+  // SPA navigations, so users coming from the bottom of the landing page
+  // would otherwise see the empty bg-background below the centered form.
+  useEffect(() => {
+    try { window.scrollTo(0, 0); } catch { /* ignore */ }
+  }, []);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
 
