@@ -558,7 +558,7 @@ function VouchPill({
       )}
     >
       <span className="text-[17px] font-black tabular-nums tracking-tight leading-none">
-        +{c.hit}&nbsp;💎
+        <span className="font-normal opacity-70">+</span>{c.hit}&nbsp;💎
       </span>
     </button>
   );
@@ -1825,7 +1825,7 @@ function DesktopVouchBtn({
       )}
     >
       <span className="text-[15px] font-black tabular-nums leading-none">
-        +{c.hit}&nbsp;💎
+        <span className="font-normal opacity-70">+</span>{c.hit}&nbsp;💎
       </span>
     </button>
   );
