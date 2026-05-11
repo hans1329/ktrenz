@@ -191,15 +191,47 @@ async function searchYouTube(apiKey: string, query: string, maxResults = 15): Pr
     const res = await fetchWithTimeout(url.toString());
     if (!res.ok) { await res.text(); return []; }
     const data = await res.json();
-    return (data.items || []).map((item: any) => ({
+    const items = (data.items || []).map((item: any) => ({
       source: "youtube",
       title: item.snippet?.title || "",
       description: item.snippet?.description || "",
       url: `https://www.youtube.com/watch?v=${item.id?.videoId}`,
       thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url,
       date: item.snippet?.publishedAt || null,
-      metadata: { channelTitle: item.snippet?.channelTitle, videoId: item.id?.videoId },
+      metadata: { channelTitle: item.snippet?.channelTitle, videoId: item.id?.videoId } as Record<string, any>,
     }));
+
+    // Enrich with per-video statistics (viewCount, likeCount, commentCount).
+    // Single videos.list call covers up to 50 IDs — 1 extra quota unit total.
+    // Without this, every YT item ends up with the same per-artist contentScore
+    // as engagement_score, killing variance in Discover ranking + "Buzz now".
+    const videoIds = items
+      .map((it: any) => it.metadata?.videoId)
+      .filter(Boolean)
+      .slice(0, 50);
+    if (videoIds.length > 0) {
+      const statsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+      statsUrl.searchParams.set("part", "statistics");
+      statsUrl.searchParams.set("id", videoIds.join(","));
+      statsUrl.searchParams.set("key", apiKey);
+      const statsRes = await fetchWithTimeout(statsUrl.toString());
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        const statsById = new Map<string, any>();
+        for (const v of (statsData.items || [])) {
+          statsById.set(v.id as string, v.statistics || {});
+        }
+        for (const it of items) {
+          const s = statsById.get(it.metadata.videoId);
+          if (s) {
+            it.metadata.views    = Number(s.viewCount    ?? 0);
+            it.metadata.likes    = Number(s.likeCount    ?? 0);
+            it.metadata.comments = Number(s.commentCount ?? 0);
+          }
+        }
+      }
+    }
+    return items;
   } catch { return []; }
 }
 
