@@ -163,13 +163,14 @@ function LandingBody({
       <div className="flex flex-col gap-3 items-center">
         <Link
           to={signInHref}
-          className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-black font-black text-sm hover:scale-[1.01] transition-transform shadow-2xl"
+          className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-sky-400 to-violet-500 text-white font-black text-sm hover:scale-[1.01] transition-transform shadow-2xl"
         >
-          <LogIn className="w-4 h-4" /> 로그인하고 시작하기
+          <LogIn className="w-4 h-4" />
+          지금 가입시 1,000 💎 즉시 지급
           <ArrowRight className="w-4 h-4" />
         </Link>
         <p className="text-[11px] text-white/40 text-center">
-          게스트로 둘러보기는 곧 추가됩니다.
+          이미 계정이 있으면 동일 버튼으로 로그인
         </p>
       </div>
 
