@@ -2418,6 +2418,7 @@ export default function H1Discover() {
         />
         <H1Landing
           sample={sampleCard}
+          extraCards={cards.slice(1)}
           isLoading={isLoading}
           onOpenDetail={(c) => setDetail(c)}
           onVouchAttempt={() => {

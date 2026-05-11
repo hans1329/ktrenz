@@ -5,7 +5,11 @@
 // nudge instead of saving locally.
 
 import { Link } from "react-router-dom";
-import { Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift, Coins } from "lucide-react";
+import {
+  Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift, Coins,
+  Youtube, Music, Newspaper, MessageCircle, Image as ImageIcon,
+  TrendingUp, Zap, Calendar, Shield,
+} from "lucide-react";
 import H1AppHeader from "@/components/h1/H1AppHeader";
 import {
   BottomNav,
@@ -20,11 +24,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function H1Landing({
   sample,
+  extraCards,
   isLoading,
   onOpenDetail,
   onVouchAttempt,
 }: {
   sample: DiscoverCard | null;
+  extraCards: DiscoverCard[];
   isLoading: boolean;
   onOpenDetail: (card: DiscoverCard) => void;
   onVouchAttempt: () => void;
@@ -56,7 +62,12 @@ export default function H1Landing({
           </div>
           <Steps onVouchAttempt={onVouchAttempt} className="mb-8" />
 
+          <SourcesStrip className="mb-8" />
+          <StatsRow className="mb-8" />
           <KCashBox className="mb-8" />
+          <MoreCardsStrip extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-8" />
+          <ProTeaser className="mb-8" />
+          <FAQ className="mb-8" />
           <CTA />
         </main>
         <BottomNav active="discover" position="fixed" />
@@ -93,7 +104,12 @@ export default function H1Landing({
               </div>
             </div>
 
+            <SourcesStrip className="mb-10" />
+            <StatsRow className="mb-10" />
             <KCashBox className="mb-10" />
+            <MoreCardsStrip extraCards={extraCards} onOpenDetail={onOpenDetail} className="mb-10" />
+            <ProTeaser className="mb-10" />
+            <FAQ className="mb-10" />
             <div className="max-w-md mx-auto">
               <CTA />
             </div>
@@ -253,6 +269,172 @@ function KCashBox({ className = "" }: { className?: string }) {
           </span>
         </li>
       </ul>
+    </div>
+  );
+}
+
+function SourcesStrip({ className = "" }: { className?: string }) {
+  // Where the trending signal actually comes from — credibility first.
+  const sources: Array<{ Icon: React.ElementType; label: string; tint: string }> = [
+    { Icon: Youtube, label: "YouTube",   tint: "text-red-400" },
+    { Icon: Music,   label: "TikTok",    tint: "text-pink-400" },
+    { Icon: ImageIcon, label: "Instagram", tint: "text-fuchsia-400" },
+    { Icon: Newspaper, label: "Naver",    tint: "text-emerald-400" },
+    { Icon: MessageCircle, label: "Reddit", tint: "text-orange-400" },
+  ];
+  return (
+    <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-4 ${className}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+        5개 소스 통합 신호
+      </p>
+      <div className="flex items-center justify-center flex-wrap gap-3">
+        {sources.map((s) => (
+          <div key={s.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10">
+            <s.Icon className={`w-3.5 h-3.5 ${s.tint}`} />
+            <span className="text-[11px] font-bold text-white/80">{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatsRow({ className = "" }: { className?: string }) {
+  // Placeholder static numbers — replace with live counters when we expose
+  // the metrics RPCs. Even rough numbers establish "real platform" vibe.
+  const stats = [
+    { value: "24", label: "매일 새 컨텐츠" },
+    { value: "7", label: "정산 일수" },
+    { value: "30%", label: "상위 적중 기준" },
+  ];
+  return (
+    <div className={`grid grid-cols-3 gap-2 ${className}`}>
+      {stats.map((s) => (
+        <div key={s.label} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-center">
+          <div className="text-2xl sm:text-3xl font-black text-white tabular-nums leading-none mb-1">{s.value}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-white/50 leading-tight">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MoreCardsStrip({
+  extraCards,
+  onOpenDetail,
+  className = "",
+}: {
+  extraCards: DiscoverCard[];
+  onOpenDetail: (card: DiscoverCard) => void;
+  className?: string;
+}) {
+  const cards = extraCards.slice(0, 4);
+  if (cards.length === 0) return null;
+  return (
+    <div className={className}>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+        오늘 함께 올라온 픽
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {cards.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => onOpenDetail(c)}
+            className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-white/10 hover:border-white/25 transition-colors text-left group"
+          >
+            {c.thumbnail ? (
+              <img
+                src={c.thumbnail}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-700 via-violet-800 to-neutral-900" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+            {c.artist && (
+              <div className="absolute bottom-1.5 inset-x-1.5 text-white text-[10px] font-black truncate drop-shadow-lg">
+                {c.artist}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-white/35 text-center mt-2.5">
+        탭하면 상세 미리보기 · 예측은 로그인 후
+      </p>
+    </div>
+  );
+}
+
+function ProTeaser({ className = "" }: { className?: string }) {
+  return (
+    <Link
+      to="/pro"
+      className={`block rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-rose-500/15 border border-amber-400/25 p-5 hover:scale-[1.005] transition-transform ${className}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-amber-400/20 grid place-items-center shrink-0">
+          <Zap className="w-5 h-5 text-amber-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300/80 mb-0.5">
+            Pro Mode
+          </div>
+          <div className="text-sm font-black text-white mb-0.5">
+            상수만의 1:1 배틀, Pro Battle
+          </div>
+          <div className="text-xs text-white/60">
+            픽 둘 중 더 뜰 사람을 즉시 골라보기. 토너먼트 방식.
+          </div>
+        </div>
+        <ArrowRight className="w-4 h-4 text-white/40 shrink-0" />
+      </div>
+    </Link>
+  );
+}
+
+function FAQ({ className = "" }: { className?: string }) {
+  const items: Array<{ q: string; a: string; Icon: React.ElementType }> = [
+    {
+      Icon: Calendar,
+      q: "언제 새 카드가 올라오나요?",
+      a: "매일 KST 09:15 자동 발행. 한국 출근시간에 맞춰 24장이 한 번에 드랍됩니다.",
+    },
+    {
+      Icon: TrendingUp,
+      q: "어떻게 적중이 정해지나요?",
+      a: "7일 뒤 24장 중 상위 7개(top 30%)에 든 카드를 적중으로 판정. 누적 buzz·views 등 종합 점수 기준.",
+    },
+    {
+      Icon: Shield,
+      q: "K-Cash는 진짜 돈인가요?",
+      a: "앱 내 포인트지만 10,000 모으면 Spotify Premium 1개월(약 $10)로 교환 가능. K-Pass 업그레이드에도 사용.",
+    },
+  ];
+  return (
+    <div className={className}>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+        자주 묻는 질문
+      </p>
+      <div className="space-y-2">
+        {items.map((it) => (
+          <div key={it.q} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+            <div className="flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-white/5 grid place-items-center shrink-0 mt-0.5">
+                <it.Icon className="w-3.5 h-3.5 text-white/70" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-white mb-1">{it.q}</div>
+                <p className="text-xs text-white/65 leading-relaxed">{it.a}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
