@@ -102,7 +102,7 @@ function LandingBody({
           K 트렌드를<br />예측해보세요!
         </h1>
         <p className="text-sm text-white/65 leading-relaxed">
-          매일 아침 새 컨텐츠 24장이 올라옵니다. 7일 뒤 상위 7개를<br className="hidden sm:inline" /> 맞추는 콘텐츠-퍼스트 예측 게임.
+          매일 아침 K-컨텐츠 24장이 올라옵니다. 7일 뒤 이중 상위 7개를<br className="hidden sm:inline" /> 맞추는 트렌드 예측 게임.
         </p>
       </div>
 
