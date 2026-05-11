@@ -826,6 +826,20 @@ Deno.serve(async (req) => {
 
       const b2Items = allSourceItems.map((item: any, idx: number) => {
         const validThumb = thumbnailChecks[idx];
+        // Per-item engagement signal — replaces the old per-artist contentScore
+        // which made every card in the same artist show identical "Buzz now".
+        // Use the primary source-specific metric, raw. curate-drop already
+        // normalizes by maxEng across the daily pool, so absolute scale
+        // mismatch (YT views vs Naver counts) doesn't break ranking.
+        const m = item.metadata || {};
+        const perItem =
+          Number(m.plays)    || // TikTok
+          Number(m.views)    || // YouTube
+          Number(m.viewCount)||
+          Number(m.likes)    || // Instagram / TikTok fallback
+          Number(m.ups)      || // Reddit
+          Number(m.score)    ||
+          0;
         return {
           run_id: runId,
           star_id,
@@ -836,9 +850,9 @@ Deno.serve(async (req) => {
           thumbnail: validThumb,
           has_thumbnail: !!validThumb,
           published_at: item.date || null,
-          engagement_score: contentScore,
+          engagement_score: perItem > 0 ? perItem : contentScore,
           card_status: "available",
-          metadata: item.metadata || {},
+          metadata: m,
         };
       });
 
