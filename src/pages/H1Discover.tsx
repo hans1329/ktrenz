@@ -549,12 +549,12 @@ function VouchPill({
       onClick={onClick}
       disabled={disabled && !active}
       className={cn(
-        "relative flex-1 inline-flex items-center justify-center py-3 rounded-xl transition-all overflow-hidden border",
+        "relative flex-1 inline-flex items-center justify-center py-3 rounded-xl transition-all overflow-hidden border backdrop-blur-md",
         active
-          ? `bg-gradient-to-b ${c.shade} text-white shadow-lg ${c.glow} border-white/30 scale-[1.03] ring-1 ${c.ring}`
+          ? "bg-gradient-to-b from-violet-500/95 to-purple-700/95 text-white shadow-lg shadow-violet-500/30 border-white/30 scale-[1.03] ring-1 ring-violet-400/50"
           : disabled
-            ? "bg-white/[0.03] text-white/30 border-white/5 cursor-not-allowed"
-            : "bg-white/[0.06] backdrop-blur-md text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95",
+            ? "bg-gradient-to-b from-violet-500/[0.08] to-purple-700/[0.04] text-white/30 border-white/5 cursor-not-allowed"
+            : "bg-gradient-to-b from-violet-500/30 to-purple-700/15 text-white border-violet-400/25 hover:from-violet-500/40 hover:to-purple-700/25 hover:border-violet-400/40 active:scale-95",
       )}
     >
       <span className="text-[17px] font-black tabular-nums tracking-tight leading-none">
@@ -1816,12 +1816,12 @@ function DesktopVouchBtn({
       onClick={onClick}
       disabled={disabled && !active}
       className={cn(
-        "relative flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95",
+        "relative flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95 backdrop-blur-md",
         active
-          ? `bg-gradient-to-b ${c.shade} text-white shadow-lg ${c.glow} border-white/25 ring-1 ${c.ring}`
+          ? "bg-gradient-to-b from-violet-500/95 to-purple-700/95 text-white shadow-lg shadow-violet-500/30 border-white/25 ring-1 ring-violet-400/50"
           : disabled
-            ? "bg-white/[0.02] text-white/30 border-white/5 cursor-not-allowed"
-            : "bg-white/[0.04] text-white/80 border-white/10 hover:bg-white/[0.08] hover:border-white/20 hover:text-white",
+            ? "bg-gradient-to-b from-violet-500/[0.06] to-purple-700/[0.03] text-white/30 border-white/5 cursor-not-allowed"
+            : "bg-gradient-to-b from-violet-500/20 to-purple-700/10 text-white/85 border-violet-400/20 hover:from-violet-500/30 hover:to-purple-700/20 hover:border-violet-400/35 hover:text-white",
       )}
     >
       <span className="text-[15px] font-black tabular-nums leading-none">
