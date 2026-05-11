@@ -54,6 +54,8 @@ type Vouch = {
   vouched_at: string;
 };
 
+type DropRow = Drop & { views_at_drop: number | null };
+
 async function resolveCohort(
   client: ReturnType<typeof createClient>,
   dropDate: string,
@@ -62,12 +64,12 @@ async function resolveCohort(
   // 1. Pull all unresolved drops in this cohort (drop_date + region).
   const { data: dropsData, error: dropsErr } = await client
     .from("ktrenz_h1_daily_drop")
-    .select("id, drop_date, region, item_id, cohort_rank")
+    .select("id, drop_date, region, item_id, cohort_rank, views_at_drop")
     .eq("drop_date", dropDate)
     .eq("region", region)
     .eq("resolved", false);
   if (dropsErr) throw dropsErr;
-  const drops = (dropsData ?? []) as unknown as Drop[];
+  const drops = (dropsData ?? []) as unknown as DropRow[];
   if (drops.length === 0) return { drops: 0, vouches: 0 };
 
   // 2. Fetch current engagement_score for each item.
@@ -81,19 +83,29 @@ async function resolveCohort(
     (items ?? []).map((i: any) => [i.id as string, Number(i.engagement_score ?? 0)]),
   );
 
-  // 3. Rank cohort by current score; lower percentile = better rank.
+  // 3. Rank by GROWTH RATIO (not absolute score). Big-baseline content stays
+  // big regardless of activity; we want the climbers. ratio = (now - drop) /
+  // max(drop, baseline). Baseline of 100 prevents tiny-buzz items from
+  // exploding the ratio with miniscule numerators.
+  const GROWTH_BASELINE = 100;
   const ranked = drops
-    .map((d) => ({ ...d, current_score: scoreMap.get(d.item_id) ?? 0 }))
-    .sort((a, b) => b.current_score - a.current_score);
+    .map((d) => {
+      const current = scoreMap.get(d.item_id) ?? 0;
+      const initial = Math.max(0, Number(d.views_at_drop ?? 0));
+      const denom = Math.max(initial, GROWTH_BASELINE);
+      const growthRatio = (current - initial) / denom;
+      return { ...d, current_score: current, growth_delta: current - initial, growth_ratio: growthRatio };
+    })
+    .sort((a, b) => b.growth_ratio - a.growth_ratio);
   const N = ranked.length;
 
   const resolutions = ranked.map((d, i) => {
     const percentile = (i + 1) / N;
     return {
       drop_id: d.id,
-      views_at_drop: null as number | null, // not snapshotted — see PRD §6 v1 simplification
+      views_at_drop: d.views_at_drop ?? null,
       views_at_resolve: d.current_score,
-      growth_delta: null as number | null,
+      growth_delta: d.growth_delta,
       cohort_percentile: percentile,
       is_viral: percentile <= VIRAL_PERCENTILE,
     };

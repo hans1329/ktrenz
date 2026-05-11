@@ -324,6 +324,11 @@ async function curateForRegion(
       item_id: p.id,
       cohort_rank: startRank + idx,
       resolution_at: resolutionAt.toISOString(),
+      // Snapshot the engagement_score at drop time. resolve-drop computes
+      // growth_ratio against this baseline so winners are "biggest climbers"
+      // instead of "biggest channels". Without this, well-established artists
+      // would deterministically win every round.
+      views_at_drop: Math.max(0, Math.floor(p.engagement_score ?? 0)),
     }));
 
   if (rows.length === 0) {

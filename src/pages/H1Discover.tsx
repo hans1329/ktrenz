@@ -102,7 +102,7 @@ function paletteFor(seed: string) {
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return PALETTES[h % PALETTES.length];
 }
-const HEADER_H = 80;        // px — H1AppHeader (48) + sub-strip (~30) + hairline (2)
+const HEADER_H = 92;        // px — H1AppHeader (56) + sub-strip (~30) + small breathing room for snap-scroll stop position
 const BOTTOM_NAV_H = 68;    // px — bottom nav height
 export { BOTTOM_NAV_H };
 
@@ -587,6 +587,7 @@ function VouchPill({
 /* ─────── Card ─────── */
 function ContentCardFull({
   card,
+  index,
   vouch,
   onVouch,
   onOpenDetail,
@@ -595,6 +596,7 @@ function ContentCardFull({
   slotState,
 }: {
   card: DiscoverCard;
+  index: number;
   vouch: Vouch | undefined;
   onVouch: (v: Vouch) => void;
   onOpenDetail: () => void;
@@ -620,13 +622,13 @@ function ContentCardFull({
         aria-label="Open detail"
       >
         <ImagePlate card={card} />
-        {/* Source + age chips */}
+        {/* Top-left: #N · Top-right: source chip */}
         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between gap-2 pointer-events-none">
+          <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-white text-[11px] font-black tabular-nums">
+            #{index + 1}
+          </div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-white text-[11px] font-semibold">
             <Icon className="w-3 h-3" /> {label}
-          </div>
-          <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-white/85 text-[11px] font-medium">
-            <Clock className="w-2.5 h-2.5" /> {hoursAgo(card.publishedAt)}h
           </div>
         </div>
       </button>
@@ -1321,7 +1323,7 @@ function Header({
         <div className="h-[2px] bg-white/5">
           <div
             className={`h-full transition-all ${
-              quotaMet ? "bg-gradient-to-r from-rose-500 to-orange-400" : "bg-white/40"
+              quotaMet ? "bg-gradient-to-r from-rose-500 to-orange-400" : "bg-violet-500"
             }`}
             style={{ width: `${pct}%` }}
           />
@@ -1602,7 +1604,7 @@ function DesktopSidebar({
           <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mb-3">
             <div
               className={`h-full transition-all ${
-                quotaMet ? "bg-gradient-to-r from-rose-500 to-orange-400" : "bg-white/40"
+                quotaMet ? "bg-gradient-to-r from-rose-500 to-orange-400" : "bg-violet-500"
               }`}
               style={{ width: `${pct}%` }}
             />
@@ -1672,6 +1674,7 @@ function SidebarNavItem({
 /* ─────── Desktop card (compact, inline vouch) ─────── */
 function DesktopCard({
   card,
+  index,
   vouch,
   onVouch,
   onOpenDetail,
@@ -1679,6 +1682,7 @@ function DesktopCard({
   slotState,
 }: {
   card: DiscoverCard;
+  index: number;
   vouch: Vouch | undefined;
   onVouch: (v: Vouch) => void;
   onOpenDetail: () => void;
@@ -1705,13 +1709,13 @@ function DesktopCard({
       >
         <ImagePlate card={card} />
 
-        {/* Top chips */}
+        {/* Top-left: #N · Top-right: source chip */}
         <div className="absolute top-2.5 inset-x-2.5 z-20 flex items-center justify-between gap-2">
+          <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-white text-[10px] font-black tabular-nums">
+            #{index + 1}
+          </div>
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-white text-[10px] font-semibold">
             <Icon className="w-2.5 h-2.5" /> {label}
-          </div>
-          <div className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-white/85 text-[10px] font-medium">
-            <Clock className="w-2.5 h-2.5" /> {hoursAgo(card.publishedAt)}h
           </div>
         </div>
 
@@ -1897,10 +1901,11 @@ function DesktopShell({
             <EmptyState />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
-              {cards.map((card) => (
+              {cards.map((card, idx) => (
                 <DesktopCard
                   key={card.id}
                   card={card}
+                  index={idx}
                   vouch={vouches[card.id]}
                   onVouch={(v) => handleVouch(card.id, v)}
                   onOpenDetail={() => setDetail(card)}
@@ -2033,10 +2038,11 @@ function MobileShell({
           className="absolute inset-0 overflow-y-auto snap-y snap-mandatory scrollbar-hide"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {cards.map((card) => (
+          {cards.map((card, idx) => (
             <ContentCardFull
               key={card.id}
               card={card}
+              index={idx}
               vouch={vouches[card.id]}
               onVouch={(v) => handleVouch(card.id, v)}
               onOpenDetail={() => setDetail(card)}
