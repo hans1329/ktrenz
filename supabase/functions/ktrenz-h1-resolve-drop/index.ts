@@ -5,13 +5,14 @@
 // Caller: hourly cron (or manual trigger). Idempotent — only touches drops
 // where resolution_at <= now() AND resolved = false.
 //
-// Scoring formulas (revised 2026-05-10 — time_decay removed):
+// Scoring formulas (revised 2026-05-11 — payout multiplier doubled):
 //   confidence_weight: low 0.5 · mid 1.0 · high 2.0
 //   outcome_mult: hit +1.0 · miss -0.5  (weight-scaled — high stakes both ways)
 //   final_score = confidence_weight × outcome_mult
-//   k_cash      = floor(final_score × 10)            -- can be negative; floored to 0
-//                                                       at the wallet level so balance
-//                                                       never goes below 0.
+//   k_cash      = floor(final_score × 20)            -- doubled from ×10. Tier
+//                                                       hits now pay 10/20/40 💎
+//                                                       (was 5/10/20). Misses
+//                                                       cost 5/10/20 (was 2/5/10).
 //
 // Why no time_decay: trend prediction is snap-judgment, not observation
 // over time. The early-bird ×3 / late ×0.3 multiplier didn't match the
@@ -123,7 +124,7 @@ async function resolveCohort(
     const isViral = isViralByDrop.get(v.drop_id) === true;
     const outcome = isViral ? HIT_MULT : MISS_MULT;
     const final = cw * outcome;
-    const kCash = Math.floor(final * 10);   // can be negative; clamped at wallet
+    const kCash = Math.floor(final * 20);   // can be negative; clamped at wallet
     const raw = cw;                         // raw_score retained for analytics
 
     const { error: upErr } = await client

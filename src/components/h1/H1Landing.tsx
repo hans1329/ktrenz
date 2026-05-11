@@ -247,10 +247,13 @@ function Step({
 }
 
 function TierGuide({ t, className = "" }: { t: TFn; className?: string }) {
-  const tiers: Array<{ mult: string; labelKey: string; hint: string; chip: string }> = [
-    { mult: "×1", labelKey: "h1.landing.tier.x1.label", hint: "+5💎",  chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
-    { mult: "×2", labelKey: "h1.landing.tier.x2.label", hint: "+10💎", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
-    { mult: "×4", labelKey: "h1.landing.tier.x4.label", hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
+  // Tier chips show just the reward magnitude (10/20/40 💎). Removed the
+  // ×N multiplier + Hunch/Pick/Lock labels — users don't stake amounts so
+  // the multiplier was misleading, and the English labels added noise.
+  const tiers: Array<{ hit: string; miss: string; chip: string }> = [
+    { hit: "+10💎", miss: "−5💎",  chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
+    { hit: "+20💎", miss: "−10💎", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
+    { hit: "+40💎", miss: "−20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
     <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-3 ${className}`}>
@@ -259,10 +262,9 @@ function TierGuide({ t, className = "" }: { t: TFn; className?: string }) {
       </p>
       <div className="grid grid-cols-3 gap-2">
         {tiers.map((tier) => (
-          <div key={tier.mult} className={`rounded-lg border ${tier.chip} px-2 py-1.5 text-center`}>
-            <div className="text-sm font-black leading-none">{tier.mult}</div>
-            <div className="text-[10px] font-bold opacity-80 mt-0.5">{t(tier.labelKey)}</div>
-            <div className="text-[9px] opacity-65 mt-0.5">{tier.hint}</div>
+          <div key={tier.hit} className={`rounded-lg border ${tier.chip} px-2 py-2 text-center`}>
+            <div className="text-sm font-black leading-none">{tier.hit}</div>
+            <div className="text-[10px] opacity-65 mt-1">{tier.miss}</div>
           </div>
         ))}
       </div>

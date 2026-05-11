@@ -521,10 +521,13 @@ function ImagePlate({ card }: { card: DiscoverCard }) {
 // `mult` is the displayed reward multiplier (low=baseline=×1). Internal
 // confidence_weight in resolve-drop is 0.5/1/2 — shown to users as 1/2/4
 // for cleaner mental model (no fractions).
+// Hit payout per tier (post 2026-05-11 doubling). Users see this directly
+// instead of the previous ×N multiplier — no staking mechanic so the
+// multiplier was misleading.
 const VOUCH_META = {
-  low:  { labelKey: "h1.confidence.hunch",  hintKey: "h1.confidence.hunchHint",   icon: Sprout,   mult: 1, shade: "from-amber-400 to-amber-500",  ring: "ring-amber-400/40",  glow: "shadow-amber-400/30" },
-  mid:  { labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint",  icon: Activity, mult: 2, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
-  high: { labelKey: "h1.confidence.sure",   hintKey: "h1.confidence.sureHint",    icon: Rocket,   mult: 4, shade: "from-rose-400 to-red-500",     ring: "ring-rose-400/50",   glow: "shadow-rose-500/40" },
+  low:  { labelKey: "h1.confidence.hunch",  hintKey: "h1.confidence.hunchHint",   icon: Sprout,   mult: 1, hit: 10, miss: 5,  shade: "from-amber-400 to-amber-500",  ring: "ring-amber-400/40",  glow: "shadow-amber-400/30" },
+  mid:  { labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint",  icon: Activity, mult: 2, hit: 20, miss: 10, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
+  high: { labelKey: "h1.confidence.sure",   hintKey: "h1.confidence.sureHint",    icon: Rocket,   mult: 4, hit: 40, miss: 20, shade: "from-rose-400 to-red-500",     ring: "ring-rose-400/50",   glow: "shadow-rose-500/40" },
 } as const;
 
 function VouchPill({
@@ -562,7 +565,7 @@ function VouchPill({
         )}
         strokeWidth={active ? 2.5 : 2}
       />
-      <span className="text-[17px] font-black tabular-nums tracking-tight leading-none">×{c.mult}</span>
+      <span className="text-[15px] font-black tabular-nums tracking-tight leading-none">+{c.hit}💎</span>
     </button>
   );
 }
@@ -1778,7 +1781,7 @@ function DesktopCard({
                 <button
                   key={l}
                   onClick={() => onVouch(l)}
-                  title={`×${VOUCH_META[l].mult}`}
+                  title={`+${VOUCH_META[l].hit}💎`}
                   className={cn(
                     "px-2 py-1 rounded-md text-[10px] font-black tabular-nums transition-all border",
                     vouch === l
@@ -1786,7 +1789,7 @@ function DesktopCard({
                       : "border-transparent text-white/45 hover:text-white/80 hover:bg-white/5",
                   )}
                 >
-                  ×{VOUCH_META[l].mult}
+                  +{VOUCH_META[l].hit}
                 </button>
               ))}
             </div>
@@ -1828,7 +1831,7 @@ function DesktopVouchBtn({
       )}
     >
       <Icon className="w-3 h-3 mb-0.5" strokeWidth={active ? 2.5 : 2} />
-      <span className="text-[15px] font-black tabular-nums leading-none">×{c.mult}</span>
+      <span className="text-[13px] font-black tabular-nums leading-none">+{c.hit}💎</span>
     </button>
   );
 }

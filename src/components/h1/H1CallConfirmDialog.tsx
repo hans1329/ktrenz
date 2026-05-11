@@ -13,7 +13,7 @@
 //   miss  = floor(raw × 0.5  × 10)   (recorded as negative; clamped at wallet)
 
 import { useMemo } from "react";
-import { Sprout, Activity, Rocket, Calendar, Trophy, X as XIcon, TrendingUp } from "lucide-react";
+import { Sprout, Activity, Rocket, Calendar, Trophy, X as XIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -61,13 +61,13 @@ export default function H1CallConfirmDialog({
 }) {
   const { t, language } = useLanguage();
 
-  // Single-tier payout — no time decay any more (game model: snap judgment,
-  // edits free until resolution). hit = weight × 10, miss = weight × 5.
+  // Single-tier payout (2026-05-11 doubled multiplier — 20×).
+  // hit = weight × 20, miss = weight × 10.
   const computed = useMemo(() => {
     if (!tier) return null;
     const meta = TIER_META[tier];
-    const hit = Math.floor(meta.weight * 10);
-    const miss = Math.floor(meta.weight * 5);
+    const hit = Math.floor(meta.weight * 20);
+    const miss = Math.floor(meta.weight * 10);
     return { meta, hit, miss };
   }, [tier]);
 
@@ -81,7 +81,6 @@ export default function H1CallConfirmDialog({
   if (!tier || !computed) return null;
   const { meta, hit, miss } = computed;
   const Icon = meta.icon;
-  const multStr = String(meta.mult);
 
   return (
     <AlertDialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
@@ -93,10 +92,9 @@ export default function H1CallConfirmDialog({
               <Icon className="w-6 h-6" strokeWidth={2.5} />
             </div>
             <div>
-              <div className="text-[10px] font-black tracking-[0.2em] uppercase opacity-80">×{multStr}</div>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-white text-lg font-black tracking-tight leading-tight">
-                  {tFmt(t("h1.confirm.title"), { mult: multStr })}
+                  {tFmt(t("h1.confirm.title"), { n: String(hit) })}
                 </AlertDialogTitle>
               </AlertDialogHeader>
             </div>
@@ -105,12 +103,8 @@ export default function H1CallConfirmDialog({
 
         {/* Body */}
         <div className="px-5 py-4 space-y-3">
-          {/* Round + resolve date */}
+          {/* Resolve date only — round count "24개 중 1" was noise */}
           <div className="space-y-1.5 text-[13px]">
-            <div className="flex items-center gap-2 text-white/80">
-              <TrendingUp className="w-3.5 h-3.5 text-white/50 shrink-0" />
-              <span>{t("h1.confirm.round")}</span>
-            </div>
             <div className="flex items-center gap-2 text-white/80">
               <Calendar className="w-3.5 h-3.5 text-white/50 shrink-0" />
               <span>{tFmt(t("h1.confirm.resolveDate"), { date: dateStr })}</span>
@@ -141,10 +135,13 @@ export default function H1CallConfirmDialog({
             </div>
           </div>
 
-          {/* Today's slot usage — shown only when caller passes slot state */}
+          {/* Today's slot usage — single-line, reward-amount keyed.
+              ×N notation removed (no staking mechanic). Each chip shows
+              the hit payout + used/cap so the user instantly sees how
+              many slots they still have at each reward level. */}
           {slots && (
-            <div className="rounded-lg bg-white/[0.03] border border-white/10 px-3 py-2">
-              <div className="text-[10px] font-black tracking-wider uppercase text-white/55 mb-1.5">
+            <div className="rounded-lg bg-white/[0.03] border border-white/10 px-3 py-2.5">
+              <div className="text-[10px] font-black tracking-wider uppercase text-white/55 mb-2">
                 {t("h1.confirm.slotsTitle")}
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -153,18 +150,19 @@ export default function H1CallConfirmDialog({
                   const s = slots[tk];
                   const isCurrent = tk === tier;
                   const willBeFull = isCurrent && s.used + 1 >= s.cap;
+                  const hit = Math.floor(meta.weight * 20);
                   return (
                     <div
                       key={tk}
                       className={cn(
-                        "rounded px-1 py-1.5 transition-colors",
+                        "rounded-md px-1 py-1.5 transition-colors",
                         isCurrent ? "bg-white/[0.07] border border-white/15" : "border border-transparent",
                       )}
                     >
-                      <div className="text-[10px] font-black text-white/65 tabular-nums">×{meta.mult}</div>
+                      <div className="text-[11px] font-black text-white/70 tabular-nums leading-none">+{hit}💎</div>
                       <div className={cn(
-                        "text-[13px] font-black tabular-nums leading-none mt-1",
-                        willBeFull ? "text-amber-300" : isCurrent ? "text-white" : "text-white/70",
+                        "text-[13px] font-black tabular-nums leading-none mt-1.5",
+                        willBeFull ? "text-amber-300" : isCurrent ? "text-white" : "text-white/65",
                       )}>
                         {isCurrent ? s.used + 1 : s.used}/{s.cap}
                       </div>
@@ -196,7 +194,7 @@ export default function H1CallConfirmDialog({
               "bg-gradient-to-b", meta.gradient,
             )}
           >
-            {tFmt(t("h1.confirm.confirm"), { mult: multStr })}
+            {t("h1.confirm.confirm")}
           </button>
         </div>
       </AlertDialogContent>
