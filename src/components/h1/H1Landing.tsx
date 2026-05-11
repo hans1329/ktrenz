@@ -6,11 +6,17 @@
 
 import { Link } from "react-router-dom";
 import {
-  Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift, Coins,
+  Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift,
   Youtube, Music, Newspaper, MessageCircle, Image as ImageIcon,
-  TrendingUp, Zap, Calendar, Shield,
+  Zap,
 } from "lucide-react";
 import H1AppHeader from "@/components/h1/H1AppHeader";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   BottomNav,
   DesktopSidebar,
@@ -138,8 +144,8 @@ function Hero() {
       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-400/25 text-rose-300 text-[10px] font-black tracking-[0.18em] uppercase mb-4">
         <Sparkles className="w-3 h-3" /> KTrenZ Discover
       </div>
-      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-[1.05] mb-3">
-        K 트렌드를<br />예측해보세요!
+      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-[1.05] mb-3 whitespace-nowrap">
+        K 트렌드를 예측해보세요!
       </h1>
       <p className="text-sm text-white/65 leading-relaxed">
         매일 아침 K-컨텐츠 24장이 올라옵니다. 7일 뒤 이중 상위 7개를<br className="hidden sm:inline" /> 맞추는 트렌드 예측 게임.
@@ -307,8 +313,8 @@ function SourcesStrip({ className = "" }: { className?: string }) {
     { Icon: MessageCircle, label: "Reddit", tint: "text-orange-400" },
   ];
   return (
-    <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-4 ${className}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+    <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-5 ${className}`}>
+      <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
         5개 소스 통합 신호
       </p>
       <div className="flex items-center justify-center flex-wrap gap-3">
@@ -356,7 +362,7 @@ function MoreCardsStrip({
   if (cards.length === 0) return null;
   return (
     <div className={className}>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+      <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
         오늘 함께 올라온 픽
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -406,7 +412,7 @@ function ProTeaser({ className = "" }: { className?: string }) {
             Pro Mode
           </div>
           <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight mb-1">
-            상수만의 1:1 배틀, Pro Battle
+            선수만의 1:1 배틀, Pro Battle
           </div>
           <div className="text-xs text-white/60">
             픽 둘 중 더 뜰 사람을 즉시 골라보기. 토너먼트 방식.
@@ -419,43 +425,61 @@ function ProTeaser({ className = "" }: { className?: string }) {
 }
 
 function FAQ({ className = "" }: { className?: string }) {
-  const items: Array<{ q: string; a: string; Icon: React.ElementType }> = [
+  const items: Array<{ q: string; a: string }> = [
     {
-      Icon: Calendar,
       q: "언제 새 카드가 올라오나요?",
       a: "매일 KST 09:15 자동 발행. 한국 출근시간에 맞춰 24장이 한 번에 드랍됩니다.",
     },
     {
-      Icon: TrendingUp,
       q: "어떻게 적중이 정해지나요?",
       a: "7일 뒤 24장 중 상위 7개(top 30%)에 든 카드를 적중으로 판정. 누적 buzz·views 등 종합 점수 기준.",
     },
     {
-      Icon: Shield,
       q: "K-Cash는 진짜 돈인가요?",
       a: "앱 내 포인트지만 10,000 모으면 Spotify Premium 1개월(약 $10)로 교환 가능. K-Pass 업그레이드에도 사용.",
+    },
+    {
+      q: "하루에 몇 번 예측할 수 있나요?",
+      a: "기본 7개 슬롯 (×1 1개 + ×2 4개 + ×4 2개). 광고 시청으로 하루 최대 5개 슬롯까지 추가 가능.",
+    },
+    {
+      q: "예측한 카드는 바꿀 수 있나요?",
+      a: "정산 전(7일 내)에 언제든 강도(×1/×2/×4) 변경 가능. 단, 바꾸는 시점이 늦을수록 보상은 조금 줄어요.",
+    },
+    {
+      q: "K-Pass 멤버십은 뭔가요?",
+      a: "프리미엄 등급. 슬롯 ×2, 30일 트렌드 인사이트, Pro Studio API 등 제공. K-Cash 또는 결제로 업그레이드.",
+    },
+    {
+      q: "5개 소스는 어떻게 활용되나요?",
+      a: "YouTube · TikTok · Instagram · Naver · Reddit에서 K-pop 컨텐츠 신호를 매일 수집·정규화해 24장으로 큐레이션.",
+    },
+    {
+      q: "데이터는 어디에 쓰이나요?",
+      a: "집합 예측 결과는 B2B Trend Intelligence (레이블·브랜드·미디어용) 인사이트로 활용. 개인 정보는 분리·익명화 처리.",
     },
   ];
   return (
     <div className={className}>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-3 text-center">
+      <p className="text-lg sm:text-xl font-black text-white tracking-tight mb-4 text-center">
         자주 묻는 질문
       </p>
-      <div className="space-y-2">
-        {items.map((it) => (
-          <div key={it.q} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
-            <div className="flex items-start gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-white/5 grid place-items-center shrink-0 mt-0.5">
-                <it.Icon className="w-3.5 h-3.5 text-white/70" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-white mb-1">{it.q}</div>
-                <p className="text-xs text-white/65 leading-relaxed">{it.a}</p>
-              </div>
-            </div>
-          </div>
+      <Accordion type="single" collapsible className="space-y-2">
+        {items.map((it, idx) => (
+          <AccordionItem
+            key={it.q}
+            value={`faq-${idx}`}
+            className="rounded-2xl bg-white/[0.03] border border-white/10 px-4 py-1 border-b"
+          >
+            <AccordionTrigger className="text-sm font-bold text-white hover:no-underline text-left py-3">
+              {it.q}
+            </AccordionTrigger>
+            <AccordionContent className="text-xs text-white/65 leading-relaxed pb-3">
+              {it.a}
+            </AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </div>
   );
 }
