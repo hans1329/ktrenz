@@ -48,56 +48,25 @@ Toast.displayName = ToastPrimitives.Root.displayName;
 const ToastAction = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Action>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
->(({ className, onPointerDown, onPointerUp, onClick, ...props }, ref) => {
-  // Mobile double-tap workaround. Radix Toast's swipe-to-dismiss tracker
-  // attaches to Toast.Root and consumes the first pointer event as a
-  // potential drag-start, so the button's native onClick fires only on the
-  // second tap. We:
-  //   1. stopPropagation on pointerdown to keep the swipe tracker quiet
-  //   2. fire the user-supplied onClick from pointerup as a fallback
-  //   3. guard with a one-shot ref so we don't double-fire (pointerup +
-  //      native click in the same gesture).
-  const firedRef = React.useRef(false);
-  return (
-    <ToastPrimitives.Action
-      ref={ref}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        firedRef.current = false;
-        onPointerDown?.(e);
-      }}
-      onPointerUp={(e) => {
-        e.stopPropagation();
-        if (!firedRef.current) {
-          firedRef.current = true;
-          // Fire user's onClick via the pointerup path. Setting timeout 0
-          // lets any React state updates inside the handler queue cleanly.
-          if (onClick) {
-            // synthesize a click-like target
-            const synthetic = e as unknown as React.MouseEvent<HTMLButtonElement>;
-            onClick(synthetic);
-          }
-        }
-        onPointerUp?.(e);
-      }}
-      onClick={(e) => {
-        // Native click also fires after pointerup completes. Guard to avoid
-        // running the user handler twice in one tap.
-        if (firedRef.current) {
-          e.preventDefault();
-          return;
-        }
-        firedRef.current = true;
-        onClick?.(e);
-      }}
-      className={cn(
-        "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary hover:text-secondary-foreground group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.destructive]:focus:ring-destructive disabled:pointer-events-none disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    />
-  );
-});
+>(({ className, onPointerDown, ...props }, ref) => (
+  <ToastPrimitives.Action
+    ref={ref}
+    // Only stopPropagation on pointerdown — keeps Radix's swipe-to-dismiss
+    // tracker quiet so the FIRST tap fires onClick natively. We must NOT
+    // stop pointerup/click bubbling because Radix Toast.Root listens on the
+    // bubble path to auto-dismiss the toast on action activation — stopping
+    // it kept toasts open after the user already tapped the action.
+    onPointerDown={(e) => {
+      e.stopPropagation();
+      onPointerDown?.(e);
+    }}
+    className={cn(
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary hover:text-secondary-foreground group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.destructive]:focus:ring-destructive disabled:pointer-events-none disabled:opacity-50",
+      className,
+    )}
+    {...props}
+  />
+));
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
 const ToastClose = React.forwardRef<
