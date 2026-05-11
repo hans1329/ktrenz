@@ -116,7 +116,7 @@ function LandingBody({
 
       {/* 3-step */}
       <ol className="space-y-3 mb-10">
-        <Step num={1} Icon={Flame}  title="감으로 콜"     body="24개 컨텐츠 카드 중 뜰 것 같은 걸 ×1 / ×2 / ×4 강도로 찍습니다." />
+        <Step num={1} Icon={Flame}  title="감으로 콜"     body="24개 컨텐츠 중 상승할 트렌드라 확신하는 카드에 ×1 / ×2 / ×4 강도로 예측" />
         <Step num={2} Icon={Eye}    title="7일간 트래킹"  body="당신의 픽이 실시간 cohort 순위에서 어떻게 움직이는지 확인." />
         <Step num={3} Icon={Trophy} title="적중 시 K-Cash" body="7일 후 상위 7개 (top 30%)에 든 픽은 💎 보상, 빗나가면 소액 차감." />
       </ol>
