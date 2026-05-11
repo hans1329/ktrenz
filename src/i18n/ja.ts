@@ -770,7 +770,7 @@ const dict: Record<string, string> = {
   "h1.brand.beta": "Beta",
   "h1.todaysDrop": "今日のドロップ",
   "h1.willGoViralFull": "7日後に上位30%入りを予測",
-  "h1.willGoViralShort": "上位30%入りを予測",
+  "h1.willGoViralShort": "7日後に上位30%入りを予測",
   "h1.callStrengthPrompt": "的中で最大4倍報酬",
   "h1.confirm.title": "的中時 +{n} 💎 報酬",
   "h1.confirm.resolveDate": "発表: {date} (ドロップ後7日)",

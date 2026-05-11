@@ -770,7 +770,7 @@ const dict: Record<string, string> = {
   "h1.brand.beta": "베타",
   "h1.todaysDrop": "오늘의 라운드",
   "h1.willGoViralFull": "7일 후 상위 30% 진입 예측",
-  "h1.willGoViralShort": "상위 30% 진입 예측",
+  "h1.willGoViralShort": "7일 후 상위 30% 진입 예측",
   "h1.callStrengthPrompt": "적중하면 최대 4배 보상",
   "h1.confirm.title": "적중시 💎{n} 보상",
   "h1.confirm.resolveDate": "발표: {date} (라운드 후 7일)",

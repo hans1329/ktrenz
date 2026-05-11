@@ -770,7 +770,7 @@ const dict: Record<string, string> = {
   "h1.brand.beta": "Beta",
   "h1.todaysDrop": "今日掉落",
   "h1.willGoViralFull": "预测7天后进入前30%",
-  "h1.willGoViralShort": "预测进前30%",
+  "h1.willGoViralShort": "预测7天后进入前30%",
   "h1.callStrengthPrompt": "命中可获最高4倍奖励",
   "h1.confirm.title": "命中可获 +{n} 💎",
   "h1.confirm.resolveDate": "公布: {date} (掉落后7天)",
