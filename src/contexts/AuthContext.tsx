@@ -252,6 +252,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabase.auth.signOut();
     } catch {}
+    // Scroll to top before navigating — when user was on `/` and logs out,
+    // `window.location.href = '/'` doesn't trigger a fresh page paint in
+    // some browsers, so they'd land on the landing page mid-scroll.
+    try { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); } catch {}
     window.location.href = '/';
   }, [queryClient]);
 
