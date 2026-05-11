@@ -1775,6 +1775,9 @@ function DesktopCard({
   );
 }
 
+export { DesktopCard };
+export type { DiscoverCard, Vouch };
+
 function DesktopVouchBtn({
   level,
   active,
@@ -2401,8 +2404,9 @@ export default function H1Discover() {
     unlockMax: adUnlocks.max_per_day,
   };
 
-  // Logged-out: replace the full feed with a casual landing that explains
-  // the game and shows one real card from today's drop as a teaser.
+  // Logged-out: replace the full feed with a casual landing. Sample card
+  // uses the real DesktopCard so click → DetailDrawer works, but any vouch
+  // attempt routes to the login nudge (no anon writes).
   if (!user?.id) {
     const sampleCard = cards[0] ?? null;
     return (
@@ -2413,15 +2417,27 @@ export default function H1Discover() {
           path="/h1"
         />
         <H1Landing
-          sample={sampleCard ? {
-            id: sampleCard.id,
-            source: sampleCard.source,
-            title: sampleCard.title,
-            artist: sampleCard.artist,
-            starImage: sampleCard.starImage,
-            thumbnail: sampleCard.thumbnail,
-          } : null}
+          sample={sampleCard}
           isLoading={isLoading}
+          onOpenDetail={(c) => setDetail(c)}
+          onVouchAttempt={() => {
+            trackH1Event("h1_login_nudge_shown", { trigger: "landing_vouch" });
+            setLoginNudgeOpen("quota");
+          }}
+        />
+        <DetailDrawer card={detail} cards={cards} open={!!detail} onClose={() => setDetail(null)} />
+        <LoginNudge
+          open={!!loginNudgeOpen}
+          trigger={loginNudgeOpen || "share"}
+          onClose={() => {
+            trackH1Event("h1_login_nudge_dismissed", { trigger: loginNudgeOpen || "unknown" });
+            setLoginNudgeOpen(false);
+          }}
+          onSignIn={() => {
+            trackH1Event("h1_login_nudge_clicked", { trigger: loginNudgeOpen || "unknown" });
+            const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/login?redirect=${redirect}`;
+          }}
         />
       </>
     );
