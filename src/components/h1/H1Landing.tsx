@@ -76,7 +76,7 @@ export default function H1Landing({
           <FAQ className="mb-8" />
           <CTA />
         </main>
-        <BottomNav active="discover" position="fixed" />
+        <BottomNav active="discover" position="fixed" signedIn={false} />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function H1Landing({
       <H1AppHeader active="discover" signedIn={false} />
 
       <div className="max-w-[1400px] mx-auto flex">
-        <DesktopSidebar active="discover" showQuota={false} />
+        <DesktopSidebar active="discover" showQuota={false} signedIn={false} />
 
         <main className="flex-1 px-5 lg:px-8 py-8 min-w-0">
           <div className="max-w-3xl mx-auto">
@@ -214,29 +214,21 @@ function Steps({
 
 function Step({
   num,
-  Icon,
   title,
   body,
 }: {
   num: number;
-  Icon: React.ElementType;
+  Icon?: React.ElementType;
   title: string;
   body: string;
 }) {
   return (
-    <li className="flex items-start gap-3 rounded-2xl bg-white/[0.03] border border-white/10 p-4">
-      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 grid place-items-center shrink-0 shadow-lg">
-        <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+      <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-1">
+        Step {num}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-white/45">
-            Step {num}
-          </span>
-        </div>
-        <div className="text-sm font-black text-white mb-0.5">{title}</div>
-        <p className="text-xs text-white/65 leading-relaxed">{body}</p>
-      </div>
+      <div className="text-sm font-black text-white mb-0.5">{title}</div>
+      <p className="text-xs text-white/65 leading-relaxed">{body}</p>
     </li>
   );
 }

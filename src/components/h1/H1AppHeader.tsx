@@ -60,8 +60,8 @@ export default function H1AppHeader({
               "|" in the brand label above. */}
           <nav className="hidden md:flex items-center gap-1 min-w-0">
             <Tab to="/h1"             active={active === "discover"}    icon={Flame}      label={t("h1.nav.discover")} />
-            <Tab to="/h1/history"     active={active === "history"}     icon={HistoryIcon} label={t("h1.nav.myCalls")}  badge={picksBadge} />
-            <Tab to="/h1/leaderboard" active={active === "leaderboard"} icon={Trophy}     label={t("h1.nav.leaderboard")} />
+            <Tab to="/h1/history"     active={active === "history"}     icon={HistoryIcon} label={t("h1.nav.myCalls")}  badge={picksBadge} disabled={!signedIn} />
+            <Tab to="/h1/leaderboard" active={active === "leaderboard"} icon={Trophy}     label={t("h1.nav.leaderboard")} disabled={!signedIn} />
           </nav>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -79,22 +79,23 @@ export default function H1AppHeader({
 }
 
 function Tab({
-  to, active, icon: Icon, label, badge,
+  to, active, icon: Icon, label, badge, disabled = false,
 }: {
   to: string;
   active: boolean;
   icon: React.ElementType;
   label: string;
   badge?: number;
+  disabled?: boolean;
 }) {
-  return (
-    <Link
-      to={to}
-      className={cn(
-        "relative inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-colors",
-        active ? "bg-white text-black" : "text-white/65 hover:text-white",
-      )}
-    >
+  const className = cn(
+    "relative inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-colors",
+    disabled
+      ? "text-white/25 cursor-not-allowed pointer-events-none"
+      : active ? "bg-white text-black" : "text-white/65 hover:text-white",
+  );
+  const inner = (
+    <>
       <Icon className="w-3 h-3" strokeWidth={active ? 2.5 : 2} />
       {label}
       {typeof badge === "number" && badge > 0 && (
@@ -105,6 +106,10 @@ function Tab({
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-    </Link>
+    </>
   );
+  if (disabled) {
+    return <span className={className} aria-disabled="true">{inner}</span>;
+  }
+  return <Link to={to} className={className}>{inner}</Link>;
 }

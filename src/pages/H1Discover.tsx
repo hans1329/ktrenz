@@ -1310,10 +1310,12 @@ function BottomNav({
   activePicksCount = 0,
   active = "discover",
   position = "absolute",
+  signedIn = true,
 }: {
   activePicksCount?: number;
   active?: H1NavTab;
   position?: "absolute" | "fixed";   // /h1 uses absolute (inside snap container); other pages use fixed
+  signedIn?: boolean;
 }) {
   const { t } = useLanguage();
   return (
@@ -1326,8 +1328,8 @@ function BottomNav({
     >
       <div className="grid grid-cols-4 h-full px-2">
         <NavBtn icon={Flame}   label={t("h1.nav.discover")}    to="/h1"             active={active === "discover"} />
-        <NavBtn icon={History} label={t("h1.nav.myCalls")}     to="/h1/history"     active={active === "history"} badge={activePicksCount} />
-        <NavBtn icon={Trophy}  label={t("h1.nav.leaderboard")} to="/h1/leaderboard" active={active === "leaderboard"} />
+        <NavBtn icon={History} label={t("h1.nav.myCalls")}     to="/h1/history"     active={active === "history"} badge={activePicksCount} disabled={!signedIn} />
+        <NavBtn icon={Trophy}  label={t("h1.nav.leaderboard")} to="/h1/leaderboard" active={active === "leaderboard"} disabled={!signedIn} />
         <NavBtn icon={Zap}     label={t("h1.nav.pro")}         to="/pro"            active={active === "pro"} />
       </div>
     </nav>
@@ -1343,31 +1345,37 @@ function NavBtn({
   to,
   active = false,
   badge,
+  disabled = false,
 }: {
   icon: React.ElementType;
   label: string;
   to: string;
   active?: boolean;
   badge?: number;
+  disabled?: boolean;
 }) {
-  return (
-    <Link
-      to={to}
-      className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors ${
-        active ? "text-white" : "text-white/45 hover:text-white/80"
-      }`}
-    >
+  const className = `relative flex flex-col items-center justify-center gap-0.5 transition-colors ${
+    disabled
+      ? "text-white/20 cursor-not-allowed pointer-events-none"
+      : active ? "text-white" : "text-white/45 hover:text-white/80"
+  }`;
+  const inner = (
+    <>
       <div className="relative">
-        <Icon className={`w-5 h-5 ${active ? "fill-white/15" : ""}`} strokeWidth={active ? 2.5 : 2} />
-        {typeof badge === "number" && badge > 0 && (
+        <Icon className={`w-5 h-5 ${active && !disabled ? "fill-white/15" : ""}`} strokeWidth={active ? 2.5 : 2} />
+        {typeof badge === "number" && badge > 0 && !disabled && (
           <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-violet-500 text-white text-[9px] font-black tabular-nums grid place-items-center shadow-md ring-2 ring-black/65">
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </div>
       <span className="text-[9.5px] font-bold tracking-tight">{label}</span>
-    </Link>
+    </>
   );
+  if (disabled) {
+    return <span className={className} aria-disabled="true">{inner}</span>;
+  }
+  return <Link to={to} className={className}>{inner}</Link>;
 }
 
 /* ════════════════════════════════════════
@@ -1520,12 +1528,14 @@ function DesktopSidebar({
   activePicksCount,
   active = "discover",
   showQuota = true,
+  signedIn = true,
 }: {
   vouchedCount?: number;
   quotaTarget?: number;
   activePicksCount?: number;
   active?: H1NavTab;
   showQuota?: boolean;
+  signedIn?: boolean;
 }) {
   const { t } = useLanguage();
   const vc = vouchedCount ?? 0;
@@ -1539,8 +1549,8 @@ function DesktopSidebar({
       {/* Nav */}
       <nav className="flex flex-col gap-0.5">
         <SidebarNavItem icon={Flame}   label={t("h1.nav.discover")}    to="/h1"             active={active === "discover"} />
-        <SidebarNavItem icon={History} label={t("h1.nav.myCalls")}     to="/h1/history"     active={active === "history"} badge={picksBadge} />
-        <SidebarNavItem icon={Trophy}  label={t("h1.nav.leaderboard")} to="/h1/leaderboard" active={active === "leaderboard"} />
+        <SidebarNavItem icon={History} label={t("h1.nav.myCalls")}     to="/h1/history"     active={active === "history"} badge={picksBadge} disabled={!signedIn} />
+        <SidebarNavItem icon={Trophy}  label={t("h1.nav.leaderboard")} to="/h1/leaderboard" active={active === "leaderboard"} disabled={!signedIn} />
         <SidebarNavItem icon={Users}   label={t("h1.nav.squads")}      hint={t("h1.nav.soon")} disabled />
       </nav>
 
