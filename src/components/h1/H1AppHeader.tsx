@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 export type H1HeaderTab = "discover" | "history" | "leaderboard";
 
-export const H1_HEADER_H = 48;   // px — single-row sticky header
+export const H1_HEADER_H = 56;   // px — single-row sticky header (bumped from 48 for breathing room)
 
 export default function H1AppHeader({
   active,
@@ -45,7 +45,7 @@ export default function H1AppHeader({
             <img
               src={ktrenzLogo}
               alt="K-TRENZ"
-              className="h-2.5 md:h-3 w-auto"
+              className="h-3 md:h-3.5 w-auto"
               style={{ filter: "brightness(0) invert(1)" }}
             />
             {/* English-only brand label, constant across all locales. Shown
@@ -66,8 +66,8 @@ export default function H1AppHeader({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {signedIn && typeof balance === "number" && (
-            <div className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-gradient-to-r from-sky-500/20 to-blue-500/15 border border-sky-300/35 text-sky-100 text-[11px] sm:text-[12px] font-black tabular-nums shadow-[0_0_12px_rgba(56,189,248,0.18)]">
-              <span className="text-[12px] sm:text-[13px] leading-none">💎</span>
+            <div className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-gradient-to-r from-sky-500/20 to-blue-500/15 border border-sky-300/35 text-sky-100 text-xs sm:text-sm font-black tabular-nums shadow-[0_0_12px_rgba(56,189,248,0.18)]">
+              <span className="text-sm leading-none">💎</span>
               {balance.toLocaleString()}
             </div>
           )}
@@ -89,18 +89,18 @@ function Tab({
   disabled?: boolean;
 }) {
   const className = cn(
-    "relative inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-colors",
+    "relative inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-colors",
     disabled
       ? "text-white/25 cursor-not-allowed pointer-events-none"
       : active ? "bg-white text-black" : "text-white/65 hover:text-white",
   );
   const inner = (
     <>
-      <Icon className="w-3 h-3" strokeWidth={active ? 2.5 : 2} />
+      <Icon className="w-3.5 h-3.5" strokeWidth={active ? 2.5 : 2} />
       {label}
       {typeof badge === "number" && badge > 0 && (
         <span className={cn(
-          "ml-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black tabular-nums grid place-items-center",
+          "ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black tabular-nums grid place-items-center",
           active ? "bg-black/15 text-black" : "bg-violet-500 text-white",
         )}>
           {badge > 9 ? "9+" : badge}
