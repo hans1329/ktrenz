@@ -326,16 +326,28 @@ async function fetchFallbackPool(): Promise<NormalizedRow[]> {
 
   if (error || !items?.length) return [];
 
-  // Per-artist cap + URL dedup, then trim to DROP_SIZE.
+  // Per-artist cap (1) + URL dedup + thumbnail fingerprint dedup, then
+  // trim to DROP_SIZE. Mirrors curate-drop's PER_ARTIST_CAP=1 policy.
   const seenUrls = new Set<string>();
   const seenStars = new Map<string, number>();
+  const seenThumbs = new Set<string>();
   const dedup: any[] = [];
+  const thumbprintLite = (url: string | null): string | null => {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      return (u.host + u.pathname).toLowerCase();
+    } catch { return url.split("?")[0].toLowerCase(); }
+  };
   for (const it of items) {
     if (!it.url || seenUrls.has(it.url)) continue;
     const seenForStar = seenStars.get(it.star_id) ?? 0;
-    if (seenForStar >= 2) continue;
+    if (seenForStar >= 1) continue;
+    const tp = thumbprintLite(it.thumbnail);
+    if (tp && seenThumbs.has(tp)) continue;
     seenUrls.add(it.url);
     seenStars.set(it.star_id, seenForStar + 1);
+    if (tp) seenThumbs.add(tp);
     dedup.push(it);
     if (dedup.length >= DROP_SIZE) break;
   }
