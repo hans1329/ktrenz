@@ -147,7 +147,10 @@ async function curateForRegion(
   region: string,
   dropDate: string,
 ) {
-  // 1. Pull candidate pool — recent, has thumbnail, exclude blog sources.
+  // 1. Pull candidate pool — recent CONTENT (published_at), has thumbnail,
+  // exclude blog sources. Filter on published_at, not created_at: scrapers
+  // can backfill old content (2-month-old IG posts etc.) which would pass
+  // a created_at filter but isn't actually a trend signal.
   const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3_600_000).toISOString();
   const { data: pool, error: poolErr } = await client
     .from("ktrenz_b2_items")
@@ -155,7 +158,8 @@ async function curateForRegion(
     .eq("has_thumbnail", true)
     .neq("source", "naver_blog")
     .not("thumbnail", "is", null)
-    .gte("created_at", sinceIso)
+    .not("published_at", "is", null)
+    .gte("published_at", sinceIso)
     .order("engagement_score", { ascending: false, nullsFirst: false })
     .limit(FETCH_POOL_SIZE);
 
