@@ -8,7 +8,7 @@
 // allowing anon writes to localStorage without an account boundary).
 
 import { Link } from "react-router-dom";
-import { Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn } from "lucide-react";
+import { Sparkles, Flame, Trophy, Eye, ArrowRight, LogIn, Music2, Gift, Coins } from "lucide-react";
 import H1AppHeader, { H1_HEADER_H } from "@/components/h1/H1AppHeader";
 import { BottomNav, DesktopSidebar, BOTTOM_NAV_H } from "@/pages/H1Discover";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -115,11 +115,49 @@ function LandingBody({
       </div>
 
       {/* 3-step */}
-      <ol className="space-y-3 mb-10">
+      <ol className="space-y-3 mb-8">
         <Step num={1} Icon={Flame}  title="예측하기"     body="24개 컨텐츠 중 상승할 트렌드라 확신하는 카드에 ×1 / ×2 / ×4 강도로 예측" />
         <Step num={2} Icon={Eye}    title="7일간 트래킹"  body="당신의 픽이 실시간 cohort 순위에서 어떻게 움직이는지 확인." />
         <Step num={3} Icon={Trophy} title="적중 시 K-Cash" body="7일 후 상위 7개 (top 30%)에 든 픽은 💎 보상, 빗나가면 소액 차감." />
       </ol>
+
+      {/* K-Cash 사용처 — "왜 이걸 모으는지" 한눈에 */}
+      <div className="rounded-2xl bg-gradient-to-br from-sky-500/15 via-violet-500/10 to-rose-500/10 border border-sky-400/25 p-5 mb-10">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-sky-400/20 grid place-items-center">
+            <Coins className="w-4 h-4 text-sky-300" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-300/80">
+              K-Cash 💎
+            </div>
+            <div className="text-sm font-black text-white">
+              모아서 진짜 보상으로 교환
+            </div>
+          </div>
+        </div>
+
+        <ul className="space-y-2 text-xs text-white/75 leading-relaxed">
+          <li className="flex items-start gap-2">
+            <Music2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-300" />
+            <span>
+              <b className="text-white">10,000 💎</b> → Spotify Premium 1개월 (≈ $10 상당)
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <Gift className="w-3.5 h-3.5 mt-0.5 shrink-0 text-rose-300" />
+            <span>
+              <b className="text-white">K-Pass 멤버십</b> 업그레이드 · 슬롯 ×2, 30일 트렌드 인사이트 등
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-300" />
+            <span>
+              매일 1번 이상 예측 시 <b className="text-white">+10 💎</b> 자동 적립 · 적중 시 강도 비례 보상
+            </span>
+          </li>
+        </ul>
+      </div>
 
       {/* CTA */}
       <div className="flex flex-col gap-3 items-center">
