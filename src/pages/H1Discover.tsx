@@ -2187,42 +2187,65 @@ export default function H1Discover() {
     void import("./Settings");
   }, []);
 
-  // Background prefetch IG media for today's IG cards. By the time the
-  // user opens a detail drawer, the in-memory + localStorage caches are
-  // already warm so playback starts instantly instead of waiting on the
-  // 2-5s RapidAPI roundtrip. Fire-and-forget, idempotent — the resolver
-  // edge function dedupes via DB cache.
+  // Background prefetch IG media for today's IG cards. Parallel — DB cache
+  // is shared so concurrent calls collapse to one upstream RapidAPI fetch
+  // per item. Also preloads the image URLs into the browser HTTP cache so
+  // subsequent <img> renders are instant (single-image IG ads with 1-2MB
+  // thumbnails were the main remaining lag source).
   useEffect(() => {
     if (cards.length === 0) return;
     const igCards = cards.filter((c) => c.source === "instagram" && c.starId && c.url);
     if (igCards.length === 0) return;
     let cancelled = false;
-    (async () => {
-      for (const c of igCards) {
-        if (cancelled) return;
-        if (igMediaCache.has(c.id)) continue;
-        const persisted = readIgCache(c.id);
-        if (persisted) {
-          igMediaCache.set(c.id, persisted);
-          continue;
+
+    const warmHttpCache = (list: IgMedia[]) => {
+      for (const m of list.slice(0, 3)) { // preload first 3 only (carousel head)
+        if (!m.url) continue;
+        // image preload via <link rel=preload> — does not block render.
+        // Videos are too heavy to preload eagerly; rely on poster fallback.
+        if (m.type === "image") {
+          try {
+            const link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "image";
+            link.href = m.url;
+            link.crossOrigin = "anonymous";
+            link.referrerPolicy = "no-referrer";
+            document.head.appendChild(link);
+            // Cleanup link node after a few seconds — it's served its purpose.
+            setTimeout(() => link.remove(), 5000);
+          } catch { /* ignore */ }
         }
-        try {
-          const { data } = await supabase.functions.invoke("ktrenz-instagram-media", {
-            body: { star_id: c.starId, item_url: c.url, item_id: c.id },
-          });
-          if (cancelled) return;
-          const list = Array.isArray((data as any)?.items)
-            ? ((data as any).items as any[]).filter((e) => e?.type && e?.url) as IgMedia[]
-            : [];
-          if (list.length > 0) {
-            igMediaCache.set(c.id, list);
-            writeIgCache(c.id, list);
-          }
-        } catch { /* ignore individual prefetch failures */ }
-        // Light throttle so we don't burst-fire >5 concurrent RapidAPI calls
-        await new Promise((r) => setTimeout(r, 200));
       }
-    })();
+    };
+
+    void Promise.all(igCards.map(async (c) => {
+      if (cancelled) return;
+      if (igMediaCache.has(c.id)) {
+        warmHttpCache(igMediaCache.get(c.id)!);
+        return;
+      }
+      const persisted = readIgCache(c.id);
+      if (persisted) {
+        igMediaCache.set(c.id, persisted);
+        warmHttpCache(persisted);
+        return;
+      }
+      try {
+        const { data } = await supabase.functions.invoke("ktrenz-instagram-media", {
+          body: { star_id: c.starId, item_url: c.url, item_id: c.id },
+        });
+        if (cancelled) return;
+        const list = Array.isArray((data as any)?.items)
+          ? ((data as any).items as any[]).filter((e) => e?.type && e?.url) as IgMedia[]
+          : [];
+        if (list.length > 0) {
+          igMediaCache.set(c.id, list);
+          writeIgCache(c.id, list);
+          warmHttpCache(list);
+        }
+      } catch { /* ignore individual prefetch failures */ }
+    }));
     return () => { cancelled = true; };
   }, [cards]);
 

@@ -127,6 +127,19 @@ export default defineConfig(() => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Instagram CDN images — IG signed-URL images get reused across
+            // session reopens within a few hours. URLs change after expiry,
+            // so cache key by full URL with a short max-age. Big payoff for
+            // sponsored carousel posts where the high-res image is 1-2MB.
+            urlPattern: /^https:\/\/(scontent[a-z0-9-]*\.cdninstagram\.com|.*\.fbcdn\.net)\/.*$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "ktrenz-pwa-ig-images",
+              expiration: { maxEntries: 150, maxAgeSeconds: 6 * 60 * 60 }, // 6h — within IG URL lifetime
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),
