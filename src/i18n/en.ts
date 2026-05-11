@@ -839,7 +839,7 @@ const dict: Record<string, string> = {
   "h1.help.earlyBody": "Change your call strength (×1/×2/×4) any day before resolution. Pick slipping in the ranks? Drop your stake. On a hot streak? Bump to ×4.",
   "h1.help.kcashTitle": "💎 balance · daily drip",
   "h1.help.kcashBody": "Hits pay 💎, misses deduct from your balance (never goes below 0). Empty balance locks ×2/×4 — climb back with ×1. Vouched at least once yesterday? You get +10💎 today automatically.",
-  "h1.help.adjustNote": "Adjust your call any time before it resolves — but later changes earn less.",
+  "h1.help.adjustNote": "Switch your call strength (×1/×2/×4) any time before resolution. No penalty for changing late.",
   "h1.toast.dripGranted": "Daily activity bonus +{amount}💎",
   "h1.toast.slotFullTitle": "{tier} slots are full",
   "h1.toast.slotFullBody": "{tier} is capped at {cap}/day. Try again tomorrow!",

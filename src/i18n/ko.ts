@@ -839,7 +839,7 @@ const dict: Record<string, string> = {
   "h1.help.earlyBody": "정산 전까지 매일 예측 강도(×1/×2/×4)를 자유롭게 변경할 수 있어요. 어제 픽이 순위 떨어졌다면 오늘 강도를 줄이거나, 좋은 흐름이면 ×4로 올려보세요.",
   "h1.help.kcashTitle": "💎 잔액 · 일일 보너스",
   "h1.help.kcashBody": "적중하면 💎 지급, 미스는 잔액에서 차감 (절대 음수 안 됨). 잔액 0이면 ×2/×4 잠김 — ×1로 천천히 회복. 어제 1번 이상 예측했다면 오늘 +10💎 자동 지급.",
-  "h1.help.adjustNote": "정산 전까지 언제든 예측을 조정할 수 있어요 — 단, 늦게 바꾸면 적게 받습니다.",
+  "h1.help.adjustNote": "정산 전까지 언제든 예측 강도(×1/×2/×4)를 변경할 수 있어요. 변경 시점에 따른 페널티는 없습니다.",
   "h1.toast.dripGranted": "오늘의 활동 보너스 +{amount}💎",
   "h1.toast.slotFullTitle": "{tier} 슬롯이 다 찼어요",
   "h1.toast.slotFullBody": "오늘 {tier}는 {cap}번까지. 내일 다시 도전!",

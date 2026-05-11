@@ -839,7 +839,7 @@ const dict: Record<string, string> = {
   "h1.help.earlyBody": "解决前可每天自由更改呼叫强度(×1/×2/×4)。排名下滑就降低强度,势头正好就升到×4。",
   "h1.help.kcashTitle": "💎 余额 · 每日奖励",
   "h1.help.kcashBody": "命中获得💎,未中从余额扣除(永不为负)。余额为0则×2/×4锁定 — 用×1慢慢恢复。昨天至少呼叫1次,今天自动获得+10💎。",
-  "h1.help.adjustNote": "在解决之前可以随时调整呼叫 — 但越晚改变赚得越少。",
+  "h1.help.adjustNote": "结算前可随时变更呼叫强度(×1/×2/×4)。晚变更不会有惩罚。",
   "h1.toast.dripGranted": "今日活动奖励 +{amount}💎",
   "h1.toast.slotFullTitle": "{tier}名额已满",
   "h1.toast.slotFullBody": "{tier}每天最多{cap}次。明天再来!",

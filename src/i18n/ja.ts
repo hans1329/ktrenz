@@ -839,7 +839,7 @@ const dict: Record<string, string> = {
   "h1.help.earlyBody": "解決前なら毎日コール強度(×1/×2/×4)を自由に変更できます。順位が落ちてきたら強度を下げ、波に乗っていれば×4へ。",
   "h1.help.kcashTitle": "💎 残高 · 毎日ボーナス",
   "h1.help.kcashBody": "的中で💎獲得、ミスは残高から差し引き(0未満にはならない)。残高0で×2/×4ロック — ×1で回復。昨日1回でもコールしていれば、本日+10💎自動付与。",
-  "h1.help.adjustNote": "解決前ならいつでもコールを調整可能 — ただし遅い変更は稼ぎが減ります。",
+  "h1.help.adjustNote": "解決前ならコール強度(×1/×2/×4)をいつでも変更可能。遅い変更によるペナルティはありません。",
   "h1.toast.dripGranted": "今日の活動ボーナス +{amount}💎",
   "h1.toast.slotFullTitle": "{tier}スロットが満杯",
   "h1.toast.slotFullBody": "{tier}は1日{cap}回まで。明日また挑戦!",

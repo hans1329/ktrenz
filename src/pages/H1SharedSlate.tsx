@@ -164,7 +164,7 @@ export default function H1SharedSlate() {
                 </h2>
                 <p className="text-sm sm:text-base text-white/70 max-w-md mx-auto mb-6">
                   Today's drop is fresh. Vouch on the contents you think will pop —
-                  earlier calls earn more.
+                  pick a call strength and watch the cohort.
                 </p>
                 <Link
                   to="/h1"

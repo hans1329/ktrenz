@@ -1883,7 +1883,7 @@ function DesktopShell({
               Which K-pop content blows up next?
             </h1>
             <p className="text-sm text-white/55 max-w-2xl">
-              {isLoading ? "Loading today's drop…" : `${cards.length} curated picks resolve at midnight. Earlier calls earn more — vouch confidence (Low / Mid / High) sets your reward weight.`}
+              {isLoading ? "Loading today's drop…" : `${cards.length} curated picks settle in 7 days. Set call strength (+10/+20/+40 💎) — change any time, no late penalty.`}
             </p>
           </div>
 
@@ -2483,7 +2483,7 @@ export default function H1Discover() {
       <>
         <SEO
           title="Discover — KTrenZ"
-          description="Call the next viral K-pop content before anyone else. Vouch early, earn more."
+          description="Call the next viral K-pop content. Pick your tier, earn 💎 when it lands in the top 30%."
           path="/h1"
         />
         <H1Landing
@@ -2518,7 +2518,7 @@ export default function H1Discover() {
     <>
       <SEO
         title="Discover — KTrenZ"
-        description="Call the next viral K-pop content before anyone else. Vouch early, earn more."
+        description="Call the next viral K-pop content. Pick your tier, earn 💎 when it lands in the top 30%."
         path="/h1"
       />
       {isMobile ? <MobileShell {...shared} /> : <DesktopShell {...shared} />}
