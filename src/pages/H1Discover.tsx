@@ -1717,7 +1717,7 @@ function DesktopCard({
 
         {decided && (
           <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg">
-            <Check className="w-2.5 h-2.5" strokeWidth={3} /> {t("h1.called")} ×{VOUCH_META[vouch as Vouch].mult}
+            <Check className="w-2.5 h-2.5" strokeWidth={3} /> {t("h1.called")}
           </div>
         )}
       </button>
@@ -1749,66 +1749,33 @@ function DesktopCard({
         </h3>
       </button>
 
-      {/* ── Section 3: Vouch row ── */}
+      {/* ── Section 3: Vouch row ── Same shape whether decided or not.
+          The selected tier just gets active styling on its button. Prior
+          "called ×N" details box was duplicate info (top chip already
+          shows CALLED + the active button color shows which tier). */}
       <div className="px-4 pb-3.5 pt-2 border-t border-white/5">
-        {!decided ? (
-          <>
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex flex-col gap-px">
-                <span className="text-[12px] font-black text-white tracking-tight">
-                  {t("h1.willGoViralShort")}
-                </span>
-                <span className="text-[10px] text-white/50 font-medium">
-                  {t("h1.callStrengthPrompt")}
-                </span>
-              </div>
-              <button
-                onClick={onOpenHelp}
-                className="text-white/40 hover:text-white/80 transition-colors shrink-0"
-                aria-label={t("h1.howItWorks")}
-              >
-                <HelpCircle className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="flex gap-1.5">
-              <DesktopVouchBtn level="low"  active={false} onClick={() => onVouch("low")}  disabled={slotState?.low.disabled} />
-              <DesktopVouchBtn level="mid"  active={false} onClick={() => onVouch("mid")}  disabled={slotState?.mid.disabled} />
-              <DesktopVouchBtn level="high" active={false} onClick={() => onVouch("high")} disabled={slotState?.high.disabled} />
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/10">
-            <div className="inline-flex items-center gap-2 min-w-0">
-              <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br shadow-sm shrink-0",
-                VOUCH_META[vouch].shade,
-              )}>
-                {(() => { const VI = VOUCH_META[vouch].icon; return <VI className="w-4 h-4 text-white" strokeWidth={2.5} />; })()}
-              </div>
-              <div className="flex flex-col leading-none min-w-0">
-                <span className="text-[9px] font-black text-white/55 uppercase tracking-[0.15em]">{t("h1.called")}</span>
-                <span className="font-black text-white tabular-nums text-base mt-0.5">×{VOUCH_META[vouch].mult}</span>
-              </div>
-            </div>
-            <div className="flex gap-1 shrink-0">
-              {(["low", "mid", "high"] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => onVouch(l)}
-                  title={`+${VOUCH_META[l].hit}💎`}
-                  className={cn(
-                    "px-2 py-1 rounded-md text-[10px] font-black tabular-nums transition-all border",
-                    vouch === l
-                      ? "bg-white/15 text-white border-white/25"
-                      : "border-transparent text-white/45 hover:text-white/80 hover:bg-white/5",
-                  )}
-                >
-                  +{VOUCH_META[l].hit}
-                </button>
-              ))}
-            </div>
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="flex flex-col gap-px">
+            <span className="text-[12px] font-black text-white tracking-tight">
+              {t("h1.willGoViralShort")}
+            </span>
+            <span className="text-[10px] text-white/50 font-medium">
+              {t("h1.callStrengthPrompt")}
+            </span>
           </div>
-        )}
+          <button
+            onClick={onOpenHelp}
+            className="text-white/40 hover:text-white/80 transition-colors shrink-0"
+            aria-label={t("h1.howItWorks")}
+          >
+            <HelpCircle className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="flex gap-1.5">
+          <DesktopVouchBtn level="low"  active={vouch === "low"}  onClick={() => onVouch("low")}  disabled={slotState?.low.disabled} />
+          <DesktopVouchBtn level="mid"  active={vouch === "mid"}  onClick={() => onVouch("mid")}  disabled={slotState?.mid.disabled} />
+          <DesktopVouchBtn level="high" active={vouch === "high"} onClick={() => onVouch("high")} disabled={slotState?.high.disabled} />
+        </div>
       </div>
     </article>
   );
