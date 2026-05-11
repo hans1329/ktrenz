@@ -56,9 +56,10 @@ export default function H1AppHeader({
             </span>
           </Link>
 
-          {/* Desktop (md+): full tab row. Separator already rendered as the
-              "|" in the brand label above. */}
-          <nav className="hidden md:flex items-center gap-1 min-w-0">
+          {/* Tablet range (md only): full tab row. At lg+ the DesktopSidebar
+              shows the same nav so we hide these to avoid duplication.
+              Mobile uses BottomNav. */}
+          <nav className="hidden md:flex lg:hidden items-center gap-1 min-w-0">
             <Tab to="/h1"             active={active === "discover"}    icon={Flame}      label={t("h1.nav.discover")} />
             <Tab to="/h1/history"     active={active === "history"}     icon={HistoryIcon} label={t("h1.nav.myCalls")}  badge={picksBadge} disabled={!signedIn} />
             <Tab to="/h1/leaderboard" active={active === "leaderboard"} icon={Trophy}     label={t("h1.nav.leaderboard")} disabled={!signedIn} />
