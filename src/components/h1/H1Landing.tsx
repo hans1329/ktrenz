@@ -281,9 +281,9 @@ function TierGuide() {
   // Compact 3-col tier chip row — sits under How it works on desktop just
   // to top up the column height. Single line per tier; no body copy.
   const tiers: Array<{ mult: string; label: string; hint: string; chip: string }> = [
-    { mult: "×1", label: "Hunch", hint: "무료", chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
-    { mult: "×2", label: "Pick",  hint: "보통", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
-    { mult: "×4", label: "Lock",  hint: "큰 폭", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
+    { mult: "×1", label: "Hunch", hint: "+5💎",  chip: "bg-amber-400/15 text-amber-200 border-amber-400/30" },
+    { mult: "×2", label: "Pick",  hint: "+10💎", chip: "bg-orange-400/15 text-orange-200 border-orange-400/30" },
+    { mult: "×4", label: "Lock",  hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
     <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-3">
