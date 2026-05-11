@@ -1035,21 +1035,28 @@ function DetailDrawer({
           <>
             {/* Top bar */}
             <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-2.5 bg-neutral-950/95 backdrop-blur border-b border-white/10">
-              <div className="flex-1 min-w-0 flex items-center gap-2">
+              <div className="flex-1 min-w-0 flex items-center gap-2.5">
                 {card.starImage ? (
                   <img
                     src={card.starImage}
                     alt=""
-                    className="w-5 h-5 rounded-full object-cover ring-1 ring-white/15 shrink-0"
+                    className="w-8 h-8 rounded-full object-cover ring-1 ring-white/15 shrink-0"
                     referrerPolicy="no-referrer"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-white/10 shrink-0" />
+                  <div className="w-8 h-8 rounded-full bg-white/10 shrink-0" />
                 )}
-                <SheetTitle className="text-sm font-bold text-white truncate m-0">
-                  {card.title}
-                </SheetTitle>
+                <div className="min-w-0 flex-1">
+                  {card.artist && (
+                    <div className="text-[10px] font-black tracking-[0.15em] uppercase text-white/55 truncate leading-tight">
+                      {card.artist}
+                    </div>
+                  )}
+                  <SheetTitle className="text-sm font-bold text-white truncate m-0 leading-tight mt-0.5">
+                    {card.title}
+                  </SheetTitle>
+                </div>
               </div>
               <button
                 onClick={onClose}
