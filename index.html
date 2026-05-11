@@ -28,8 +28,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="KTrenZ" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <!-- Favicon: explicit sizes help mobile browsers pick correctly. v=2
+         busts aggressive mobile Safari / Chrome cache after icon changes. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=3" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png?v=3" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png?v=3" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png?v=3" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa-192x192.png?v=3" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://jguylowswwgjvotdcsfj.supabase.co" crossorigin />

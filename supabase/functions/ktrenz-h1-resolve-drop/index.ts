@@ -5,14 +5,24 @@
 // Caller: hourly cron (or manual trigger). Idempotent — only touches drops
 // where resolution_at <= now() AND resolved = false.
 //
-// Scoring formulas (PRD §5 + §9):
+// Scoring formulas (revised 2026-05-10 — time_decay removed):
 //   confidence_weight: low 0.5 · mid 1.0 · high 2.0
-//   time_decay (hours since drop_date 00:00 UTC):
-//     0-24h ×3.0 · 24-72h ×1.0 · 72-168h ×0.3
-//   outcome_mult: hit +1.0 · miss -0.5  (asymmetric, miss softer than hit)
-//   raw_score   = confidence_weight × time_decay
-//   final_score = raw_score × outcome_mult
-//   k_cash      = max(0, floor(final_score × 10))   -- never negative for UX
+//   outcome_mult: hit +1.0 · miss -0.5  (weight-scaled — high stakes both ways)
+//   final_score = confidence_weight × outcome_mult
+//   k_cash      = floor(final_score × 10)            -- can be negative; floored to 0
+//                                                       at the wallet level so balance
+//                                                       never goes below 0.
+//
+// Why no time_decay: trend prediction is snap-judgment, not observation
+// over time. The early-bird ×3 / late ×0.3 multiplier didn't match the
+// game's mental model. Users now edit picks daily (record_vouch unlocked
+// across all open rounds) without any timing penalty.
+//
+// Wallet integration (decided 2026-05-09):
+//   Each resolved vouch writes a row to ktrenz_point_transactions
+//   (reason='h1_hit' | 'h1_miss'). The trg_ktrenz_credit_points trigger sums
+//   amounts into ktrenz_user_points.points. Misses are clamped so the user
+//   never goes negative (max loss = current balance).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -26,12 +36,6 @@ const HIT_MULT = 1.0;
 const MISS_MULT = -0.5;
 
 const CONFIDENCE_WEIGHT: Record<string, number> = { low: 0.5, mid: 1.0, high: 2.0 };
-
-function timeDecay(hoursSinceDrop: number): number {
-  if (hoursSinceDrop <= 24) return 3.0;
-  if (hoursSinceDrop <= 72) return 1.0;
-  return 0.3;
-}
 
 type Drop = {
   id: string;
@@ -112,18 +116,15 @@ async function resolveCohort(
   if (vouchErr) throw vouchErr;
   const vouches = (vouchData ?? []) as unknown as Vouch[];
 
-  const dropMidnight = new Date(`${dropDate}T00:00:00Z`).getTime();
   let vouchUpdates = 0;
 
   for (const v of vouches) {
-    const hours = (new Date(v.vouched_at).getTime() - dropMidnight) / 3_600_000;
-    const decay = timeDecay(Math.max(0, hours));
     const cw = CONFIDENCE_WEIGHT[v.confidence] ?? 1.0;
-    const raw = cw * decay;
     const isViral = isViralByDrop.get(v.drop_id) === true;
     const outcome = isViral ? HIT_MULT : MISS_MULT;
-    const final = raw * outcome;
-    const kCash = Math.max(0, Math.floor(final * 10));
+    const final = cw * outcome;
+    const kCash = Math.floor(final * 10);   // can be negative; clamped at wallet
+    const raw = cw;                         // raw_score retained for analytics
 
     const { error: upErr } = await client
       .from("ktrenz_h1_vouches")
@@ -140,6 +141,40 @@ async function resolveCohort(
       continue;
     }
     vouchUpdates += 1;
+
+    // Write to wallet ledger. Floor miss losses against current balance so
+    // the user never goes negative (the welcome-bonus 1000 K-Cash buffer
+    // already absorbs ~5 worst-case days of all-miss play).
+    if (kCash !== 0) {
+      let amount = kCash;
+      if (amount < 0) {
+        const { data: bal } = await client
+          .from("ktrenz_user_points")
+          .select("points")
+          .eq("user_id", v.user_id)
+          .maybeSingle();
+        const currentBalance = (bal?.points as number | undefined) ?? 0;
+        amount = Math.max(amount, -currentBalance); // never below 0
+        if (amount === 0) continue; // already broke; nothing to deduct
+      }
+      const { error: txErr } = await client
+        .from("ktrenz_point_transactions")
+        .insert({
+          user_id: v.user_id,
+          amount,
+          reason: isViral ? "h1_hit" : "h1_miss",
+          metadata: {
+            vouch_id: v.id,
+            drop_id: v.drop_id,
+            confidence: v.confidence,
+            raw_score: raw,
+            final_score: final,
+          },
+        });
+      if (txErr) {
+        console.warn("[h1-resolve] ledger insert failed:", v.id, txErr.message);
+      }
+    }
   }
 
   // 6. Mark drops resolved.

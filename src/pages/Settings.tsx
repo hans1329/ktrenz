@@ -87,9 +87,9 @@ const SettingsPage = () => {
       const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: urlWithCache }).eq("id", user.id);
       if (updateErr) throw updateErr;
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-      toast({ title: "프로필 이미지가 변경되었습니다" });
+      toast({ title: t("settings.toast.imageUpdated") });
     } catch (e: any) {
-      toast({ title: e.message || "업로드 실패", variant: "destructive" });
+      toast({ title: e.message || t("settings.toast.uploadFailed"), variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -101,13 +101,12 @@ const SettingsPage = () => {
     const trimmedDisplay = displayName.trim();
 
     if (!trimmedUsername) {
-      toast({ title: "닉네임을 입력해주세요", variant: "destructive" });
+      toast({ title: t("settings.toast.handleRequired"), variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
-      // 닉네임 중복 체크
       if (trimmedUsername !== profile?.username) {
         const { data: existing } = await supabase
           .from("profiles")
@@ -116,13 +115,12 @@ const SettingsPage = () => {
           .neq("id", user.id)
           .maybeSingle();
         if (existing) {
-          toast({ title: "이미 사용 중인 닉네임입니다", variant: "destructive" });
+          toast({ title: t("settings.toast.handleTaken"), variant: "destructive" });
           setSaving(false);
           return;
         }
       }
 
-      // 표시이름 중복 체크
       if (trimmedDisplay && trimmedDisplay !== profile?.display_name) {
         const { data: existing } = await supabase
           .from("profiles")
@@ -131,7 +129,7 @@ const SettingsPage = () => {
           .neq("id", user.id)
           .maybeSingle();
         if (existing) {
-          toast({ title: "이미 사용 중인 표시 이름입니다", variant: "destructive" });
+          toast({ title: t("settings.toast.displayNameTaken"), variant: "destructive" });
           setSaving(false);
           return;
         }
@@ -146,32 +144,32 @@ const SettingsPage = () => {
         .eq("id", user.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-      toast({ title: "프로필이 저장되었습니다" });
+      toast({ title: t("settings.toast.profileSaved") });
     } catch (e: any) {
-      toast({ title: e.message || "저장 실패", variant: "destructive" });
+      toast({ title: e.message || t("settings.toast.saveFailed"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
   const discoverShortcuts = [
-    { icon: History, label: "My calls", desc: "Vouch history & resolution status", onClick: () => navigate("/h1/history") },
-    { icon: Trophy, label: "Leaderboard", desc: "Where you rank against other callers", onClick: () => navigate("/h1/leaderboard") },
-    { icon: Coins, label: "K-Cash balance", desc: "Coming soon — earned from hits", comingSoon: true },
+    { icon: History, label: t("settings.discover.myCalls.label"), desc: t("settings.discover.myCalls.desc"), onClick: () => navigate("/h1/history") },
+    { icon: Trophy, label: t("settings.discover.leaderboard.label"), desc: t("settings.discover.leaderboard.desc"), onClick: () => navigate("/h1/leaderboard") },
+    { icon: Coins, label: t("settings.discover.kcash.label"), desc: t("settings.discover.kcash.desc"), onClick: () => navigate("/wallet") },
   ];
 
   const sections = [
     {
-      title: "Account",
+      title: t("settings.account.title"),
       items: [
-        { icon: CreditCard, label: "K-Pass membership", desc: "Plan & upgrade", onClick: () => navigate("/kpass") },
-        { icon: Shield, label: "Privacy", desc: user?.email || "", onClick: () => {} },
+        { icon: CreditCard, label: t("settings.account.kpass.label"), desc: t("settings.account.kpass.desc"), onClick: () => navigate("/k-pass") },
+        { icon: Shield, label: t("settings.account.privacy.label"), desc: user?.email || "", onClick: () => navigate("/privacy") },
       ],
     },
     {
-      title: "Notifications",
+      title: t("settings.notifications.title"),
       items: [
-        { icon: Bell, label: "Push notifications", desc: "Daily drop reminders & resolution alerts", comingSoon: true },
+        { icon: Bell, label: t("settings.notifications.push.label"), desc: t("settings.notifications.push.desc"), comingSoon: true },
       ],
     },
   ];
@@ -209,7 +207,7 @@ const SettingsPage = () => {
           {/* Profile section */}
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1">
-              Profile
+              {t("settings.profile.title")}
             </p>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
               <div className="flex items-center gap-4">
@@ -227,7 +225,7 @@ const SettingsPage = () => {
                 </label>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-white truncate">
-                    {profile?.display_name || profile?.username || "User"}
+                    {profile?.display_name || profile?.username || t("settings.userFallback")}
                   </p>
                   <p className="text-xs text-white/55 truncate">{user?.email}</p>
                 </div>
@@ -235,7 +233,7 @@ const SettingsPage = () => {
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">Handle</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">{t("settings.profile.handle")}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/45">@</span>
                     <Input
@@ -248,11 +246,11 @@ const SettingsPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">Display name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/55 mb-1 block">{t("settings.profile.displayName")}</label>
                   <Input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Display Name"
+                    placeholder={t("settings.profile.displayName")}
                     className="h-9 text-sm bg-white/[0.04] border-white/10 text-white placeholder:text-white/30 focus-visible:ring-rose-500/40"
                   />
                 </div>
@@ -263,7 +261,7 @@ const SettingsPage = () => {
                   className="w-full bg-white text-black hover:bg-white/90 font-black"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save
+                  {t("settings.profile.save")}
                 </Button>
               </div>
             </div>
@@ -272,7 +270,7 @@ const SettingsPage = () => {
           {/* Discover shortcuts */}
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1 inline-flex items-center gap-1.5">
-              <Flame className="w-3 h-3 text-rose-400" /> Discover
+              <Flame className="w-3 h-3 text-rose-400" /> {t("settings.discover.title")}
             </p>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden divide-y divide-white/5">
               {discoverShortcuts.map((item) => (
@@ -293,7 +291,7 @@ const SettingsPage = () => {
                     <p className="text-[11px] text-white/45 truncate">{item.desc}</p>
                   </div>
                   {(item as any).comingSoon ? (
-                    <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">Soon</span>
+                    <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">{t("settings.comingSoon")}</span>
                   ) : (
                     <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
                   )}
@@ -328,7 +326,7 @@ const SettingsPage = () => {
                     {(item as any).custom ? (
                       <div onClick={(e) => e.stopPropagation()}>{(item as any).custom}</div>
                     ) : (item as any).comingSoon ? (
-                      <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">Soon</span>
+                      <span className="text-[10px] text-white/55 bg-white/5 px-2 py-0.5 rounded-full">{t("settings.comingSoon")}</span>
                     ) : (
                       <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
                     )}
@@ -341,7 +339,7 @@ const SettingsPage = () => {
           {/* Language */}
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 px-1">
-              Language
+              {t("settings.language.title")}
             </p>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden divide-y divide-white/5">
               {LANGUAGES.map((lang) => (

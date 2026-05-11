@@ -9,6 +9,35 @@ const corsHeaders = {
 
 const TIMEOUT_MS = 10000;
 
+// ── Off-topic content filter ──────────────────────────────────────────
+// Drops items whose hashtags clearly mark non-K-pop topics (drift racing,
+// gaming, gambling, etc.). Applied to all sources at save time so bad data
+// never enters ktrenz_b2_items in the first place.
+//
+// Conservative list — anything ambiguous (#anime, #travel, #fashion) is
+// excluded because it can legitimately co-occur with K-pop content.
+const OFF_TOPIC_HASHTAGS = new Set([
+  // cars / motorsport
+  "jdm", "drift", "drifting", "drifter", "cars", "carlife", "carmods",
+  "carmod", "automotive", "racing", "motorsport", "ebisu", "track",
+  "supra", "honda", "nissan", "toyota", "bmw", "mustang", "tuning",
+  "hellcat", "audi", "mercedes", "porsche", "ferrari",
+  // gaming / dev
+  "gaming", "gamedev", "esports", "valorant", "fortnite", "pubg", "lol",
+  "leagueoflegends", "dota", "csgo", "fps", "minecraft", "roblox",
+  // adult / spam / commercial
+  "casino", "bet", "betting", "crypto", "nft", "forex", "stocks",
+  "onlyfans", "fansly",
+  // sports leagues
+  "nba", "nfl", "mlb", "ncaa", "uefa", "premierleague", "ufc",
+]);
+
+function hasOffTopicTag(text: string): boolean {
+  if (!text) return false;
+  const tags = text.match(/#[\p{L}\p{N}_]+/gu) ?? [];
+  return tags.some((tag) => OFF_TOPIC_HASHTAGS.has(tag.slice(1).toLowerCase()));
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit = {}, ms = TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -441,12 +470,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const naverNewsDeduped = dedup(naverNewsRaw, true).filter((i: any) => isTitleRelevant(i.title));
-    const naverBlog = dedup(naverBlogRaw).filter((i: any) => isTitleRelevant(i.title));
-    const youtube = dedup(youtubeRaw).filter((i: any) => isTitleRelevant(i.title));
-    const tiktok = dedup(tiktokRaw);
-    const instagram = dedup(instagramRaw);
-    const reddit = dedup(redditRaw).filter((i: any) => isTitleRelevant(i.title));
+    // Compose filters per source:
+    // - All sources: drop off-topic hashtag content (drift/gaming/etc).
+    // - Naver News/Blog/YouTube/Reddit: also require artist-name relevance
+    //   (these are name-search-based, false positives are common).
+    // - TikTok/Instagram: handle-based search trusts the association but
+    //   off-topic filter still removes obviously cross-topic creator posts.
+    const offTopic = (i: any) => hasOffTopicTag(`${i.title || ""} ${i.description || ""}`);
+    const naverNewsDeduped = dedup(naverNewsRaw, true).filter((i: any) => isTitleRelevant(i.title) && !offTopic(i));
+    const naverBlog = dedup(naverBlogRaw).filter((i: any) => isTitleRelevant(i.title) && !offTopic(i));
+    const youtube = dedup(youtubeRaw).filter((i: any) => isTitleRelevant(i.title) && !offTopic(i));
+    const tiktok = dedup(tiktokRaw).filter((i: any) => !offTopic(i));
+    const instagram = dedup(instagramRaw).filter((i: any) => !offTopic(i));
+    const reddit = dedup(redditRaw).filter((i: any) => isTitleRelevant(i.title) && !offTopic(i));
 
     // Enrich with og:image where thumbnails are missing
     const enrichWithOgImage = async (items: any[], limit = 10) => {

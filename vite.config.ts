@@ -39,22 +39,45 @@ export default defineConfig(() => ({
         skipWaiting: false,
         clientsClaim: false,
         cleanupOutdatedCaches: true,
+        // Disable auto-bound NavigationRoute that vite-plugin-pwa injects by
+        // default. That route registers FIRST and forces every navigation to
+        // serve precached index.html — which dead-codes our NetworkFirst
+        // navigate handler and produced blank screens for users whose stale
+        // SW pointed at evicted chunks. Setting navigateFallback to null lets
+        // the runtimeCaching `request.mode === "navigate"` NetworkFirst
+        // actually run.
+        navigateFallback: null,
         // Bumped to v2 to evict stale runtime caches from builds that did not
         // have Supabase/CDN image runtime caching wired up. Old cached entries
         // (incl. failed/opaque responses for cross-origin images) were causing
         // images to silently 404 on mobile Chrome. Bumping the id forces a
         // clean cache namespace on next SW activation.
-        cacheId: "ktrenz-pwa-v2",
+        // v3 (2026-05-10) — force SW cache invalidation after the H1 vaul→Sheet
+        // refactor. Mobile users on the old SW were seeing "오류가 발생했습니다"
+        // because the broken vaul drawer chunk was still being served from
+        // cache even though the deployed build had moved to Sheet.
+        // v4 (2026-05-10) — force-evict stale SW state for users on v3. v3
+        // shipped with the auto-bound NavigationRoute serving precached
+        // index.html that referenced evicted chunks → blank screen on new
+        // tabs. v4 disables navigateFallback (see above) and rotates the
+        // cache namespace so existing v3 SWs can't keep serving the broken
+        // setup.
+        cacheId: "ktrenz-pwa-v4",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/report(?:\/|$)/, /^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
-        // Precache critical assets only. index.html is intentionally excluded
-        // so navigation requests always hit network first (see runtimeCaching).
-        // Route-lazy chunks (Admin*, B2B*, recharts, lang chunks 등)는
-        // 별도로 runtime cache에서 처리.
+        // navigateFallback omitted from explicit config, but vite-plugin-pwa
+        // still auto-binds /index.html for navigation handling. We must
+        // include it in globPatterns or SW init throws `non-precached-url`.
+        // The runtimeCaching NetworkFirst handler below still fires first
+        // for navigation requests, so the precached index.html is just an
+        // offline fallback — no stale-route problem.
+        // Precache critical assets. index.html MUST be included because
+        // vite-plugin-pwa auto-binds a navigation route to it; excluding it
+        // throws `non-precached-url` at SW init. NetworkFirst handler in
+        // runtimeCaching still fires first on navigations so this is just
+        // an offline fallback.
         globPatterns: [
+          "index.html",
           "manifest.webmanifest",
-          "registerSW.js",
           "robots.txt",
           "pwa-*.png",
           "favicon.*",

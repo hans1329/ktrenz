@@ -15,6 +15,7 @@ const Login = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const KPass = lazy(() => import("./pages/KPass"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Wallet = lazy(() => import("./pages/Wallet"));
 const PitchDeck = lazy(() => import("./pages/PitchDeck"));
 const PitchDeck3 = lazy(() => import("./pages/PitchDeck3"));
 const H1Discover = lazy(() => import("./pages/H1Discover"));
@@ -97,6 +98,15 @@ const RouteFallback = () => (
   </div>
 );
 
+// Dark-themed fallback used inside the /h1 sub-tree so nav between
+// /h1, /h1/history, /h1/leaderboard doesn't flash a white skeleton over
+// the dark canvas while the lazy chunk loads.
+const H1RouteFallback = () => (
+  <div className="min-h-screen bg-neutral-950 grid place-items-center">
+    <div className="w-6 h-6 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+  </div>
+);
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -109,24 +119,32 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
-                  <Route path="/" element={<Battle />} />
+                  {/* P10 launch (2026-05-10): Discover (h1) is now the default
+                      home. Battle moves to /pro for grandfathered KR power
+                      users. Legacy /h1 path still works (same component) so
+                      external share links don't break. */}
+                  <Route path="/" element={<Suspense fallback={<H1RouteFallback />}><H1Discover /></Suspense>} />
+                  <Route path="/pro" element={<Battle />} />
+                  <Route path="/pro-battle" element={<Battle />} />
                   <Route path="/discover" element={<TrendDiscovery />} />
                   <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                   <Route path="/fes-engine" element={<FesEngine />} />
                   <Route path="/agent" element={<FanAgent />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/k-pass" element={<KPass />} />
-                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/k-pass" element={<Suspense fallback={<H1RouteFallback />}><KPass /></Suspense>} />
+                  <Route path="/kpass" element={<Suspense fallback={<H1RouteFallback />}><KPass /></Suspense>} />
+                  <Route path="/settings" element={<Suspense fallback={<H1RouteFallback />}><Settings /></Suspense>} />
+                  <Route path="/wallet" element={<Suspense fallback={<H1RouteFallback />}><Wallet /></Suspense>} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/dashboard" element={<UserDashboard />} />
                   <Route path="/pitchdeck" element={<PitchDeck />} />
                   <Route path="/pd" element={<PitchDeck />} />
                   <Route path="/pd3" element={<PitchDeck3 />} />
-                  <Route path="/h1" element={<H1Discover />} />
-                  <Route path="/h1/share/:slateId" element={<H1SharedSlate />} />
-                  <Route path="/h1/history" element={<H1History />} />
-                  <Route path="/h1/leaderboard" element={<H1Leaderboard />} />
+                  <Route path="/h1" element={<Suspense fallback={<H1RouteFallback />}><H1Discover /></Suspense>} />
+                  <Route path="/h1/share/:slateId" element={<Suspense fallback={<H1RouteFallback />}><H1SharedSlate /></Suspense>} />
+                  <Route path="/h1/history" element={<Suspense fallback={<H1RouteFallback />}><H1History /></Suspense>} />
+                  <Route path="/h1/leaderboard" element={<Suspense fallback={<H1RouteFallback />}><H1Leaderboard /></Suspense>} />
                   <Route path="/deck" element={<Deck />} />
                   <Route path="/signal" element={<SignalRadar />} />
 

@@ -4,8 +4,13 @@
  * Lives outside the cards so the buttons can stay free of inline mechanics
  * copy. Triggered by a HelpCircle next to the "Will this go viral?" prompt
  * — discoverable when needed, invisible when not.
+ *
+ * Uses shadcn Sheet (Radix Dialog under the hood) — same pattern as Battle's
+ * detail drawer. Picked over vaul because vaul's touch-event capture broke
+ * autoplay on embedded media in sibling drawers.
  */
-import { X, Sparkles, Sprout, Activity, Rocket, Clock, Coins } from "lucide-react";
+import { Sparkles, Sprout, Activity, Rocket, Clock, Coins, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type Props = {
@@ -15,20 +20,21 @@ type Props = {
 
 export default function H1HowItWorksModal({ open, onClose }: Props) {
   const { t } = useLanguage();
-  if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-neutral-950 rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/10 max-h-[88vh] sm:max-h-[85vh] overflow-y-auto sm:mx-4 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+    <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <SheetContent
+        side="bottom"
+        hideClose
+        className="rounded-t-3xl h-[calc(100dvh-88px)] sm:h-auto sm:max-h-[85vh] overflow-y-auto sm:max-w-md sm:mx-auto bg-neutral-950 border-t border-white/10 p-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
+        {/* Sticky top bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-neutral-950/95 backdrop-blur border-b border-white/10">
           <div className="inline-flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-rose-400" />
-            <h2 className="text-base font-black text-white tracking-tight">{t("h1.howItWorks")}</h2>
+            <SheetTitle className="text-base font-black text-white tracking-tight">
+              {t("h1.howItWorks")}
+            </SheetTitle>
           </div>
           <button
             onClick={onClose}
@@ -39,6 +45,7 @@ export default function H1HowItWorksModal({ open, onClose }: Props) {
           </button>
         </div>
 
+        {/* Body */}
         <div className="px-5 py-5 space-y-5">
           <Block label={t("h1.help.dropTitle")} body={t("h1.help.dropBody")} />
           <Block label={t("h1.help.viralTitle")} body={t("h1.help.viralBody")} />
@@ -70,12 +77,12 @@ export default function H1HowItWorksModal({ open, onClose }: Props) {
             </div>
           </div>
 
-          <p className="text-[11px] text-white/35 text-center pt-1">
+          <p className="text-[11px] text-white/35 text-center pt-1 pb-2">
             {t("h1.help.adjustNote")}
           </p>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 

@@ -1,18 +1,25 @@
+/**
+ * /pd, /pitchdeck — Pitch deck for KTrenZ Discover (h1 P10 launched 2026-05-10).
+ *
+ * Replaces the legacy Battle-centric deck. Reflects the post-launch positioning:
+ * Discover game on top of a multi-source K-pop trend intelligence engine,
+ * with B2B Trend-Intelligence-as-a-Service as the monetization core.
+ *
+ * Korean primary copy. /pd3 keeps the Web3 / token-focused English deck.
+ */
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import {
-  Flame, Activity, BarChart3, Zap, Wand2, Bot, Sparkles,
-  TrendingUp, Eye, Radio, Layers, Target, Shield, ArrowRight,
-  ChevronDown, Music, Globe, Users, Linkedin
+  Activity, BarChart3, Sparkles, TrendingUp, Layers, ArrowRight,
+  ChevronDown, Globe, Users, Building2, Megaphone, Briefcase, Newspaper,
+  Lightbulb, ShieldCheck, Linkedin, Database, Calendar, LineChart,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
-import BoxParticles from "@/components/v3/BoxParticles";
 import ceoHanKim from "@/assets/team/ceo-han-kim.jpg";
 import cfoChrisLee from "@/assets/team/cfo-chris-lee.jpg";
 import cooWilliamYang from "@/assets/team/coo-william-yang.jpg";
 
-/* ─────── Section wrapper ─────── */
+/* ─────── Layout primitives ─────── */
 const Section = ({
   children,
   className = "",
@@ -36,81 +43,23 @@ const SectionTag = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-const FeatureCard = ({
-  icon: Icon,
-  title,
-  desc,
-  accent = false,
-}: {
-  icon: React.ElementType;
-  title: string;
-  desc: string;
-  accent?: boolean;
-}) => (
-  <div
-    className={`group relative rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 ${
-      accent
-        ? "bg-primary/10 border-primary/30 hover:border-primary/50 hover:shadow-[0_0_30px_hsl(11_100%_46%/0.15)]"
-        : "bg-card/60 border-border/50 hover:border-primary/30 hover:shadow-[0_0_20px_hsl(11_100%_46%/0.08)]"
-    }`}
-  >
-    <div
-      className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${
-        accent ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground group-hover:text-primary"
-      } transition-colors`}
-    >
-      <Icon className="w-5 h-5" />
-    </div>
-    <h3 className="text-foreground font-bold text-lg mb-2">{title}</h3>
-    <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-2xl bg-card/60 border border-border/50 p-6 ${className}`}>
+    {children}
   </div>
 );
 
-/* ─────── Animated counter ─────── */
-const Counter = ({ end, suffix = "" }: { end: number; suffix?: string }) => {
-  const [val, setVal] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
+/* ════════════════════════════════════════════════════════════════════ */
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          let start = 0;
-          const step = Math.ceil(end / 40);
-          const interval = setInterval(() => {
-            start += step;
-            if (start >= end) {
-              start = end;
-              clearInterval(interval);
-            }
-            setVal(start);
-          }, 30);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [end]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      {val.toLocaleString()}
-      {suffix}
-    </span>
-  );
-};
-
-/* ═══════════════════════════════════════════
-   PITCH DECK PAGE
-   ═══════════════════════════════════════════ */
 export default function PitchDeck() {
   const navigate = useNavigate();
-
   return (
-    <div className="bg-background text-foreground overflow-x-hidden">
-      <SEO title="KTrenZ – The Only Place to See K-Pop Firepower Live" description="KTrenZ is the real-time K-Pop trend platform tracking 100+ artists across YouTube, X, and music charts with AI-powered FES energy scores." path="/pitchdeck" />
+    <div className="bg-background text-foreground">
+      <SEO
+        title="KTrenZ — 다음 K-pop 트렌드를 30초 안에"
+        description="600+ 아티스트 데이터베이스와 글로벌 팬덤 집단지성을 결합한 K-pop 트렌드 예측 플랫폼. B2B Trend Intelligence as a Service."
+        path="/pd"
+      />
 
       {/* ───── 1. HERO ───── */}
       <Section className="overflow-hidden">
@@ -122,20 +71,22 @@ export default function PitchDeck() {
         <div className="relative max-w-4xl mx-auto text-center z-10">
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-8" />
 
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-6">
+            <Sparkles className="w-3 h-3" /> Discover · 2026-05-10 라이브
+          </div>
+
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.1] tracking-tight mb-6">
-            <span className="text-foreground">The Only Place to See</span>
+            <span className="text-foreground">다음 K-pop 트렌드를</span>
             <br />
             <span className="bg-gradient-to-r from-primary via-orange-400 to-amber-400 bg-clip-text text-transparent">
-              K-Pop Firepower
+              30초 안에 찾아낸다
             </span>
-            <br />
-            <span className="text-foreground">Live</span>
           </h1>
 
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Fusing YouTube · X · TikTok and music platform data into a single score —
+            매일 큐레이션된 24장의 K-pop 콘텐츠 카드.
             <br className="hidden md:block" />
-            <strong className="text-foreground">Fan Energy Score (FES)</strong> measures artist momentum in real time.
+            글로벌 팬덤이 베팅하고, <strong className="text-foreground">우리 엔진은 모멘텀을 데이터화</strong>합니다.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-16">
@@ -143,25 +94,25 @@ export default function PitchDeck() {
               onClick={() => navigate("/")}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:brightness-110 transition-all shadow-[0_0_20px_hsl(11_100%_46%/0.3)]"
             >
-              View Live Rankings
+              라운드 열기
             </button>
-            <button
-              onClick={() => navigate("/agent")}
+            <a
+              href="#b2b"
               className="px-8 py-3.5 rounded-xl bg-secondary text-secondary-foreground font-bold text-base hover:bg-secondary/80 transition-all border border-border"
             >
-              Try AI Agent
-            </button>
+              B2B 데이터 문의
+            </a>
           </div>
 
           <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
             {[
-              { label: "Tracked Artists", value: 200, suffix: "+" },
-              { label: "Data Points/Day", value: 50000, suffix: "+" },
-              { label: "Live Updates", value: 24, suffix: "h" },
+              { label: "아티스트 DB", value: "600+" },
+              { label: "데이터 소스", value: "7+" },
+              { label: "일일 큐레이션", value: "24" },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-primary">
-                  <Counter end={s.value} suffix={s.suffix} />
+                <div className="text-2xl md:text-3xl font-black text-primary tabular-nums">
+                  {s.value}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
               </div>
@@ -172,444 +123,461 @@ export default function PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 2. DATA ENGINE ───── */}
-      <Section id="engine">
+      {/* ───── 2. PROBLEM ───── */}
+      <Section id="problem" className="bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-16">
-            <SectionTag>
-              <Activity className="w-3.5 h-3.5" /> Data Engine
-            </SectionTag>
+          <div className="text-center mb-14">
+            <SectionTag><Lightbulb className="w-3.5 h-3.5" /> Problem</SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              FES — <span className="text-primary">Fan Energy Score</span>
+              K-pop 트렌드 발견의 <span className="text-primary">3가지 공백</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            <Card className="hover:border-primary/30 transition-colors">
+              <Globe className="w-7 h-7 text-primary mb-3" />
+              <h3 className="font-bold text-base mb-2">글로벌 인지 격차</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                "이 아티스트가 뜬다"는 시그널이 한국 외 팬덤엔
+                평균 <strong className="text-foreground">6~14일 늦게</strong> 도착.
+                먼저 베팅한 사람이 모멘텀을 가져갑니다.
+              </p>
+            </Card>
+            <Card className="hover:border-primary/30 transition-colors">
+              <Activity className="w-7 h-7 text-primary mb-3" />
+              <h3 className="font-bold text-base mb-2">정량 시그널 부재</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                좋아요·조회수는 <strong className="text-foreground">사후 데이터</strong>.
+                "이 콘텐츠가 7일 후 뜰까?"라는
+                <strong className="text-foreground"> 사전 예측 정량 지표</strong>가 시장에 없음.
+              </p>
+            </Card>
+            <Card className="hover:border-primary/30 transition-colors">
+              <Building2 className="w-7 h-7 text-primary mb-3" />
+              <h3 className="font-bold text-base mb-2">B2B 의사결정 공백</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                라벨·A&R·브랜드는 <em>컴백 타이밍 / 글로벌 마케팅 예산 / 신인 발굴</em>을
+                직감으로 결정. 데이터 기반 의사결정 도구
+                <strong className="text-foreground"> 시장 부재</strong>.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 3. SOLUTION — Discover Game ───── */}
+      <Section id="solution">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><Sparkles className="w-3.5 h-3.5" /> Solution</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              Discover — <span className="text-primary">Snap-Judgment</span> 예측 게임
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Collecting multi-platform data in real time and synthesizing it into
-              a single energy score with our proprietary weighted algorithm.
+              사용자 게임 자체가 곧 데이터 수집기. 30초 베팅이 7일 후 정산되며,
+              그 데이터는 글로벌 팬덤 집단지성으로 누적됩니다.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-4 gap-4 mb-10">
+            {[
+              { step: "01", title: "매일 24장", desc: "엔진이 큐레이션한 K-pop 콘텐츠 카드" },
+              { step: "02", title: "30초 베팅", desc: "×1 / ×2 / ×4 강도로 \"뜰까?\" 결정" },
+              { step: "03", title: "7일 후 정산", desc: "코호트 상위 30% = 적중" },
+              { step: "04", title: "💎 보상 → Spotify", desc: "10,000 K-Cash로 1개월 프리미엄 교환" },
+            ].map((item) => (
+              <div key={item.step} className="relative bg-card/60 border border-border/50 rounded-2xl p-6 hover:border-primary/30 transition-all">
+                <div className="text-xs font-bold text-primary mb-3">{item.step}</div>
+                <div className="font-bold mb-2">{item.title}</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <Card className="bg-gradient-to-br from-primary/10 to-orange-500/5 border-primary/20">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <Lightbulb className="w-8 h-8 text-primary shrink-0" />
+              <p className="text-sm md:text-base text-foreground leading-relaxed">
+                <strong>핵심 인사이트</strong>: 사용자가 ×4를 누른다는 건 "이게 뜬다"고 K-Cash를 거는 강한 확신.
+                좋아요·조회수보다 <strong className="text-primary">선행 시그널</strong>로 작동.
+                이게 우리 데이터 자산의 차별점입니다.
+              </p>
+            </div>
+          </Card>
+        </div>
+      </Section>
+
+      {/* ───── 4. DATA ENGINE ───── */}
+      <Section id="engine" className="bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><Database className="w-3.5 h-3.5" /> Data Engine</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              <span className="text-primary">우리 엔진</span>이 가진 6가지 자산
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
             {[
               {
-                icon: Globe,
-                step: "01",
-                title: "Collect",
-                desc: "Automatically collect views, mentions, and engagement metrics from YouTube · X · TikTok and more.",
+                icon: Users,
+                title: "Star DB · 600+ 아티스트",
+                tag: "Asset",
+                desc: "그룹·멤버·소셜핸들 매핑. 콘텐츠 → 아티스트 식별 정확도가 모든 분석의 기반.",
               },
               {
                 icon: Layers,
-                step: "02",
-                title: "Normalize",
-                desc: "Normalize platform-specific scale differences to a common baseline.",
+                title: "Multi-source 7+ 채널",
+                tag: "Coverage",
+                desc: "Naver News · YouTube · TikTok · Instagram · Spotify · Reddit · 커머스. 단일 플랫폼 봇·왜곡 면역.",
               },
               {
-                icon: Activity,
-                step: "03",
-                title: "Weight & Sum",
-                desc: "Calculate FES using multi-source weights across Energy, Buzz, and YouTube.",
+                icon: BarChart3,
+                title: "24장 큐레이션 알고리즘",
+                tag: "Precision",
+                desc: "engagement × freshness × per-artist cap × 4-layer dedup (썸네일 fingerprint, 같은 날짜+아티스트, Jaccard 토큰, off-topic 해시태그). 사람 손 안 댄 일관 필터링.",
               },
               {
                 icon: TrendingUp,
-                step: "04",
-                title: "Momentum",
-                desc: "Determine acceleration and trend direction from 24h / 7d change rates.",
+                title: "Cohort Percentile 정산",
+                tag: "Stable",
+                desc: "drop_date+region 단위 코호트, 상위 30% = hit. 절대 기준 아닌 상대평가 → market noise 면역, hit rate 안정.",
               },
-            ].map((item, i) => (
-              <div
-                key={item.step}
-                className="relative bg-card/60 border border-border/50 rounded-2xl p-6 hover:border-primary/30 transition-all group"
-              >
-                <span className="absolute top-4 right-4 text-xs font-mono text-primary/40 group-hover:text-primary/70 transition-colors">
-                  {item.step}
-                </span>
-                <item.icon className="w-8 h-8 text-primary/70 mb-4" />
-                <h3 className="text-foreground font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ───── 3. VISUALIZATION ───── */}
-      <Section id="viz">
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-16">
-            <SectionTag>
-              <Eye className="w-3.5 h-3.5" /> Visualization
-            </SectionTag>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              Read Firepower through{" "}
-              <span className="text-primary">Velocity</span> &{" "}
-              <span className="text-primary">Density</span>
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Not just numbers — an energy map you can feel at a glance.
-              Area = energy, color = trend, neon = explosion.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-8 overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-[80px]" />
-              <h3 className="text-foreground font-bold text-xl mb-3 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" /> Energy Treemap
-              </h3>
-              <p className="text-muted-foreground text-sm mb-6">
-                Top artists placed by area proportion. Neon glow on ≥25% surge.
-              </p>
-              <div className="grid grid-cols-4 grid-rows-3 gap-1.5 h-40">
-                <div className="col-span-2 row-span-2 rounded-lg bg-red-500/30 border border-red-500/40 flex items-center justify-center text-xs font-bold text-red-300 shadow-[0_0_12px_hsl(0_80%_50%/0.3)]">BTS</div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">aespa</div>
-                <div className="col-span-1 row-span-2 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-[10px] font-bold text-red-300">IVE</div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-blue-300">LE SSE..</div>
-                <div className="col-span-2 row-span-1 rounded-lg bg-green-500/15 border border-green-500/25 flex items-center justify-center text-[10px] font-bold text-green-300">BLACKPINK</div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-[10px] font-bold text-blue-300">NCT</div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">SKZ</div>
-              </div>
-            </div>
-
-            <div className="space-y-5 flex flex-col justify-center">
-              {[
-                { color: "bg-red-500", label: "Surging (≥15%)", desc: "Energy accelerating fast. Comeback, viral, or major event detected." },
-                { color: "bg-green-500", label: "Stable (≥0%)", desc: "Steady fandom activity keeping energy solidly maintained." },
-                { color: "bg-blue-500", label: "Declining (<0%)", desc: "Activity decrease or natural decay. Rebound expected on next activity." },
-                { color: "bg-red-500 shadow-[0_0_12px_hsl(0_80%_50%/0.5)]", label: "Neon Burst (≥25%)", desc: "Extreme surge. Glow effect provides immediate visual alert." },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-4">
-                  <div className={`w-4 h-4 rounded-sm mt-1 shrink-0 ${item.color}`} />
-                  <div>
-                    <div className="text-foreground font-semibold text-sm">{item.label}</div>
-                    <div className="text-muted-foreground text-sm">{item.desc}</div>
+              {
+                icon: Activity,
+                title: "사용자 ×N 강도 시그널",
+                tag: "Edge",
+                desc: "베팅 강도가 confidence 지표로 누적. 단순 view보다 \"사전 예측 확신도\" — 가장 강력한 leading indicator.",
+              },
+              {
+                icon: Calendar,
+                title: "지속 시계열 데이터",
+                tag: "Asset",
+                desc: "engagement_score 일일 cron 업데이트 누적. day-7 / 14 / 21 / 30 trajectory 자동 추적 가능 (인프라 보유).",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl bg-card/60 border border-border/50 p-6 hover:border-primary/30 transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 grid place-items-center shrink-0">
+                    <item.icon className="w-5 h-5 text-primary" />
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <BoxParticles count={40} color="hsl(11, 100%, 46%)" />
-              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> Live Change Rate
-              </h3>
-              <div className="space-y-2.5">
-                {[
-                  { rank: 1, name: "BTS", score: "9,420", change: "+18.3%", up: true },
-                  { rank: 2, name: "aespa", score: "8,150", change: "+5.1%", up: true },
-                  { rank: 3, name: "IVE", score: "7,830", change: "+12.7%", up: true },
-                  { rank: 4, name: "BLACKPINK", score: "6,920", change: "+1.2%", up: true },
-                  { rank: 5, name: "NCT", score: "5,410", change: "-3.4%", up: false },
-                ].map((a) => (
-                  <div key={a.rank} className="flex items-center gap-3 py-1.5">
-                    <span className={`text-xs font-black w-5 text-center ${a.rank <= 3 ? "text-primary" : "text-muted-foreground"}`}>
-                      {a.rank}
-                    </span>
-                    <span className="text-foreground text-sm font-medium flex-1 truncate">{a.name}</span>
-                    <span className="text-muted-foreground text-xs tabular-nums">{a.score}</span>
-                    <span className={`text-xs font-semibold tabular-nums ${a.up ? "text-red-400" : "text-blue-400"}`}>
-                      {a.change}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <BoxParticles count={28} color="hsl(11, 100%, 46%)" />
-              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" /> Momentum
-              </h3>
-              <p className="text-muted-foreground text-xs mb-4">24h energy change rate trend</p>
-              <div className="relative h-28">
-                <svg viewBox="0 0 200 80" className="w-full h-full" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="momentumGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(11 100% 46%)" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="hsl(11 100% 46%)" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15" fill="none" stroke="hsl(11 100% 46%)" strokeWidth="2" />
-                  <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15 L200,80 L0,80 Z" fill="url(#momentumGrad)" />
-                </svg>
-                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-muted-foreground px-1">
-                  <span>-24h</span><span>-12h</span><span>Now</span>
-                </div>
-              </div>
-              <div className="mt-3 text-center">
-                <span className="text-primary font-bold text-lg">+18.3%</span>
-                <span className="text-muted-foreground text-xs ml-1">Accelerating</span>
-              </div>
-            </div>
-
-            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <BoxParticles count={18} color="hsl(11, 100%, 46%)" />
-              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-primary" /> FES Density
-              </h3>
-              <p className="text-muted-foreground text-xs mb-4">Artist density by score range</p>
-              <div className="flex items-end gap-2 h-28">
-                {[
-                  { h: "20%", label: "2K", count: 8 },
-                  { h: "35%", label: "4K", count: 15 },
-                  { h: "65%", label: "6K", count: 32 },
-                  { h: "100%", label: "8K", count: 45 },
-                  { h: "80%", label: "9K+", count: 12 },
-                ].map((bar) => (
-                  <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[9px] text-muted-foreground">{bar.count}</span>
-                    <div
-                      className="w-full rounded-t-md bg-gradient-to-t from-primary/40 to-primary/80 transition-all"
-                      style={{ height: bar.h }}
-                    />
-                    <span className="text-[9px] text-muted-foreground">{bar.label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 text-center">
-                <span className="text-foreground font-bold text-sm">8K–9K range most dense</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ───── 4. MERITS ───── */}
-      <Section id="merits">
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-16">
-            <SectionTag>
-              <Sparkles className="w-3.5 h-3.5" /> Why K-TRENZ
-            </SectionTag>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              A <span className="text-primary">whole new dimension</span> beyond charts
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5">
-            <FeatureCard
-              icon={Zap}
-              title="Real-Time Momentum"
-              desc="Not weekly or monthly aggregates — we track energy flow in real time, second by second."
-              accent
-            />
-            <FeatureCard
-              icon={Layers}
-              title="Multi-Source Fusion"
-              desc="YouTube, X, TikTok and more fused into a single unbiased composite score."
-            />
-            <FeatureCard
-              icon={Target}
-              title="AI Personal Assistant"
-              desc="An agent that auto-briefs you on your artist's live firepower changes and optimal streaming strategy."
-            />
-            <FeatureCard
-              icon={Eye}
-              title="Intuitive Visualization"
-              desc="Treemaps, sparklines, and energy charts let you read complex data at a glance."
-            />
-            <FeatureCard
-              icon={Shield}
-              title="Transparent Data"
-              desc="All scoring criteria and change history are public. A fair playing field for fandoms."
-              accent
-            />
-            <FeatureCard
-              icon={Radio}
-              title="Streaming Strategy"
-              desc="AI generates optimal streaming strategies per artist in real time. Maximize fan activity efficiency."
-            />
-          </div>
-        </div>
-      </Section>
-
-      {/* ───── 5. AI WEAPON ───── */}
-      <Section id="weapon">
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-16">
-            <SectionTag>
-              <Wand2 className="w-3.5 h-3.5" /> Magic Wand
-            </SectionTag>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              A Powerful
-              <br />
-              <span className="text-primary">Magic Wand</span> for Fans
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              The AI agent is not just a chatbot.
-              <br />
-              It's a fan-exclusive <strong className="text-foreground">strategic weapon</strong> armed with real-time data.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              {
-                icon: "🔍",
-                title: "Live Firepower Recon",
-                desc: "Get real-time briefings on your artist's FES score, ranking, and energy changes.",
-              },
-              {
-                icon: "📋",
-                title: "Streaming Battle Plan",
-                desc: "AI analyzes platform weights to suggest the most efficient streaming order and strategy.",
-              },
-              {
-                icon: "🎯",
-                title: "Watchlist Management",
-                desc: "\"Add BTS\" — one sentence to register. Manage everything with natural language.",
-              },
-              {
-                icon: "📊",
-                title: "Instant Ranking Cards",
-                desc: "One quick button to view live TOP rankings as inline cards.",
-              },
-              {
-                icon: "⚡",
-                title: "Trend Change Detection",
-                desc: "The agent auto-detects surges and drops and alerts you immediately.",
-              },
-              {
-                icon: "🤖",
-                title: "24/7 Standby",
-                desc: "Ask anytime, get instant responses. A fan activity partner that never sleeps.",
-              },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className={`relative bg-card/60 border rounded-2xl p-6 hover:-translate-y-1 transition-all duration-300 ${
-                  i === 0
-                    ? "border-primary/30 hover:border-primary/50 hover:shadow-[0_0_30px_hsl(11_100%_46%/0.15)]"
-                    : "border-border/50 hover:border-primary/30"
-                }`}
-              >
-                <div className="text-3xl mb-4">{item.icon}</div>
-                <h3 className="text-foreground font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border text-sm text-muted-foreground">
-              <Wand2 className="w-4 h-4 text-primary" />
-              Data + AI = The Fan's <strong className="text-foreground">Ultimate Weapon</strong>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ───── 6. AI AGENT ───── */}
-      <Section id="agent">
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <SectionTag>
-                <Bot className="w-3.5 h-3.5" /> Fan Agent
-              </SectionTag>
-              <h2 className="text-3xl md:text-5xl font-black mb-6">
-                An AI <span className="text-primary">Agent</span>
-                <br />
-                to Power Your Fandom
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Register your favorite artists and let AI handle real-time briefings,
-                ranking change alerts, and streaming strategies.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  "Register & manage artists with natural language",
-                  "FES-based real-time trend briefings",
-                  "Personalized streaming optimization guide",
-                  "Instant ranking cards via quick buttons",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-foreground">
-                    <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                      <Zap className="w-3 h-3 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-base">{item.title}</h3>
+                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                        {item.tag}
+                      </span>
                     </div>
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="bg-card/80 border border-border/50 rounded-2xl p-5 space-y-3 shadow-[0_0_40px_hsl(11_100%_46%/0.06)]">
-              <div className="flex items-center gap-2 pb-3 border-b border-border/40 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-foreground font-bold text-sm">K-TRENZ Agent</span>
-                <span className="ml-auto w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              </div>
-              {[
-                { role: "user", text: "How's BTS doing right now?" },
-                {
-                  role: "agent",
-                  text: "🔥 BTS current FES 9,420 — Energy +18.3% surging! Spotify streaming is exploding with comeback effect.",
-                },
-                { role: "user", text: "Plan a streaming strategy" },
-                {
-                  role: "agent",
-                  text: "📋 I recommend streaming Dynamite → Butter → Spring Day in 3 rotations. Spotify weight is currently highest for maximum efficiency.",
-                },
-              ].map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-primary/15 text-foreground rounded-br-md"
-                        : "bg-secondary text-secondary-foreground rounded-bl-md"
-                    }`}
-                  >
-                    {msg.text}
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ───── 7. KEY FEATURES ───── */}
-      <Section id="features">
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-16">
-            <SectionTag>
-              <Sparkles className="w-3.5 h-3.5" /> Key Features
-            </SectionTag>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              Key <span className="text-primary">Features</span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { icon: Flame, title: "Live FES Rankings", desc: "Real-time Fan Energy Score rankings and change tracking per artist." },
-              { icon: BarChart3, title: "Energy Treemap", desc: "Area = energy, color = trend. See the entire market in one screen." },
-              { icon: Music, title: "Streaming Guide", desc: "AI generates optimal streaming strategies per artist in real time." },
-              { icon: Wand2, title: "AI Magic Wand", desc: "Agent armed with real-time data to maximize your fan activity efficiency." },
-              { icon: Bot, title: "Fan Agent Bot", desc: "AI that communicates in natural language. Artist briefings & strategy delivery." },
-              { icon: Users, title: "Fandom Community", desc: "Wiki, posts, challenges, DMs — an integrated space for fan activities." },
-            ].map((f, i) => (
-              <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} accent={i === 0} />
+              </div>
             ))}
           </div>
         </div>
       </Section>
 
-      {/* ───── 8. Team ───── */}
-      <Section id="team">
+      {/* ───── 4.5 PREDICTION LAYERS — 7일 게임 / 30일 인사이트 ───── */}
+      <Section id="layers">
         <div className="max-w-5xl mx-auto w-full">
-          <div className="text-center mb-12 md:mb-16">
-            <SectionTag>
-              <Users className="w-3.5 h-3.5" /> Team
-            </SectionTag>
+          <div className="text-center mb-14">
+            <SectionTag><LineChart className="w-3.5 h-3.5" /> Prediction Layers</SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              Where K-Pop Insiders <br className="hidden md:inline" />
-              Meet <span className="text-primary">Web3 Builders</span>
+              7일 <span className="text-primary">게임</span> / 30일 <span className="text-primary">인사이트</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              사용자 게임은 7일 코호트로 빠르게 돌지만, 그 데이터가 곧바로 30일 모멘텀으로 누적됩니다.
+              <br className="hidden md:block" />
+              4번의 7일 cohort가 한 달 단위 fidelity를 검증.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-border/50 bg-card/60">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="text-left p-4 font-semibold">Layer</th>
+                  <th className="text-left p-4 font-semibold">주기</th>
+                  <th className="text-left p-4 font-semibold">출력</th>
+                  <th className="text-left p-4 font-semibold">대상</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                <tr>
+                  <td className="p-4 font-bold">Discover 게임</td>
+                  <td className="p-4 text-muted-foreground">7일</td>
+                  <td className="p-4 text-muted-foreground">hit/miss · K-Cash</td>
+                  <td className="p-4"><span className="text-primary font-semibold">사용자</span></td>
+                </tr>
+                <tr>
+                  <td className="p-4 font-bold">Trajectory 추적</td>
+                  <td className="p-4 text-muted-foreground">7→14→21→30일</td>
+                  <td className="p-4 text-muted-foreground">지속성 % (flash vs sustained)</td>
+                  <td className="p-4 text-muted-foreground">내부 검증</td>
+                </tr>
+                <tr className="bg-primary/[0.03]">
+                  <td className="p-4 font-bold">Rolling 30-day 모멘텀</td>
+                  <td className="p-4 text-muted-foreground">30일 sliding</td>
+                  <td className="p-4 font-semibold">아티스트·키워드별 모멘텀 점수</td>
+                  <td className="p-4"><span className="text-primary font-semibold">B2B (라벨·브랜드)</span></td>
+                </tr>
+                <tr className="bg-primary/[0.03]">
+                  <td className="p-4 font-bold">Weekly 리포트</td>
+                  <td className="p-4 text-muted-foreground">주 1회</td>
+                  <td className="p-4 font-semibold">Top 10 떠오르는 아티스트 + 키워드 클러스터</td>
+                  <td className="p-4"><span className="text-primary font-semibold">B2B 구독</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-4">
+            인프라 (engagement_score 일일 cron · vouches 영구 저장 · resolution 스냅샷) 이미 보유 — 집계만 추가.
+          </p>
+        </div>
+      </Section>
+
+      {/* ───── 5. B2B BUSINESS MODEL ───── */}
+      <Section id="b2b" className="bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><Briefcase className="w-3.5 h-3.5" /> Business Model</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              Trend Intelligence <span className="text-primary">as a Service</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              사용자 게임이 데이터를 만들고, 그 데이터를 4가지 트랙으로 판매합니다.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {[
+              {
+                icon: Building2,
+                track: "Track 1",
+                client: "엔터테인먼트 / 라벨",
+                clientNote: "HYBE · SM · JYP · YG급",
+                product: "Predictive Dashboard",
+                products: [
+                  "다음 30일 뜰 아티스트·콘텐츠 예측",
+                  "컴백 타이밍 시뮬레이터",
+                  "글로벌 마케팅 예산 ROI 모델",
+                ],
+                price: "월 $5K~$50K 구독",
+                priceNote: "회사 규모별 tier",
+              },
+              {
+                icon: Megaphone,
+                track: "Track 2",
+                client: "브랜드 / 광고주",
+                clientNote: "코카콜라 · 삼성 · 현대 등",
+                product: "Quarterly Trend Report",
+                products: [
+                  "30일 후 글로벌 모멘텀 예상 아티스트 TOP 10",
+                  "사전 모델 콜라보 매칭",
+                  "캠페인 timing + 예산 모델",
+                ],
+                price: "분기 리포트당 $20K",
+                priceNote: "+ 캠페인 분석 add-on",
+              },
+              {
+                icon: Users,
+                track: "Track 3",
+                client: "A&R / 에이전시",
+                clientNote: "신인 발굴 · 트레이닝",
+                product: "Talent API + Momentum Tracker",
+                products: [
+                  "신인·트레이닝 후보 발굴",
+                  "아티스트별 모멘텀 알람",
+                  "Raw API 직접 연동",
+                ],
+                price: "월 $1K~$5K",
+                priceNote: "API volume tier",
+              },
+              {
+                icon: Newspaper,
+                track: "Track 4",
+                client: "미디어 / 콘텐츠 제작",
+                clientNote: "Dispatch · 1theK · 유튜버",
+                product: "Topic Priority Dashboard",
+                products: [
+                  "다음 화제거리 우선순위",
+                  "키워드 모멘텀 알림",
+                  "콘텐츠 제작 sequence",
+                ],
+                price: "월 $500~$2K",
+                priceNote: "SaaS subscription",
+              },
+            ].map((t) => (
+              <div key={t.track} className="rounded-2xl bg-card/60 border border-border/50 p-6 hover:border-primary/30 transition-all">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 grid place-items-center shrink-0">
+                    <t.icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-primary mb-1">{t.track}</div>
+                    <h3 className="font-bold text-lg leading-tight">{t.client}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t.clientNote}</p>
+                  </div>
+                </div>
+
+                <div className="text-sm font-bold text-foreground mb-2">{t.product}</div>
+                <ul className="space-y-1.5 mb-4">
+                  {t.products.map((p) => (
+                    <li key={p} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-primary mt-1.5">▸</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pt-3 border-t border-border/30">
+                  <div className="text-base font-black text-primary">{t.price}</div>
+                  <div className="text-[11px] text-muted-foreground">{t.priceNote}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 6. WHY US — Comparison ───── */}
+      <Section id="differentiation">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><ShieldCheck className="w-3.5 h-3.5" /> Why Us</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              우리만 할 수 있는 <span className="text-primary">4가지</span>
+            </h2>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-border/50 bg-card/60">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="text-left p-4 font-semibold"></th>
+                  <th className="text-center p-4 font-semibold text-primary">KTrenZ</th>
+                  <th className="text-center p-4 font-semibold">Spotify Trends</th>
+                  <th className="text-center p-4 font-semibold">Twitter Trending</th>
+                  <th className="text-center p-4 font-semibold">Stan Twitter</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {[
+                  { feature: "사전 예측 (7일 전)", ktrenz: "✓", spotify: "—", twitter: "—", stan: "—" },
+                  { feature: "Multi-source (7+)", ktrenz: "✓", spotify: "Spotify only", twitter: "Twitter only", stan: "—" },
+                  { feature: "K-pop 특화 Star DB", ktrenz: "✓ 600+", spotify: "—", twitter: "—", stan: "비정량" },
+                  { feature: "정량 시그널 (cohort %ile)", ktrenz: "✓", spotify: "—", twitter: "—", stan: "—" },
+                  { feature: "B2B API", ktrenz: "✓ planned", spotify: "—", twitter: "—", stan: "—" },
+                ].map((r) => (
+                  <tr key={r.feature}>
+                    <td className="p-4 font-semibold">{r.feature}</td>
+                    <td className="p-4 text-center text-primary font-bold">{r.ktrenz}</td>
+                    <td className="p-4 text-center text-muted-foreground">{r.spotify}</td>
+                    <td className="p-4 text-center text-muted-foreground">{r.twitter}</td>
+                    <td className="p-4 text-center text-muted-foreground">{r.stan}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 7. TRACTION ───── */}
+      <Section id="traction" className="bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><TrendingUp className="w-3.5 h-3.5" /> Traction</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              <span className="text-primary">P10 라이브</span> 직후 — 진행 중
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {[
+              { done: true, title: "P10 라이브 (2026-05-10)", note: "/ 기본 home = Discover" },
+              { done: true, title: "Star DB 600+ 아티스트", note: "그룹·멤버·소셜핸들 매핑 완료" },
+              { done: true, title: "일일 cron 7개 소스 자동 수집", note: "24장 큐레이션 + 4-layer dedup" },
+              { done: true, title: "K-Cash 통합 wallet", note: "Battle + H1 같은 지갑" },
+              { done: true, title: "Spotify Premium 교환", note: "10,000 💎 = 1개월" },
+              { done: false, title: "B2B Pilot 5건 (Q2~Q3)", note: "라벨·에이전시 컨택 진행 중" },
+              { done: false, title: "Predictive Dashboard MVP (Q3)", note: "30일 모멘텀 + Trajectory" },
+              { done: false, title: "첫 라벨급 paid customer (Q4)", note: "HYBE/SM 중 1 목표" },
+            ].map((m) => (
+              <div key={m.title} className={`rounded-xl border p-4 flex items-start gap-3 ${m.done ? "bg-primary/5 border-primary/30" : "bg-card/60 border-border/50"}`}>
+                <div className={`mt-0.5 w-5 h-5 rounded-full grid place-items-center shrink-0 ${m.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  {m.done ? "✓" : "·"}
+                </div>
+                <div>
+                  <div className="text-sm font-bold">{m.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{m.note}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 8. ROADMAP ───── */}
+      <Section id="roadmap">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><Calendar className="w-3.5 h-3.5" /> Roadmap</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              12개월 <span className="text-primary">실행 플랜</span>
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                phase: "Q2 — 검증",
+                year: "2026",
+                items: ["B2B pilot 5건 가계약", "Predictive Dashboard MVP", "데이터 정확도 검증 (day-7/30 hit rate)"],
+              },
+              {
+                phase: "Q3 — 영업 본격화",
+                year: "2026",
+                items: ["Trajectory + 30일 모멘텀 production", "Weekly auto-report 발송 시스템", "첫 paid pilot 1건 close"],
+              },
+              {
+                phase: "Q4 — 첫 메이저",
+                year: "2026",
+                items: ["HYBE/SM/JYP 중 1개 customer 계약", "API 베타 (Track 3 클라이언트 5팀)", "분기 리포트 (Track 2) 정기 발송"],
+              },
+              {
+                phase: "Q1 — 글로벌 확장",
+                year: "2027",
+                items: ["동남아·일본 시장 (Star DB 1000+)", "Multi-region cohort", "Series A 펀딩"],
+              },
+            ].map((p) => (
+              <div key={p.phase} className="rounded-2xl border border-border/50 bg-card/60 p-6">
+                <div className="flex items-baseline gap-3 mb-3">
+                  <h3 className="text-lg md:text-xl font-black">{p.phase}</h3>
+                  <span className="text-xs font-bold text-primary">{p.year}</span>
+                </div>
+                <ul className="space-y-1.5">
+                  {p.items.map((it) => (
+                    <li key={it} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <ArrowRight className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 9. TEAM ───── */}
+      <Section id="team" className="bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-14">
+            <SectionTag><Users className="w-3.5 h-3.5" /> Team</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              K-pop 인사이더 + <span className="text-primary">데이터 엔지니어링</span>
             </h2>
           </div>
 
@@ -619,37 +587,33 @@ export default function PitchDeck() {
                 name: "Han Kim",
                 role: "CEO",
                 img: ceoHanKim,
-                bio: ["Platform Industry Veteran", "Smart Contract Specialist &", "Full-Stack Developer"],
+                bio: ["플랫폼 산업 베테랑", "스마트 컨트랙트 스페셜리스트", "풀스택 개발자"],
                 linkedin: "https://www.linkedin.com/in/han-seok-kim-0057121aa/",
               },
               {
                 name: "Chris Lee",
                 role: "CFO",
                 img: cfoChrisLee,
-                bio: ["Strategy Lead", "Platform Architecture &", "Financial Design Expert"],
+                bio: ["전략 리드", "플랫폼 아키텍처 &", "재무 설계 전문가"],
                 linkedin: "https://www.linkedin.com/in/chris-lee-73a4a74/",
               },
               {
                 name: "William Yang",
                 role: "COO",
                 img: cooWilliamYang,
-                bio: ["Community", "Fandom Network Specialist", "K-Culture Expert"],
+                bio: ["커뮤니티", "팬덤 네트워크 스페셜리스트", "K-Culture Expert"],
                 linkedin: "https://www.linkedin.com/in/william-yang-vim/",
               },
             ].map((m) => (
               <div
                 key={m.name}
-                className="rounded-2xl bg-card/60 border border-border/50 p-6 md:p-7 flex flex-col items-center"
+                className="rounded-2xl bg-card/60 border border-border/50 p-6 flex flex-col items-center"
               >
                 <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden mb-4 ring-2 ring-primary/30">
                   <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
                 </div>
-                <h3 className="text-lg md:text-xl font-bold text-foreground text-center mb-1">
-                  {m.name}
-                </h3>
-                <p className="text-primary font-semibold text-sm md:text-base text-center mb-3">
-                  {m.role}
-                </p>
+                <h3 className="text-lg md:text-xl font-bold text-foreground text-center mb-1">{m.name}</h3>
+                <p className="text-primary font-semibold text-sm md:text-base text-center mb-3">{m.role}</p>
                 <p className="text-xs md:text-sm text-muted-foreground text-center leading-relaxed">
                   {m.bio.map((line, i) => (
                     <span key={i}>
@@ -665,62 +629,43 @@ export default function PitchDeck() {
                   className="inline-flex items-center gap-1.5 mt-4 text-xs md:text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   <Linkedin className="w-4 h-4" />
-                  <span>LinkedIn</span>
+                  LinkedIn
                 </a>
               </div>
             ))}
           </div>
-
-          <p className="text-center text-xs md:text-sm text-muted-foreground mt-10">
-            Get in touch:{" "}
-            <a
-              href="mailto:manager@k-trendz.com"
-              className="text-primary hover:underline font-semibold"
-            >
-              manager@k-trendz.com
-            </a>
-          </p>
         </div>
       </Section>
 
-      {/* ───── 9. CTA ───── */}
+      {/* ───── 10. CTA ───── */}
       <Section id="cta">
-        <div className="relative max-w-3xl mx-auto text-center z-10">
-          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[140px]" />
-          </div>
-
-          <div className="text-6xl mb-6">🔥</div>
-          <h2 className="text-3xl md:text-5xl font-black mb-6">
-            Check the
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
+            다음 K-pop 트렌드를
             <br />
-            <span className="text-primary">Live Firepower</span> Right Now
+            <span className="bg-gradient-to-r from-primary via-orange-400 to-amber-400 bg-clip-text text-transparent">
+              먼저 알고 싶으시면
+            </span>
           </h2>
-          <p className="text-muted-foreground text-lg mb-10 max-w-lg mx-auto">
-            The energy dashboard no K-Pop fan can miss.
-            <br />
-            See where your artist stands right now.
+          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto">
+            팬덤은 ktrenz.com에서. B2B는 직접 문의 부탁드립니다.
           </p>
-
           <div className="flex flex-wrap justify-center gap-4">
             <button
               onClick={() => navigate("/")}
-              className="group px-10 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg hover:brightness-110 transition-all shadow-[0_0_30px_hsl(11_100%_46%/0.35)] flex items-center gap-2"
+              className="px-8 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:brightness-110 transition-all shadow-[0_0_20px_hsl(11_100%_46%/0.3)]"
             >
-              Live Dashboard
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              라운드 열기
             </button>
-            <button
-              onClick={() => navigate("/agent")}
-              className="px-10 py-4 rounded-xl bg-card text-foreground font-bold text-lg hover:bg-secondary transition-all border border-border flex items-center gap-2"
+            <a
+              href="mailto:hello@ktrenz.com?subject=B2B Trend Intelligence 문의"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-secondary text-secondary-foreground font-bold text-base hover:bg-secondary/80 transition-all border border-border"
             >
-              <Bot className="w-5 h-5" />
-              Start Agent
-            </button>
+              B2B 문의 <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
-
-          <p className="text-muted-foreground text-xs mt-16">
-            © 2026 K-TRENZ. Built for K-Pop fans, by fans.
+          <p className="text-xs text-muted-foreground mt-12">
+            KTrenZ · © 2026 · Discover (h1) v2 라이브
           </p>
         </div>
       </Section>

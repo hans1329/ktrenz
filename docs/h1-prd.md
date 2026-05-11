@@ -1,10 +1,35 @@
 # Discover (h1) — Product Requirements Document
 
-**Status**: Draft v1 (2026-05-08)
+**Status**: v2 (2026-05-10) — game-model pivot applied & shipped
 **Owner**: Han Kim (CEO), Z (CTO)
 **Codename**: h1 — internal name for the Discover pivot
-**Public name**: Discover (working)
+**Public name**: Discover (working) — surface label "라운드" (KO) / "Round" (EN)
 **1-pager precedent**: [docs/discover_game_mechanics.md](./discover_game_mechanics.md)
+
+---
+
+## Revision history
+
+### v2 (2026-05-10) — snap-judgment + multi-round editing
+Operating philosophy reframed: trend prediction is snap judgment, not observation. Time-decay early-bird bonus removed. Users now edit picks any day until resolution. Round terminology adopted (KO).
+
+| Area | v1 | v2 |
+|---|---|---|
+| Drop size | N = 10 | **N = 24** (matches client `DROP_SIZE` constant) |
+| Quota | 30% of 10 = 3 | 30% of 24 = 7 (= daily slot cap) |
+| Confidence display | "Low/Mid/High" | **×1 / ×2 / ×4** (multiplier as primary chrome; Hunch/Pick/Lock as Help-only labels) |
+| Slot caps | none | **×1: 1/day · ×2: 4/day · ×4: 2/day** (7 actions/day total) |
+| Time decay | ×3.0 (h0-24), ×1.0 (24-72), ×0.3 (72-168) | **removed** — all bets paid the same regardless of timing |
+| Editing window | Day-1 only (effective implementation bug) | **Editable any day until resolution**, across all open rounds |
+| Mid/×2, High/×4 prerequisite | none | requires K-Cash balance > 0 (×1 always free) |
+| Daily drip | none | **+10 K-Cash/day** if user voucher activity yesterday |
+| Welcome stake | none (H1) | **1000 K-Cash** from Battle welcome bonus (shared wallet) |
+| Wallet | per-vouch K-Cash row only, never aggregated | resolves write to `ktrenz_point_transactions` ledger; balance auto-floors at 0 |
+| Off-topic filter | none | scraper-side hashtag deny-list + 4-layer cohort dedup at curate (thumb fingerprint, star+date, Jaccard ≥ 0.3, per-artist cap 2) |
+| Confirm dialog | n/a | new — preview win/miss K-Cash + slot impact + resolution date before commit |
+
+### v1 (2026-05-08) — initial PRD
+See sections below; semantics still authoritative where v2 didn't supersede.
 
 ---
 
@@ -34,7 +59,8 @@ KTrenZ's current product (Battle) gates global growth on three friction points:
 - Building a recommendation engine. Today's Drop is a curated daily set; personalization is v2.
 - Live video playback inside the app. We deep-link to source platforms.
 - Social features beyond share — no comments, no follows, no DMs.
-- Multi-day prediction markets. Each card resolves on a fixed window (default 7d).
+- Continuous (slider) confidence — locked to 3 discrete tiers (×1/×2/×4).
+- ~~Multi-day prediction markets~~ — superseded in v2: rounds remain editable across the 7-day resolution window, multiple rounds open concurrently.
 
 ---
 
@@ -54,7 +80,7 @@ KTrenZ's current product (Battle) gates global growth on three friction points:
 ### Daily flow (60 sec target)
 
 1. User opens `/h1` (or `ktrenz.com` once promoted to default).
-2. **Today's Drop** is a curated set of N=10 contents released at one fixed time per region cluster.
+2. **Today's Round** is a curated set of N=**24** contents released at one fixed time per region cluster.
 3. For each card the user can:
    - **Vouch (Low / Mid / High)** — confidence-tiered prediction "this will go viral"
    - **Pass** — implicit, by scrolling/swiping past without vouching
@@ -75,38 +101,46 @@ KTrenZ's current product (Battle) gates global growth on three friction points:
 The biggest design risk is **degenerate strategies that produce no signal**: skip-only, only-vouch-the-already-viral, vouch-everything-at-low-confidence. Four layered rules guard against each:
 
 ### L1 — Daily vouch quota
-- User must vouch on **≥30% of shown cards** (default: 3 of 10) to qualify for that day's leaderboard and token mining.
+- User must vouch on **≥30% of shown cards** (default: 7 of 24) to qualify for that day's leaderboard and token mining.
 - Below quota: vouches still recorded for personal stats, but no leaderboard/mining credit.
 - **Kills**: pure-skip strategy.
 
-### L2 — Time decay
-- Vouch reward multiplied by:
-  - **Hour 0–6** of cohort: ×3.0
-  - **Hour 6–24**: ×1.0
-  - **Hour 24–168 (resolution window)**: ×0.3
-- Vouching late on an already-trending content earns minimal reward.
-- **Kills**: "wait and see what's already viral" copying behavior.
+### L2 — Daily slot caps **(v2 — replaces former Time Decay)**
+- Per-tier daily caps: **×1 = 1/day · ×2 = 4/day · ×4 = 2/day** (= 7 total actions/day).
+- A "slot" is consumed by any vouch action with `vouched_at >= today_midnight` (creating or modifying), counted across all open rounds.
+- ×2 / ×4 additionally require K-Cash balance > 0 (×1 is always free, so a broke user can climb back).
+- **Kills**: "always pick ×4" dominant-strategy degeneracy — high tier is scarce.
+- **Why time-decay was removed**: trend prediction is snap-judgment, not observation. Earlier-vouch reward bonus didn't fit the mental model and effectively never fired (record_vouch was scoped to `current_date` only, so all bets coincidentally got the day-1 multiplier).
 
 ### L3 — Asymmetric reward
-- **Vouch hit**: `+confidence_weight × time_decay × cohort_difficulty`
-- **Vouch miss**: `−0.5 × confidence_weight × time_decay`
-- **Pass (scroll past)**: 0
-- The miss penalty is meaningful but smaller than the hit reward — **calibrated bold play wins**.
+- `final_score = confidence_weight × outcome_mult` where `outcome_mult = +1.0 (hit)` / `−0.5 (miss)`.
+- `k_cash = floor(final_score × 10)` — can be negative; the wallet trigger floors balance at 0 so a broke user never goes negative.
+- **Pass (scroll past)**: 0.
+- Hit and miss values per tier (decay no longer applies):
+
+  | Tier | weight | hit K-Cash | miss K-Cash |
+  |---|---|---|---|
+  | ×1 (Hunch) | 0.5 | +5  | −2 |
+  | ×2 (Pick)  | 1.0 | +10 | −5 |
+  | ×4 (Lock)  | 2.0 | +20 | −10 |
+
 - **Kills**: lazy-vouch-everything strategy.
 
-### L4 — Calibration scoring (v2 — ship +90d)
+### L4 — Calibration scoring (v3 — ship +90d)
 - Brier-style scoring: `score = 1 − (predicted_prob − actual)²` weighted by confidence.
 - High-confidence wrong calls hurt more than low-confidence wrong calls.
 - High-confidence right calls earn more than low-confidence right calls.
 - **Kills**: "vouch everything weakly" gaming.
 - **Why deferred**: needs ~90 days of data to set confidence-calibration baselines without scaring new users.
 
-### Confidence weights (v1)
-| Confidence | Hit weight | Miss penalty |
-|---|---|---|
-| Low  | +1.0 | −0.5 |
-| Mid  | +2.0 | −1.0 |
-| High | +4.0 | −2.0 |
+### Confidence weights (v2 — displayed multiplier 1/2/4)
+Internal weight × hit_mult / miss_mult, surfaced to the user as ×1, ×2, ×4 multiplier badges. The button labels (Hunch / Pick / Lock — Korean: 감 / 추천 / 강추) are kept in the Help modal only.
+
+| Display | Internal weight | Slot cap/day | Balance gate |
+|---|---|---|---|
+| ×1 | 0.5 | 1 | none (free) |
+| ×2 | 1.0 | 4 | balance > 0 |
+| ×4 | 2.0 | 2 | balance > 0 |
 
 ---
 
@@ -140,16 +174,22 @@ The biggest design risk is **degenerate strategies that produce no signal**: ski
 
 ## 7. Daily ritual
 
-### Today's Drop
-- One curated set of **N=10 contents** per region cluster, dropped at **fixed time daily**.
+### Today's Round
+- One curated set of **N=24 contents** per region cluster, dropped at **fixed time daily**.
 - Drop time (TBD pre-launch — see Open Questions): single global time vs. regional staggering.
 - Mix: 60% fresh-this-week · 30% rising-yesterday · 10% wildcards (rookies / B-side picks).
 
-### Curation algorithm v1 (server-side)
+### Curation algorithm v2 (server-side)
 - Pull recent content items from `ktrenz_b2_items` (last 72h, has_thumbnail, not naver_blog).
-- Rank by a blended score: `0.6 × engagement_score + 0.3 × velocity_24h + 0.1 × freshness`.
-- Apply per-artist cap (max 2 contents per artist) for variety.
-- Select top 10. Store as `ktrenz_h1_daily_drop` row keyed by date+region.
+- Rank by blended score: `0.7 × normalized_engagement + 0.3 × freshness_factor`.
+- **Off-topic hashtag deny-list** — drops items tagged with #jdm/#drift/#gaming/etc. (cars, gaming, gambling, sports leagues). Same list also enforced at scraper save time so bad data never enters `ktrenz_b2_items`.
+- **4-layer cross-source dedup** — walks scored items high→low, drops any that match an already-picked item via:
+  1. Same thumbnail fingerprint (host + path) — same press photo from CDN
+  2. Same `star_id` + same `published_at::date` — same news cycle
+  3. Title-token Jaccard ≥ 0.3 within same star — same event, different outlets
+  4. Per-artist cap (`PER_ARTIST_CAP = 2`) — variety
+- **Cohort cap** — both `record_vouch` lazy-create and curate-drop respect a hard 24-row ceiling per `(drop_date, region)` so the slate never inflates past 24.
+- Store as `ktrenz_h1_daily_drop` row keyed by date+region.
 
 ### Personalization (v2)
 - Personal feed weighted by user's vouch history (preferred artists, sources).
@@ -185,11 +225,14 @@ The biggest design risk is **degenerate strategies that produce no signal**: ski
 
 ## 9. Reward attribution
 
-### K-Cash (Web2, universal)
-- Per scored vouch: `K-Cash = floor(confidence × time_decay × hit/miss × 10)`
-- Daily quota met = +5 K-Cash bonus
-- 7-day vouch streak = +10 · 30-day streak = +50 + cosmetic badge
-- Watch-ad to extend daily vouch slots beyond default 10 (preserves ad revenue)
+### K-Cash (Web2, universal — v2)
+- Per scored vouch: `K-Cash = floor(confidence_weight × outcome_mult × 10)` (hit/miss values per L3 table).
+- Per-vouch K-Cash is also written to `ktrenz_point_transactions` ledger (reason `h1_hit` / `h1_miss`); the `trg_ktrenz_credit_points` trigger sums into `ktrenz_user_points.points`. Same wallet as Battle.
+- **Daily activity drip**: +10 K-Cash if user vouched at least once yesterday (lazy-claimed on H1 page open via `ktrenz_h1_claim_drip`). No drip if inactive — anti-farming.
+- **Welcome bonus**: 1000 K-Cash on first signup (existing — covers ~5 worst-case days of misses).
+- **Floor at 0**: misses are clamped against current balance; user never goes negative.
+- 7-day vouch streak = +10 · 30-day streak = +50 + cosmetic badge (deferred — not yet shipped).
+- Watch-ad to extend daily slot caps (deferred).
 
 ### $KTNZ Activity Mining (Web3, opt-in regions)
 - **No tokenomics change.** The "Activity Mining" definition broadens from "Battle pick" to "vouch on Discover OR pick on Pro Battle."
@@ -318,13 +361,18 @@ ktrenz_h1_leaderboard_daily (
 
 ## 13. Backend services / APIs
 
-### RPCs
+### RPCs (v2 current set)
 | RPC | Purpose | Caller |
 |---|---|---|
-| `ktrenz_h1_get_today_drop(region text)` | Returns today's 10 cards joined with item + star info | Client (Discover home) |
-| `ktrenz_h1_record_vouch(drop_id uuid, confidence text)` | Insert vouch, enforce uniqueness, return current quota state | Client (vouch button) |
-| `ktrenz_h1_my_history(limit int, offset int)` | Returns user's past vouches with resolution status | Client (History tab) |
-| `ktrenz_h1_leaderboard(scope text, date date)` | Returns leaderboard for daily/weekly/all-time | Client (Ranks tab) |
+| `ktrenz_h1_get_today_drop(_region text)` | Returns today's 24 cards joined with item + star info | Client (Discover home) |
+| `ktrenz_h1_record_vouch(_item_id uuid, _confidence text)` | Upsert vouch on any open round (today or past, until resolution); enforces slot caps + balance gate; lazy-creates today drop row if cohort has room | Client (any vouch action) |
+| `ktrenz_h1_my_today_vouches()` | User's vouches on today's drop, keyed by item_id (for hydration on login flip) | Client (Discover) |
+| `ktrenz_h1_my_status()` | One-shot fetch: balance + today's slot usage per tier + drip eligibility/state | Client (status hook) |
+| `ktrenz_h1_my_active_picks()` | User's vouches on non-resolved rounds, joined with current cohort rank + provisional-hit flag | Client (history / future "active picks" strip) |
+| `ktrenz_h1_my_history(_limit int, _offset int)` | User's full vouch history with resolution + interim rank | Client (History tab) |
+| `ktrenz_h1_claim_drip()` | Lazy daily +10 K-Cash if user voucher activity yesterday | Client (page mount) |
+| `ktrenz_h1_create_shared_slate(_vouches jsonb, _handle text)` | Persists a public share slate row | Client (share flow) |
+| `ktrenz_h1_slot_cap(_confidence text)` | Pure function returning the per-tier daily cap (1/4/2) | Server-side helper |
 
 ### Edge Functions
 - **`h1-curate-drop`** — daily cron at 00:00 in each region's local time. Computes today's curated drop, inserts into `ktrenz_h1_daily_drop`.
