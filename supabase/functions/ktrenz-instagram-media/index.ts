@@ -124,7 +124,12 @@ async function fetchInstagramPostByShortcode(shortcode: string, rapidApiKey: str
 type FeedCacheEntry = { ts: number; edges: any[] };
 const feedCache = new Map<string, FeedCacheEntry>();
 const FEED_TTL_MS = 5 * 60 * 1000; // IG CDN URLs typically live ~30 min; 5 min cache leaves headroom
-const DB_CACHE_TTL_MS = 25 * 60 * 1000; // DB cache TTL — slightly under IG CDN URL lifetime
+// DB cache TTL — extended 2026-05-12 from 25min to 4h. IG CDN URLs are
+// observed to live 4-6h with the signed params we get back. When a URL
+// does expire mid-playback, the client's onLoadError fires force=true and
+// refetches fresh — so the trade-off is "most users hit instant DB cache"
+// vs "few unlucky users see one 2-5s reload."
+const DB_CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

@@ -2187,6 +2187,45 @@ export default function H1Discover() {
     void import("./Settings");
   }, []);
 
+  // Background prefetch IG media for today's IG cards. By the time the
+  // user opens a detail drawer, the in-memory + localStorage caches are
+  // already warm so playback starts instantly instead of waiting on the
+  // 2-5s RapidAPI roundtrip. Fire-and-forget, idempotent — the resolver
+  // edge function dedupes via DB cache.
+  useEffect(() => {
+    if (cards.length === 0) return;
+    const igCards = cards.filter((c) => c.source === "instagram" && c.starId && c.url);
+    if (igCards.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (const c of igCards) {
+        if (cancelled) return;
+        if (igMediaCache.has(c.id)) continue;
+        const persisted = readIgCache(c.id);
+        if (persisted) {
+          igMediaCache.set(c.id, persisted);
+          continue;
+        }
+        try {
+          const { data } = await supabase.functions.invoke("ktrenz-instagram-media", {
+            body: { star_id: c.starId, item_url: c.url, item_id: c.id },
+          });
+          if (cancelled) return;
+          const list = Array.isArray((data as any)?.items)
+            ? ((data as any).items as any[]).filter((e) => e?.type && e?.url) as IgMedia[]
+            : [];
+          if (list.length > 0) {
+            igMediaCache.set(c.id, list);
+            writeIgCache(c.id, list);
+          }
+        } catch { /* ignore individual prefetch failures */ }
+        // Light throttle so we don't burst-fire >5 concurrent RapidAPI calls
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [cards]);
+
   // Auth change handler:
   //   - logout (user.id → undefined): clear in-memory state to anon's storage
   //   - login change (different user.id): swap state to the new user's
