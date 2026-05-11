@@ -1044,12 +1044,15 @@ function DetailDrawer({
                 {card.title}
               </h3>
 
-              {/* "Buzz now" 일시 숨김 — engagement_score가 per-item이 아니라
-                  per-artist 집계라 같은 아티스트 카드들이 동일 숫자(62 등)로
-                  표시되는 문제. content-search가 TikTok/IG는 per-item으로
-                  넘어왔지만 YouTube/Reddit/Naver는 아직 per-item 신호 미수집.
-                  정확한 신호 들어오면 grid-cols-2 복원. */}
-              <div className="mb-4">
+              {/* per-item engagement_score 백필 후 재노출 (2026-05-11).
+                  source별 단위가 달라서 (YT views / TT plays / IG likes /
+                  Reddit·Naver fallback) 라벨은 "Buzz"로 통일하고 절대 숫자만
+                  포맷팅(1.2M, 845K 등)으로 표시. */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="rounded-2xl bg-white/5 p-3.5">
+                  <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Buzz</div>
+                  <div className="text-xl font-black text-white tabular-nums">{formatViews(card.currentViews)}</div>
+                </div>
                 <div className="rounded-2xl bg-white/5 p-3.5">
                   <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Posted</div>
                   <div className="text-xl font-black text-white tabular-nums">{formatAge(card.publishedAt)}</div>
