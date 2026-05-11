@@ -93,8 +93,11 @@ export default function H1Landing({
           <div className="max-w-3xl mx-auto">
             <Hero />
 
-            {/* Desktop: 2-col — card on left, steps on right */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 items-start">
+            {/* Desktop: 2-col — card on left, steps + tier guide on right.
+                items-stretch (grid default) + flex column on right pushes
+                TierGuide to the bottom so the right column auto-matches the
+                card's height regardless of card aspect / title length. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div>
                 <SectionLabel>오늘의 샘플</SectionLabel>
                 <SampleCardSlot
@@ -104,12 +107,10 @@ export default function H1Landing({
                   onVouchAttempt={onVouchAttempt}
                 />
               </div>
-              <div className="space-y-3">
-                <div>
-                  <SectionLabel>How it works</SectionLabel>
-                  <Steps onVouchAttempt={onVouchAttempt} />
-                </div>
-                <TierGuide />
+              <div className="flex flex-col">
+                <SectionLabel>How it works</SectionLabel>
+                <Steps onVouchAttempt={onVouchAttempt} />
+                <TierGuide className="mt-3 md:mt-auto md:pt-3" />
               </div>
             </div>
 
@@ -269,7 +270,7 @@ function KCashBox({ className = "" }: { className?: string }) {
   );
 }
 
-function TierGuide() {
+function TierGuide({ className = "" }: { className?: string }) {
   // Compact 3-col tier chip row — sits under How it works on desktop just
   // to top up the column height. Single line per tier; no body copy.
   const tiers: Array<{ mult: string; label: string; hint: string; chip: string }> = [
@@ -278,7 +279,7 @@ function TierGuide() {
     { mult: "×4", label: "Lock",  hint: "+20💎", chip: "bg-rose-400/15 text-rose-200 border-rose-400/30" },
   ];
   return (
-    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-3">
+    <div className={`rounded-2xl bg-white/[0.03] border border-white/10 p-3 ${className}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45 mb-2 text-center">
         예측 강도
       </p>
