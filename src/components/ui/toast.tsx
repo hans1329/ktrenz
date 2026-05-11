@@ -48,24 +48,56 @@ Toast.displayName = ToastPrimitives.Root.displayName;
 const ToastAction = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Action>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
->(({ className, onPointerDown, ...props }, ref) => (
-  <ToastPrimitives.Action
-    ref={ref}
-    // Stop the pointerdown from bubbling up to the Toast.Root swipe handler.
-    // Without this Radix's swipe-to-dismiss tracker consumes the first tap
-    // as a potential drag-start and the button's onClick fires only on the
-    // second tap. Reported across radix-toast for touch devices.
-    onPointerDown={(e) => {
-      e.stopPropagation();
-      onPointerDown?.(e);
-    }}
-    className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary hover:text-secondary-foreground group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.destructive]:focus:ring-destructive disabled:pointer-events-none disabled:opacity-50",
-      className,
-    )}
-    {...props}
-  />
-));
+>(({ className, onPointerDown, onPointerUp, onClick, ...props }, ref) => {
+  // Mobile double-tap workaround. Radix Toast's swipe-to-dismiss tracker
+  // attaches to Toast.Root and consumes the first pointer event as a
+  // potential drag-start, so the button's native onClick fires only on the
+  // second tap. We:
+  //   1. stopPropagation on pointerdown to keep the swipe tracker quiet
+  //   2. fire the user-supplied onClick from pointerup as a fallback
+  //   3. guard with a one-shot ref so we don't double-fire (pointerup +
+  //      native click in the same gesture).
+  const firedRef = React.useRef(false);
+  return (
+    <ToastPrimitives.Action
+      ref={ref}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        firedRef.current = false;
+        onPointerDown?.(e);
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        if (!firedRef.current) {
+          firedRef.current = true;
+          // Fire user's onClick via the pointerup path. Setting timeout 0
+          // lets any React state updates inside the handler queue cleanly.
+          if (onClick) {
+            // synthesize a click-like target
+            const synthetic = e as unknown as React.MouseEvent<HTMLButtonElement>;
+            onClick(synthetic);
+          }
+        }
+        onPointerUp?.(e);
+      }}
+      onClick={(e) => {
+        // Native click also fires after pointerup completes. Guard to avoid
+        // running the user handler twice in one tap.
+        if (firedRef.current) {
+          e.preventDefault();
+          return;
+        }
+        firedRef.current = true;
+        onClick?.(e);
+      }}
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary hover:text-secondary-foreground group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.destructive]:focus:ring-destructive disabled:pointer-events-none disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  );
+});
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
 const ToastClose = React.forwardRef<
@@ -74,8 +106,10 @@ const ToastClose = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
+    // Always visible on touch (no group-hover trigger on mobile).
+    onPointerDown={(e) => { e.stopPropagation(); }}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-white/60 opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus:opacity-100 focus:outline-none",
+      "absolute right-2 top-2 rounded-md p-1 text-white/60 transition-opacity opacity-70 hover:opacity-100 hover:text-white focus:opacity-100 focus:outline-none",
       className,
     )}
     toast-close=""
