@@ -1316,7 +1316,7 @@ function Header({
             }`}
           >
             {quotaMet ? <Check className="w-2.5 h-2.5" /> : <Flame className="w-2.5 h-2.5" />}
-            {Math.min(vouchedCount, quotaTarget)}/{quotaTarget}
+            <span className={quotaMet ? "" : "text-violet-400"}>{Math.min(vouchedCount, quotaTarget)}</span>/{quotaTarget}
           </div>
         </div>
         <div className="h-[2px] bg-white/5">
@@ -1543,7 +1543,7 @@ function DesktopHeader({
             }`}
           >
             {quotaMet ? <Check className="w-3 h-3" /> : <Flame className="w-3 h-3" />}
-            {Math.min(vouchedCount, quotaTarget)}/{quotaTarget}
+            <span className={quotaMet ? "" : "text-violet-400"}>{Math.min(vouchedCount, quotaTarget)}</span>/{quotaTarget}
           </div>
         </div>
       </div>
@@ -1596,8 +1596,9 @@ function DesktopSidebar({
               </span>
             )}
           </div>
-          <div className="text-3xl font-black text-white tabular-nums mb-2">
-            {displayed}<span className="text-white/40 text-xl">/{quotaTarget}</span>
+          <div className="text-3xl font-black tabular-nums mb-2">
+            <span className={quotaMet ? "text-white" : "text-violet-400"}>{displayed}</span>
+            <span className="text-white/40 text-xl">/{quotaTarget}</span>
           </div>
           <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mb-3">
             <div
