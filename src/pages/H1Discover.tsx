@@ -73,7 +73,10 @@ const DROP_SIZE = 24; // Today's Drop curated count
 const DAILY_QUOTA_TARGET_MAX = 7;
 function quotaTargetFor(cohortSize: number): number {
   if (cohortSize <= 0) return DAILY_QUOTA_TARGET_MAX;
-  return Math.max(1, Math.min(DAILY_QUOTA_TARGET_MAX, Math.ceil((cohortSize * DAILY_QUOTA_TARGET_MAX) / DROP_SIZE)));
+  // Floor instead of ceil — 12장이면 12*7/24=3.5를 4가 아닌 3으로 잡아 빡빡한
+  // 비율 유지. 작은 cohort에서 quota target이 사실상 달성 불가능해지는 일을
+  // 막으면서, 일관된 "전체의 절반 미만" 기준 유지.
+  return Math.max(1, Math.min(DAILY_QUOTA_TARGET_MAX, Math.floor((cohortSize * DAILY_QUOTA_TARGET_MAX) / DROP_SIZE)));
 }
 const VOUCH_STORAGE_KEY_PREFIX = "ktrenz-h1-vouches-"; // + YYYY-MM-DD
 
