@@ -2265,9 +2265,14 @@ export default function H1Discover() {
     return { low: computeOne("low"), mid: computeOne("mid"), high: computeOne("high") };
   }, [vouches, h1Status]);
 
-  // Ad-unlock CTA: only offer to authed users with remaining unlock budget.
-  const adUnlocks = h1Status.ad_unlocks ?? { used: 0, max_per_day: 2, mid: 0, high: 0 };
-  const unlockRemaining = Math.max(0, adUnlocks.max_per_day - adUnlocks.used);
+  // Ad-unlock CTA: only offer to authed users with remaining unlock budget
+  // AND remaining unvouched cards. If user already vouched everything, the
+  // ad watch is wasted — gate to `cards.length - vouchedCount` so cohorts
+  // smaller than the server cap don't strand unlocks.
+  const adUnlocks = h1Status.ad_unlocks ?? { used: 0, max_per_day: 5, mid: 0, high: 0 };
+  const unlockServerRemaining = Math.max(0, adUnlocks.max_per_day - adUnlocks.used);
+  const unvouchedRemaining = Math.max(0, cards.length - vouchedCount);
+  const unlockRemaining = Math.min(unlockServerRemaining, unvouchedRemaining);
   const onUnlockMore = h1Status.signed_in && unlockRemaining > 0
     ? () => {
         trackH1Event("h1_ad_unlock_open", { remaining: unlockRemaining });

@@ -38,7 +38,7 @@ const EMPTY_STATUS: H1Status = {
     mid:  { used: 0, cap: 4 },
     high: { used: 0, cap: 2 },
   },
-  ad_unlocks: { used: 0, max_per_day: 2, mid: 0, high: 0 },
+  ad_unlocks: { used: 0, max_per_day: 5, mid: 0, high: 0 },
   drip: { claimed_today: false, eligible: false, amount: 10 },
 };
 
