@@ -523,11 +523,30 @@ function ImagePlate({ card }: { card: DiscoverCard }) {
 // for cleaner mental model (no fractions).
 // Hit payout per tier (post 2026-05-11 doubling). Users see this directly
 // instead of the previous ×N multiplier — no staking mechanic so the
-// multiplier was misleading.
+// multiplier was misleading. Tier-specific tint (amber / orange / rose)
+// matches the Call Strength chips on the landing TierGuide.
 const VOUCH_META = {
-  low:  { labelKey: "h1.confidence.hunch",  hintKey: "h1.confidence.hunchHint",   icon: Sprout,   mult: 1, hit: 10, miss: 5,  shade: "from-amber-400 to-amber-500",  ring: "ring-amber-400/40",  glow: "shadow-amber-400/30" },
-  mid:  { labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint",  icon: Activity, mult: 2, hit: 20, miss: 10, shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30" },
-  high: { labelKey: "h1.confidence.sure",   hintKey: "h1.confidence.sureHint",    icon: Rocket,   mult: 4, hit: 40, miss: 20, shade: "from-rose-400 to-red-500",     ring: "ring-rose-400/50",   glow: "shadow-rose-500/40" },
+  low: {
+    labelKey: "h1.confidence.hunch", hintKey: "h1.confidence.hunchHint", icon: Sprout, mult: 1, hit: 10, miss: 5,
+    shade: "from-amber-400 to-amber-500", ring: "ring-amber-400/40", glow: "shadow-amber-400/30",
+    text: "text-amber-200",
+    bgIdle: "bg-amber-400/10 border-amber-400/25 hover:bg-amber-400/20 hover:border-amber-400/40",
+    bgActive: "bg-amber-400/30 border-amber-300/60 ring-1 ring-amber-300/40 shadow-lg shadow-amber-500/20",
+  },
+  mid: {
+    labelKey: "h1.confidence.likely", hintKey: "h1.confidence.likelyHint", icon: Activity, mult: 2, hit: 20, miss: 10,
+    shade: "from-orange-400 to-orange-500", ring: "ring-orange-400/40", glow: "shadow-orange-500/30",
+    text: "text-orange-200",
+    bgIdle: "bg-orange-400/10 border-orange-400/25 hover:bg-orange-400/20 hover:border-orange-400/40",
+    bgActive: "bg-orange-400/30 border-orange-300/60 ring-1 ring-orange-300/40 shadow-lg shadow-orange-500/20",
+  },
+  high: {
+    labelKey: "h1.confidence.sure", hintKey: "h1.confidence.sureHint", icon: Rocket, mult: 4, hit: 40, miss: 20,
+    shade: "from-rose-400 to-red-500", ring: "ring-rose-400/50", glow: "shadow-rose-500/40",
+    text: "text-rose-200",
+    bgIdle: "bg-rose-400/10 border-rose-400/25 hover:bg-rose-400/20 hover:border-rose-400/40",
+    bgActive: "bg-rose-400/30 border-rose-300/60 ring-1 ring-rose-300/40 shadow-lg shadow-rose-500/20",
+  },
 } as const;
 
 function VouchPill({
@@ -550,11 +569,12 @@ function VouchPill({
       disabled={disabled && !active}
       className={cn(
         "relative flex-1 inline-flex items-center justify-center py-4 rounded-xl transition-all overflow-hidden border backdrop-blur-md",
+        c.text,
         active
-          ? "bg-white/15 text-white border-white/40 scale-[1.03] ring-1 ring-white/30 shadow-lg"
+          ? `${c.bgActive} scale-[1.03]`
           : disabled
             ? "bg-white/[0.03] text-white/30 border-white/5 cursor-not-allowed"
-            : "bg-white/[0.06] text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95",
+            : `${c.bgIdle} active:scale-95`,
       )}
     >
       <span className="text-[17px] font-black tabular-nums tracking-tight leading-none">
@@ -1817,11 +1837,12 @@ function DesktopVouchBtn({
       disabled={disabled && !active}
       className={cn(
         "relative flex-1 flex items-center justify-center py-4 rounded-xl text-xs font-black tracking-tight transition-all border active:scale-95 backdrop-blur-md",
+        c.text,
         active
-          ? "bg-white/15 text-white border-white/40 ring-1 ring-white/30 shadow-lg"
+          ? c.bgActive
           : disabled
             ? "bg-white/[0.02] text-white/30 border-white/5 cursor-not-allowed"
-            : "bg-white/[0.04] text-white/85 border-white/10 hover:bg-white/[0.08] hover:border-white/20 hover:text-white",
+            : c.bgIdle,
       )}
     >
       <span className="text-[15px] font-black tabular-nums leading-none">
