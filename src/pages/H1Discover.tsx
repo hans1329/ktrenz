@@ -29,6 +29,7 @@ import H1HowItWorksModal from "@/components/h1/H1HowItWorksModal";
 import H1CallConfirmDialog from "@/components/h1/H1CallConfirmDialog";
 import H1AdUnlockDialog from "@/components/h1/H1AdUnlockDialog";
 import H1AppHeader from "@/components/h1/H1AppHeader";
+import H1Landing from "@/components/h1/H1Landing";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
@@ -2399,6 +2400,32 @@ export default function H1Discover() {
     unlockRemaining,
     unlockMax: adUnlocks.max_per_day,
   };
+
+  // Logged-out: replace the full feed with a casual landing that explains
+  // the game and shows one real card from today's drop as a teaser.
+  if (!user?.id) {
+    const sampleCard = cards[0] ?? null;
+    return (
+      <>
+        <SEO
+          title="Discover — KTrenZ"
+          description="Call the next viral K-pop content before anyone else. Vouch early, earn more."
+          path="/h1"
+        />
+        <H1Landing
+          sample={sampleCard ? {
+            id: sampleCard.id,
+            source: sampleCard.source,
+            title: sampleCard.title,
+            artist: sampleCard.artist,
+            starImage: sampleCard.starImage,
+            thumbnail: sampleCard.thumbnail,
+          } : null}
+          isLoading={isLoading}
+        />
+      </>
+    );
+  }
 
   return (
     <>
