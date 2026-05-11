@@ -936,15 +936,41 @@ function H1InstagramEmbed({ card }: { card: DiscoverCard }) {
 
 function DetailDrawer({
   card,
+  cards,
   open,
   onClose,
 }: {
   card: DiscoverCard | null;
+  cards: DiscoverCard[];
   open: boolean;
   onClose: () => void;
 }) {
   const { Icon, label } = card ? sourceMeta(card.source) : { Icon: () => null, label: "" };
   const embed = card ? getEmbed(card) : null;
+
+  // Live rank within today's cohort — sort by currentViews desc and find
+  // the index. This is the predictor's most decisive context ("내 픽이
+  // 지금 24장 중 #5라는 것"이 게임의 모든 의사결정의 기반).
+  const rankInfo = useMemo(() => {
+    if (!card || cards.length === 0) return null;
+    const sorted = [...cards].sort((a, b) => b.currentViews - a.currentViews);
+    const idx = sorted.findIndex((c) => c.id === card.id);
+    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null;
+  }, [card, cards]);
+
+  // Views-per-hour since published — rough viral velocity proxy. Without
+  // item-level historical snapshots this is the best signal we can derive
+  // from the columns we already store. For items with fallback contentScore
+  // (Naver/Reddit) the number is mostly noise; we still show it so all
+  // items render the same shape — let users learn which sources to trust.
+  const velocityInfo = useMemo(() => {
+    if (!card || !card.publishedAt) return null;
+    const publishedMs = new Date(card.publishedAt).getTime();
+    if (Number.isNaN(publishedMs)) return null;
+    const hours = Math.max(1, (Date.now() - publishedMs) / 3_600_000);
+    const perHour = Math.round(card.currentViews / hours);
+    return { perHour };
+  }, [card]);
   return (
     <Sheet open={open && !!card} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
@@ -1044,14 +1070,30 @@ function DetailDrawer({
                 {card.title}
               </h3>
 
-              {/* per-item engagement_score 백필 후 재노출 (2026-05-11).
+              {/* Prediction context — 사용자가 "이게 top 7에 들까?"를 판단할
+                  때 필요한 신호 4개. Buzz=현재 절대값, Rank=24장 중 위치,
+                  Velocity=시간당 증가율(per-item history 없어 평균치 근사),
+                  Posted=게시 시점.
                   source별 단위가 달라서 (YT views / TT plays / IG likes /
-                  Reddit·Naver fallback) 라벨은 "Buzz"로 통일하고 절대 숫자만
-                  포맷팅(1.2M, 845K 등)으로 표시. */}
+                  Reddit·Naver는 contentScore fallback) Buzz/Velocity 절대
+                  비교는 부정확 — Rank가 가장 결정적인 지표. */}
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div className="rounded-2xl bg-white/5 p-3.5">
                   <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Buzz</div>
                   <div className="text-xl font-black text-white tabular-nums">{formatViews(card.currentViews)}</div>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-3.5">
+                  <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Rank</div>
+                  <div className="text-xl font-black text-white tabular-nums">
+                    {rankInfo ? `#${rankInfo.rank}` : "—"}
+                    {rankInfo && <span className="text-white/40 text-sm font-bold"> / {rankInfo.total}</span>}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-3.5">
+                  <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Velocity</div>
+                  <div className="text-xl font-black text-white tabular-nums">
+                    {velocityInfo ? `${formatViews(velocityInfo.perHour)}/h` : "—"}
+                  </div>
                 </div>
                 <div className="rounded-2xl bg-white/5 p-3.5">
                   <div className="text-[10px] uppercase font-bold text-white/50 mb-1 tracking-wider">Posted</div>
@@ -1870,7 +1912,7 @@ function DesktopShell({
         </main>
       </div>
 
-      <DetailDrawer card={detail} open={!!detail} onClose={() => setDetail(null)} />
+      <DetailDrawer card={detail} cards={cards} open={!!detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
@@ -1985,7 +2027,7 @@ function MobileShell({
 
       <BottomNav activePicksCount={activePicksCount} />
 
-      <DetailDrawer card={detail} open={!!detail} onClose={() => setDetail(null)} />
+      <DetailDrawer card={detail} cards={cards} open={!!detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
