@@ -828,7 +828,7 @@ const dict: Record<string, string> = {
   "h1.empty.body": "오늘의 콘텐츠를 큐레이션 중입니다. 잠시 후 다시 확인해주세요.",
   "h1.empty.bodyShort": "잠시 후 다시 확인해주세요.",
   "h1.help.dropTitle": "오늘의 라운드",
-  "h1.help.dropBody": "매일 아침 24개의 K-pop 콘텐츠를 큐레이션합니다. 뜰 것 같은 것에 예측하세요.",
+  "h1.help.dropBody": "매일 아침 24개의 K-컨텐츠를 큐레이션 합니다. 뜰 것 같은 것에 예측하세요.",
   "h1.help.viralTitle": "여기서 '뜬다'는 의미",
   "h1.help.viralBody": "예측한 픽이 7일 후 그날 24개 중 버즈 성장 상위 7위 안에 들면 적중. 그 외에는 미스.",
   "h1.help.callsScale": "예측 강도 · 일일 슬롯",
