@@ -772,7 +772,7 @@ const dict: Record<string, string> = {
   "h1.willGoViralFull": "Predict entry into top 30% in 7 days",
   "h1.willGoViralShort": "Predict entry into top 30% in 7 days",
   "h1.callStrengthPrompt": "Hit it — up to 4× reward",
-  "h1.confirm.title": "Hit it → +{n} 💎",
+  "h1.confirm.title": "Hit it · +{n} 💎",
   "h1.confirm.resolveDate": "Resolves: {date} (7 days after drop)",
   "h1.confirm.round": "Today's round (1 of 24)",
   "h1.confirm.win": "If it lands in TOP 7",

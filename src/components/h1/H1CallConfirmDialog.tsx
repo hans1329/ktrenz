@@ -80,25 +80,17 @@ export default function H1CallConfirmDialog({
 
   if (!tier || !computed) return null;
   const { meta, hit, miss } = computed;
-  const Icon = meta.icon;
 
   return (
     <AlertDialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
       <AlertDialogContent className="max-w-sm bg-neutral-950 border-white/10 p-0 overflow-hidden">
-        {/* Header band — gradient by tier */}
+        {/* Header band — gradient by tier, icon + ×N removed for clarity. */}
         <div className={cn("px-5 py-5 bg-gradient-to-br text-white", meta.gradient)}>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-              <Icon className="w-6 h-6" strokeWidth={2.5} />
-            </div>
-            <div>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-white text-lg font-black tracking-tight leading-tight">
-                  {tFmt(t("h1.confirm.title"), { n: String(hit) })}
-                </AlertDialogTitle>
-              </AlertDialogHeader>
-            </div>
-          </div>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white text-lg font-black tracking-tight leading-tight">
+              {tFmt(t("h1.confirm.title"), { n: String(hit) })}
+            </AlertDialogTitle>
+          </AlertDialogHeader>
         </div>
 
         {/* Body */}

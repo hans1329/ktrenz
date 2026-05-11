@@ -772,7 +772,7 @@ const dict: Record<string, string> = {
   "h1.willGoViralFull": "预测7天后进入前30%",
   "h1.willGoViralShort": "预测7天后进入前30%",
   "h1.callStrengthPrompt": "命中可获最高4倍奖励",
-  "h1.confirm.title": "命中可获 +{n} 💎",
+  "h1.confirm.title": "命中 +{n} 💎",
   "h1.confirm.resolveDate": "公布: {date} (掉落后7天)",
   "h1.confirm.round": "今日轮次 (24个中1个)",
   "h1.confirm.win": "进入TOP 7",
