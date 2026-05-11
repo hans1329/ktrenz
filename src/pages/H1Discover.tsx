@@ -397,29 +397,49 @@ function useDiscoverCards() {
   });
 }
 
-/* ─────── Vouch persistence (localStorage, scoped per day) ─────── */
-function todayKey(): string {
+/* ─────── Vouch persistence (localStorage, scoped per day + owner) ───────
+ *
+ * Key shape: `ktrenz-h1-vouches-{owner}-YYYY-MM-DD`
+ *   owner = user uuid for authed sessions
+ *   owner = "anon"     for guest sessions
+ *
+ * Why owner-scoped: previously all users shared one date-only key. A → 로그
+ * 아웃 → B 로그인 시 A의 vouch가 그대로 화면에 남고, login-flip 효과가
+ * A의 localStorage entry를 B 계정으로 record_vouch 호출해서 데이터 누수.
+ */
+function ownerToken(userId: string | null | undefined): string {
+  return userId && userId.length > 0 ? userId : "anon";
+}
+
+function todayKey(userId: string | null | undefined): string {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${VOUCH_STORAGE_KEY_PREFIX}${y}-${m}-${day}`;
+  return `${VOUCH_STORAGE_KEY_PREFIX}${ownerToken(userId)}-${y}-${m}-${day}`;
 }
 
-function loadVouches(): Record<string, Vouch> {
+function loadVouches(userId: string | null | undefined): Record<string, Vouch> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(todayKey());
+    const raw = window.localStorage.getItem(todayKey(userId));
     return raw ? (JSON.parse(raw) as Record<string, Vouch>) : {};
   } catch {
     return {};
   }
 }
 
-function saveVouches(v: Record<string, Vouch>) {
+function saveVouches(userId: string | null | undefined, v: Record<string, Vouch>) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(todayKey(), JSON.stringify(v));
+    window.localStorage.setItem(todayKey(userId), JSON.stringify(v));
+  } catch { /* ignore */ }
+}
+
+function clearVouches(userId: string | null | undefined) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(todayKey(userId));
   } catch { /* ignore */ }
 }
 
@@ -2055,7 +2075,10 @@ export default function H1Discover() {
     return next.getTime();
   }, []);
 
-  const [vouches, setVouches] = useState<Record<string, Vouch>>(() => loadVouches());
+  // Initial state: load whatever was last saved for the current owner
+  // (authed user uuid or "anon"). The auth-change effect below re-loads
+  // when user.id flips.
+  const [vouches, setVouches] = useState<Record<string, Vouch>>(() => loadVouches(user?.id));
   const [detail, setDetail] = useState<DiscoverCard | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [loginNudgeOpen, setLoginNudgeOpen] = useState<false | "share" | "quota">(false);
@@ -2094,12 +2117,12 @@ export default function H1Discover() {
     trackH1Event("h1_help_opened", { trigger: "manual" });
   };
 
-  // Persist vouches to localStorage on every change (scoped per day).
+  // Persist vouches to localStorage on every change (scoped per day + owner).
   // Acts as offline cache + non-auth fallback. When the user is authed,
   // the server is source of truth and localStorage just mirrors.
   useEffect(() => {
-    saveVouches(vouches);
-  }, [vouches]);
+    saveVouches(user?.id, vouches);
+  }, [vouches, user?.id]);
 
   // Page-view telemetry (fires once per session per refresh).
   useEffect(() => {
@@ -2111,39 +2134,55 @@ export default function H1Discover() {
     void import("./Settings");
   }, []);
 
-  // On login flip: (1) push any anon localStorage vouches up to the server,
-  // then (2) hydrate today's server vouches into local state. Server wins
-  // for any conflicts because record_vouch upserts.
+  // Auth change handler:
+  //   - logout (user.id → undefined): clear in-memory state to anon's storage
+  //   - login change (different user.id): swap state to the new user's
+  //     storage, run anon→authed migration once per user, hydrate from server
+  //
+  // Without this every previous-session's vouch persisted across logout/
+  // login, including cross-account leakage via the legacy single-key
+  // localStorage scheme.
   useEffect(() => {
-    if (!user?.id) return;
-    if (lastSyncedUserRef.current === user.id) return;
-    lastSyncedUserRef.current = user.id;
+    const ownerId = user?.id ?? null;
+    // Always reset state to whatever this owner has stored. Logout flushes
+    // the in-memory `vouches` to anon's bucket (could be empty).
+    setVouches(loadVouches(ownerId));
+
+    // Anon-only or unchanged user: nothing more to do.
+    if (!ownerId) {
+      lastSyncedUserRef.current = null;
+      return;
+    }
+    if (lastSyncedUserRef.current === ownerId) return;
+    lastSyncedUserRef.current = ownerId;
 
     let cancelled = false;
     (async () => {
-      // 1. Replay localStorage vouches (one-shot sync on login).
-      const local = loadVouches();
-      const entries = Object.entries(local);
-      if (entries.length > 0) {
-        await Promise.all(entries.map(([itemId, conf]) =>
+      // 1. One-time anon→authed migration: if the previous-session anon
+      // localStorage has vouches, push them to the server, then clear that
+      // anon bucket so a future logout doesn't re-leak across accounts.
+      const anonLocal = loadVouches(null);
+      const anonEntries = Object.entries(anonLocal);
+      if (anonEntries.length > 0) {
+        await Promise.all(anonEntries.map(([itemId, conf]) =>
           (supabase as any).rpc("ktrenz_h1_record_vouch", {
             _item_id: itemId,
             _confidence: conf,
           }),
         ));
-        trackH1Event("h1_localstorage_synced", { count: entries.length });
+        clearVouches(null);
+        trackH1Event("h1_localstorage_synced", { count: anonEntries.length });
       }
 
-      // 2. Pull current server state and merge.
+      // 2. Pull this user's server state and use it as the canonical source
+      // (replace, don't merge — cross-user state should never linger).
       const { data, error } = await (supabase as any).rpc("ktrenz_h1_my_today_vouches");
       if (cancelled || error || !Array.isArray(data)) return;
-      setVouches((prev) => {
-        const merged = { ...prev };
-        for (const row of data as Array<{ item_id: string; confidence: Vouch }>) {
-          if (row?.item_id && row?.confidence) merged[row.item_id] = row.confidence;
-        }
-        return merged;
-      });
+      const next: Record<string, Vouch> = {};
+      for (const row of data as Array<{ item_id: string; confidence: Vouch }>) {
+        if (row?.item_id && row?.confidence) next[row.item_id] = row.confidence;
+      }
+      setVouches(next);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
