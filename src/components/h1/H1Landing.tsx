@@ -205,7 +205,7 @@ function Steps({
   className?: string;
 }) {
   return (
-    <ol className={`space-y-2 ${className}`}>
+    <ol className={`space-y-3 ${className}`}>
       <Step num={1} title="예측하기"     body="24개 컨텐츠 중 상승할 트렌드라 확신하는 카드에 ×1 / ×2 / ×4 강도로 예측" />
       <Step num={2} title="7일간 트래킹"  body="당신의 픽이 실시간 cohort 순위에서 어떻게 움직이는지 확인." />
       <Step num={3} title="적중 시 K-Cash" body="7일 후 상위 7개 (top 30%)에 든 픽은 💎 보상, 빗나가면 소액 차감." />
@@ -224,12 +224,12 @@ function Step({
   body: string;
 }) {
   return (
-    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-3.5">
-      <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-0.5">
+    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-5">
+      <div className="text-[11px] font-black uppercase tracking-wider text-white/45 mb-1.5">
         Step {num}
       </div>
-      <div className="text-sm font-black text-white mb-0.5">{title}</div>
-      <p className="text-[11px] text-white/65 leading-snug">{body}</p>
+      <div className="text-lg font-black text-white mb-1.5">{title}</div>
+      <p className="text-sm text-white/70 leading-relaxed">{body}</p>
     </li>
   );
 }
