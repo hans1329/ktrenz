@@ -224,12 +224,12 @@ function Step({
   body: string;
 }) {
   return (
-    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-5">
-      <div className="text-[11px] font-black uppercase tracking-wider text-white/45 mb-1.5">
+    <li className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+      <div className="text-[10px] font-black uppercase tracking-wider text-white/45 mb-1">
         Step {num}
       </div>
-      <div className="text-lg font-black text-white mb-1.5">{title}</div>
-      <p className="text-sm text-white/70 leading-relaxed">{body}</p>
+      <div className="text-base font-black text-white mb-1">{title}</div>
+      <p className="text-xs text-white/65 leading-relaxed">{body}</p>
     </li>
   );
 }
