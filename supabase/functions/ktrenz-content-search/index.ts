@@ -384,6 +384,7 @@ Deno.serve(async (req) => {
 
     // ── Build search query with group context for members ──
     let groupNameKo: string | null = null;
+    let groupNameEn: string | null = null;
     if (star.star_type === "member" && star.group_star_id) {
       const { data: group } = await sb
         .from("ktrenz_stars")
@@ -392,14 +393,21 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (group) {
         groupNameKo = group.name_ko || group.display_name;
+        groupNameEn = group.display_name;
       }
     }
 
-    // For member: "그룹명 이름" to narrow search; for others: name as-is
+    // For member: "그룹명 이름" to narrow search; for others: name as-is.
     const searchQuery = (star.star_type === "member" && groupNameKo)
       ? `${groupNameKo} ${star.name_ko || star.display_name}`
       : star.name_ko || star.display_name;
-    const searchQueryEn = star.display_name;
+    // YouTube / Reddit (English-leaning sources): ALSO inject group name
+    // for members. Without the group qualifier "Joshua" / "Jacob" /
+    // "Martin" etc. return same-name foreigners and gamers (Joshua Van,
+    // Fortnite Jacob, ...). Add "kpop" suffix as extra K-context anchor.
+    const searchQueryEn = (star.star_type === "member" && groupNameEn)
+      ? `${groupNameEn} ${star.display_name} kpop`
+      : `${star.display_name} kpop`;
 
     // Fetch member names for title filtering (group → members)
     let memberNames: string[] = [];
