@@ -327,7 +327,7 @@ async function searchInstagram(rapidApiKey: string, handle: string | null, query
   } catch { return []; }
 }
 
-// ── Reddit (SerpAPI) ──
+// ── Reddit (SerpAPI for discovery + Reddit JSON for per-post ups) ──
 async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
   try {
     const url = new URL("https://serpapi.com/search.json");
@@ -339,17 +339,45 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
     const res = await fetchWithTimeout(url.toString(), {}, 12000);
     if (!res.ok) { await res.text(); return []; }
     const data = await res.json();
-    return (data.organic_results || []).filter((r: any) =>
+    const raw = (data.organic_results || []).filter((r: any) =>
       r.link?.includes("reddit.com")
-    ).slice(0, 15).map((r: any) => ({
-      source: "reddit",
-      title: r.title || "",
-      description: r.snippet || "",
-      url: r.link,
-      thumbnail: r.thumbnail || r.rich_snippet?.top?.detected_extensions?.thumbnail || null,
-      date: r.date || null,
-      metadata: { subreddit: r.link?.match(/reddit\.com\/r\/([^/]+)/)?.[1] || "" },
+    ).slice(0, 15);
+
+    // Enrich each post with ups/comments via Reddit's public JSON API.
+    // `{post_url}.json` returns the post object with score, num_comments, etc.
+    // Limited to 15 calls per artist run — Reddit JSON has no auth requirement
+    // for read but rate-limits ~60 req/min unauthenticated, well within budget.
+    const enriched = await Promise.all(raw.map(async (r: any) => {
+      const base = {
+        source: "reddit" as const,
+        title: r.title || "",
+        description: r.snippet || "",
+        url: r.link as string,
+        thumbnail: r.thumbnail || r.rich_snippet?.top?.detected_extensions?.thumbnail || null,
+        date: r.date || null,
+        metadata: { subreddit: r.link?.match(/reddit\.com\/r\/([^/]+)/)?.[1] || "" } as Record<string, any>,
+      };
+      try {
+        // Normalize comment URLs — strip query, append .json, force www.
+        const cleaned = (r.link as string).split("?")[0].replace(/\/$/, "");
+        const jsonUrl = `${cleaned}.json`;
+        const jr = await fetchWithTimeout(jsonUrl, {
+          headers: { "User-Agent": "ktrenz/1.0 (server)" },
+        }, 8000);
+        if (jr.ok) {
+          const arr = await jr.json();
+          // listing[0].data.children[0].data is the post
+          const post = arr?.[0]?.data?.children?.[0]?.data;
+          if (post) {
+            base.metadata.ups = Number(post.score ?? post.ups ?? 0);
+            base.metadata.comments = Number(post.num_comments ?? 0);
+            base.metadata.upvote_ratio = Number(post.upvote_ratio ?? 0);
+          }
+        }
+      } catch { /* keep base, no enrichment */ }
+      return base;
     }));
+    return enriched;
   } catch { return []; }
 }
 

@@ -319,21 +319,38 @@ async function curateForRegion(
   // count against this cap, so we only fill the remaining gap. Prevents the
   // drop from inflating past 24 (e.g. 28 if 4 lazy items existed pre-cron).
   const remainingSlots = Math.max(0, DROP_SIZE - existingItemIds.size);
-  const rows = picks
+  const rowsRaw = picks
     .filter((p) => !existingItemIds.has(p.id))
-    .slice(0, remainingSlots)
-    .map((p, idx) => ({
-      drop_date: dropDate,
-      region,
-      item_id: p.id,
-      cohort_rank: startRank + idx,
-      resolution_at: resolutionAt.toISOString(),
-      // Snapshot the engagement_score at drop time. resolve-drop computes
-      // growth_ratio against this baseline so winners are "biggest climbers"
-      // instead of "biggest channels". Without this, well-established artists
-      // would deterministically win every round.
-      views_at_drop: Math.max(0, Math.floor(p.engagement_score ?? 0)),
-    }));
+    .slice(0, remainingSlots);
+
+  // Per-item baseline for growth measurement at resolve time. For media
+  // sources we use the per-item engagement_score (views/plays/likes). For
+  // Naver, the API has no per-item engagement signal, so we use the
+  // artist's article-volume in the past 7 days as the proxy — matches the
+  // game's intent that Naver buzz = how much an artist is being covered.
+  const baselineFor = async (p: typeof rowsRaw[number]) => {
+    if (p.source === "naver_news" || p.source === "naver_blog") {
+      if (!p.star_id) return 0;
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { count } = await client
+        .from("ktrenz_b2_items")
+        .select("id", { count: "exact", head: true })
+        .eq("star_id", p.star_id)
+        .like("source", "naver%")
+        .gte("published_at", since);
+      return count ?? 0;
+    }
+    return Math.max(0, Math.floor(p.engagement_score ?? 0));
+  };
+
+  const rows = await Promise.all(rowsRaw.map(async (p, idx) => ({
+    drop_date: dropDate,
+    region,
+    item_id: p.id,
+    cohort_rank: startRank + idx,
+    resolution_at: resolutionAt.toISOString(),
+    views_at_drop: await baselineFor(p),
+  })));
 
   if (rows.length === 0) {
     return { region, dropDate, inserted: 0, skipped: picks.length, total: existingItemIds.size };

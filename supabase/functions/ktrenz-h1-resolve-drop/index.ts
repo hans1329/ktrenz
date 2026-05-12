@@ -72,25 +72,60 @@ async function resolveCohort(
   const drops = (dropsData ?? []) as unknown as DropRow[];
   if (drops.length === 0) return { drops: 0, vouches: 0 };
 
-  // 2. Fetch current engagement_score for each item.
+  // 2. Fetch current engagement_score AND source for each item.
   const itemIds = drops.map((d) => d.item_id);
   const { data: items, error: itemsErr } = await client
     .from("ktrenz_b2_items")
-    .select("id, engagement_score")
+    .select("id, engagement_score, source, star_id")
     .in("id", itemIds);
   if (itemsErr) throw itemsErr;
-  const scoreMap = new Map<string, number>(
-    (items ?? []).map((i: any) => [i.id as string, Number(i.engagement_score ?? 0)]),
+  const itemMap = new Map<string, { score: number; source: string; star_id: string | null }>(
+    (items ?? []).map((i: any) => [
+      i.id as string,
+      { score: Number(i.engagement_score ?? 0), source: String(i.source ?? ""), star_id: i.star_id ?? null },
+    ]),
   );
+
+  // For Naver, "current" buzz = artist's article count in past 7 days
+  // (matches the drop-time baseline). Cache per artist to avoid one query
+  // per Naver item.
+  const naverCountCache = new Map<string, number>();
+  const naverArtistsToCount = new Set<string>();
+  for (const d of drops) {
+    const m = itemMap.get(d.item_id);
+    if (m && m.star_id && (m.source === "naver_news" || m.source === "naver_blog")) {
+      naverArtistsToCount.add(m.star_id);
+    }
+  }
+  if (naverArtistsToCount.size > 0) {
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    for (const sid of naverArtistsToCount) {
+      const { count } = await client
+        .from("ktrenz_b2_items")
+        .select("id", { count: "exact", head: true })
+        .eq("star_id", sid)
+        .like("source", "naver%")
+        .gte("published_at", since);
+      naverCountCache.set(sid, count ?? 0);
+    }
+  }
 
   // 3. Rank by GROWTH RATIO (not absolute score). Big-baseline content stays
   // big regardless of activity; we want the climbers. ratio = (now - drop) /
   // max(drop, baseline). Baseline of 100 prevents tiny-buzz items from
   // exploding the ratio with miniscule numerators.
   const GROWTH_BASELINE = 100;
+  const currentFor = (drop_item_id: string): number => {
+    const m = itemMap.get(drop_item_id);
+    if (!m) return 0;
+    if (m.star_id && (m.source === "naver_news" || m.source === "naver_blog")) {
+      return naverCountCache.get(m.star_id) ?? 0;
+    }
+    return m.score;
+  };
   const ranked = drops
     .map((d) => {
-      const current = scoreMap.get(d.item_id) ?? 0;
+      const current = currentFor(d.item_id);
       const initial = Math.max(0, Number(d.views_at_drop ?? 0));
       const denom = Math.max(initial, GROWTH_BASELINE);
       const growthRatio = (current - initial) / denom;
