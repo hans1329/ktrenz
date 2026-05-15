@@ -419,26 +419,39 @@ Deno.serve(async (req) => {
     // ── Build search query with group context for members ──
     let groupNameKo: string | null = null;
     let groupNameEn: string | null = null;
+    let groupQualifier: string | null = null;
     if (star.star_type === "member" && star.group_star_id) {
       const { data: group } = await sb
         .from("ktrenz_stars")
-        .select("name_ko, display_name")
+        .select("name_ko, display_name, search_qualifier")
         .eq("id", star.group_star_id)
         .maybeSingle();
       if (group) {
         groupNameKo = group.name_ko || group.display_name;
         groupNameEn = group.display_name;
+        groupQualifier = group.search_qualifier || null;
       }
     }
 
-    // For member: "그룹명 이름" to narrow search; for others: name as-is.
-    const searchQuery = (star.star_type === "member" && groupNameKo)
+    // For ambiguous Korean names ("아이들" = (여자)아이들 group AND the
+    // common noun "children", "온유"="SHINee Onew" AND a personal name,
+    // etc.), the DB carries a `search_qualifier` like "가수" / "아이돌" /
+    // "그룹". We anchor the Korean (Naver) query with it so the search
+    // engine narrows to entertainment context. For members, we inherit
+    // the group's qualifier when present.
+    const memberQualifier = star.star_type === "member"
+      ? (groupQualifier || star.search_qualifier)
+      : star.search_qualifier;
+    const koCore = (star.star_type === "member" && groupNameKo)
       ? `${groupNameKo} ${star.name_ko || star.display_name}`
-      : star.name_ko || star.display_name;
-    // YouTube / Reddit (English-leaning sources): ALSO inject group name
-    // for members. Without the group qualifier "Joshua" / "Jacob" /
-    // "Martin" etc. return same-name foreigners and gamers (Joshua Van,
-    // Fortnite Jacob, ...). Add "kpop" suffix as extra K-context anchor.
+      : (star.name_ko || star.display_name);
+    const searchQuery = memberQualifier
+      ? `${koCore} ${memberQualifier}`
+      : koCore;
+
+    // YouTube / Reddit (English-leaning sources): same idea — anchor with
+    // "kpop" + group name for members. Without the qualifier "Joshua" /
+    // "Jacob" / "Martin" return foreigners and gamers.
     const searchQueryEn = (star.star_type === "member" && groupNameEn)
       ? `${groupNameEn} ${star.display_name} kpop`
       : `${star.display_name} kpop`;
