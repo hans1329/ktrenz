@@ -72,17 +72,50 @@ async function resolveCohort(
   const drops = (dropsData ?? []) as unknown as DropRow[];
   if (drops.length === 0) return { drops: 0, vouches: 0 };
 
-  // 2. Fetch current engagement_score AND source for each item.
+  // 2. Fetch the drop's items + their LATEST score (across all re-scrapes).
+  // content-search inserts a new b2_items row per run, so the row we stored
+  // at curate time may be stale by the time we resolve. For each drop's item
+  // we pull all rows with the same URL, sorted by created_at desc, and take
+  // the highest engagement_score. This way a re-scraped item with newer
+  // metadata-derived score (YouTube viewCount, TT plays, Reddit ups, etc.)
+  // gets credited in growth.
   const itemIds = drops.map((d) => d.item_id);
   const { data: items, error: itemsErr } = await client
     .from("ktrenz_b2_items")
-    .select("id, engagement_score, source, star_id")
+    .select("id, engagement_score, source, star_id, url")
     .in("id", itemIds);
   if (itemsErr) throw itemsErr;
-  const itemMap = new Map<string, { score: number; source: string; star_id: string | null }>(
+
+  // Group all b2_items rows sharing the same URL (across runs). For each
+  // drop, the score we use is max(engagement_score) over those rows.
+  const urls = [...new Set((items ?? []).map((i: any) => i.url).filter(Boolean))] as string[];
+  let urlMaxScore = new Map<string, number>();
+  if (urls.length > 0) {
+    // Chunk into batches of 50 URLs to avoid URL-length limits on the IN()
+    // clause. PostgREST translates this to URL query params.
+    for (let off = 0; off < urls.length; off += 50) {
+      const batch = urls.slice(off, off + 50);
+      const { data: scraped } = await client
+        .from("ktrenz_b2_items")
+        .select("url, engagement_score")
+        .in("url", batch);
+      for (const r of (scraped ?? []) as any[]) {
+        const cur = urlMaxScore.get(r.url) ?? 0;
+        const v = Number(r.engagement_score ?? 0);
+        if (v > cur) urlMaxScore.set(r.url, v);
+      }
+    }
+  }
+
+  const itemMap = new Map<string, { score: number; source: string; star_id: string | null; url: string | null }>(
     (items ?? []).map((i: any) => [
       i.id as string,
-      { score: Number(i.engagement_score ?? 0), source: String(i.source ?? ""), star_id: i.star_id ?? null },
+      {
+        score: urlMaxScore.get(i.url) ?? Number(i.engagement_score ?? 0),
+        source: String(i.source ?? ""),
+        star_id: i.star_id ?? null,
+        url: i.url ?? null,
+      },
     ]),
   );
 
@@ -306,6 +339,20 @@ Deno.serve(async (req) => {
     const cohorts = new Set<string>();
     for (const d of (due ?? []) as any[]) {
       cohorts.add(`${d.drop_date}|${d.region}`);
+    }
+
+    // Refresh live stats BEFORE resolving so growth_ratio reflects the
+    // latest YouTube viewCount instead of the frozen day-1 value.
+    if (cohorts.size > 0) {
+      try {
+        await fetch(`${url}/functions/v1/ktrenz-h1-refresh-stats`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceKey}` },
+          body: "{}",
+        });
+      } catch (err) {
+        console.warn("[h1-resolve-drop] refresh-stats pre-call failed:", (err as Error).message);
+      }
     }
 
     const results: Array<Record<string, unknown>> = [];
