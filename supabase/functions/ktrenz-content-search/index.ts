@@ -532,11 +532,19 @@ Deno.serve(async (req) => {
     // Parallel search all sources
     const [naverNewsRaw, naverBlogRaw, youtubeRaw, tiktokRaw, instagramRaw, redditRaw] = await Promise.all([
       NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "news", searchQuery, 15) : Promise.resolve([]),
-      NAVER_ID ? searchNaver(NAVER_ID, NAVER_SECRET, "blog", searchQuery, 10) : Promise.resolve([]),
+      // naver_blog disabled 2026-05-15 — 100% thumbnail-less and already
+      // filtered out from curate pool. Was wasting ~130 inserts/day. Re-enable
+      // only if we add a thumbnail enricher and decide to use blog cards.
+      Promise.resolve([] as any[]),
       YT_KEY ? searchYouTube(YT_KEY, searchQueryEn, 15) : Promise.resolve([]),
       RAPIDAPI_KEY ? searchTikTok(RAPIDAPI_KEY, star.social_handles?.tiktok || null, star.social_handles?.tiktok_secuid || null, 15) : Promise.resolve([]),
       RAPIDAPI_KEY ? searchInstagram(RAPIDAPI_KEY, star.social_handles?.instagram || null, searchQuery) : Promise.resolve([]),
-      SERPAPI_KEY ? searchReddit(SERPAPI_KEY, searchQueryEn) : Promise.resolve([]),
+      // Reddit disabled 2026-05-15 — SerpAPI returns titles but post-page
+      // .json fetch is blocked from Supabase edge (AWS IP). All 13/day items
+      // ended up with no ups/comments metadata, providing zero viral signal.
+      // Re-enable after Reddit OAuth setup (app registration + token) or
+      // switch to a non-rate-limited intermediary.
+      Promise.resolve([] as any[]),
     ]);
 
     // Deduplicate per source: by URL first, then by normalized title similarity

@@ -102,18 +102,128 @@ async function refreshYouTube(
   return { checked: list.length, updated };
 }
 
+function extractInstagramShortcode(url: string): string | null {
+  if (!url) return null;
+  const m = url.match(/instagram\.com\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+async function refreshInstagram(
+  client: ReturnType<typeof createClient>,
+  rapidApiKey: string,
+): Promise<{ checked: number; updated: number }> {
+  // Active IG items in unresolved drops.
+  const { data: drops, error: dErr } = await client
+    .from("ktrenz_h1_daily_drop")
+    .select("item_id, ktrenz_b2_items!inner(id, url, source, star_id, engagement_score)")
+    .eq("resolved", false);
+  if (dErr) throw dErr;
+  const items = ((drops ?? []) as any[])
+    .map((d) => d.ktrenz_b2_items)
+    .filter((i: any) => i?.source === "instagram" && i?.url && i?.star_id);
+  const uniqueById = new Map<string, any>();
+  for (const i of items) uniqueById.set(i.id, i);
+  const list = [...uniqueById.values()];
+  if (list.length === 0) return { checked: 0, updated: 0 };
+
+  // Group items by star_id so we fetch each handle's feed once.
+  const byStar = new Map<string, any[]>();
+  for (const it of list) {
+    const arr = byStar.get(it.star_id) ?? [];
+    arr.push(it);
+    byStar.set(it.star_id, arr);
+  }
+
+  // Resolve star → IG handle.
+  const { data: stars } = await client
+    .from("ktrenz_stars")
+    .select("id, social_handles")
+    .in("id", [...byStar.keys()]);
+  const handleByStar = new Map<string, string>();
+  for (const s of (stars ?? []) as any[]) {
+    const h = s.social_handles?.instagram;
+    if (h && typeof h === "string") handleByStar.set(s.id, h.replace(/^@/, ""));
+  }
+
+  // Parallel — cap concurrency to avoid hammering RapidAPI. Each handle
+  // gets one feed fetch which is ~3-5s. Limit also bounds total walltime
+  // under the 150s edge function ceiling.
+  const CONCURRENCY = 5;
+  const handles = [...byStar.entries()];
+  let updated = 0;
+  for (let off = 0; off < handles.length; off += CONCURRENCY) {
+    const batch = handles.slice(off, off + CONCURRENCY);
+    const results = await Promise.all(batch.map(async ([starId, starItems]) => {
+      const handle = handleByStar.get(starId);
+      if (!handle) return 0;
+      try {
+        const res = await fetch("https://instagram120.p.rapidapi.com/api/instagram/posts", {
+          method: "POST",
+          headers: {
+            "x-rapidapi-host": "instagram120.p.rapidapi.com",
+            "x-rapidapi-key": rapidApiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username: handle, maxId: "" }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) return 0;
+        const data = await res.json();
+        const edges = (data?.result?.edges ?? []) as any[];
+        const postByCode = new Map<string, any>();
+        for (const e of edges) {
+          const p = e?.node || e;
+          const code = p?.code || p?.shortcode;
+          if (code) postByCode.set(code, p);
+        }
+        let starUpdated = 0;
+        for (const it of starItems) {
+          const code = extractInstagramShortcode(it.url);
+          if (!code) continue;
+          const p = postByCode.get(code);
+          if (!p) continue;
+          const likes = Number(p.like_count ?? 0);
+          const comments = Number(p.comment_count ?? 0);
+          const score = Math.max(likes, 0);
+          if (score === it.engagement_score) continue;
+          const { error: uErr } = await client
+            .from("ktrenz_b2_items")
+            .update({
+              engagement_score: score,
+              metadata: { likes, comments, refreshed_at: new Date().toISOString() },
+            })
+            .eq("id", it.id);
+          if (!uErr) starUpdated += 1;
+        }
+        return starUpdated;
+      } catch (err) {
+        console.warn(`[refresh-stats] IG handle=${handle} failed:`, (err as Error).message);
+        return 0;
+      }
+    }));
+    updated += results.reduce((a, b) => a + b, 0);
+  }
+  return { checked: list.length, updated };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ytKey = Deno.env.get("YOUTUBE_API_KEY") || Deno.env.get("YT_KEY");
-    if (!ytKey) throw new Error("YOUTUBE_API_KEY not configured");
+    const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
     const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    const yt = await refreshYouTube(client, ytKey);
+    const yt = ytKey
+      ? await refreshYouTube(client, ytKey)
+      : { checked: 0, updated: 0, skipped: "no YT key" };
+    const ig = rapidApiKey
+      ? await refreshInstagram(client, rapidApiKey)
+      : { checked: 0, updated: 0, skipped: "no RAPIDAPI key" };
+
     return new Response(
-      JSON.stringify({ ok: true, youtube: yt }, null, 2),
+      JSON.stringify({ ok: true, youtube: yt, instagram: ig }, null, 2),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
