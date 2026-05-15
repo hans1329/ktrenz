@@ -362,7 +362,13 @@ async function searchReddit(serpApiKey: string, query: string): Promise<any[]> {
         const cleaned = (r.link as string).split("?")[0].replace(/\/$/, "");
         const jsonUrl = `${cleaned}.json`;
         const jr = await fetchWithTimeout(jsonUrl, {
-          headers: { "User-Agent": "ktrenz/1.0 (server)" },
+          headers: {
+            // Reddit recommends descriptive UA "<platform>:<app>:<ver> (by /u/<user>)".
+            // Datacenter IPs (Supabase Deno on AWS) hit blocks more often, so use
+            // a recognizable UA and an `Accept: application/json` to look legit.
+            "User-Agent": "web:ktrenz:v1.0 (by /u/ktrenz_bot)",
+            "Accept": "application/json",
+          },
         }, 8000);
         if (jr.ok) {
           const arr = await jr.json();
