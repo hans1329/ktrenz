@@ -82,7 +82,6 @@ const B2BMarkets = lazy(() => import("./pages/b2b/B2BMarkets"));
 const B2BRecommendations = lazy(() => import("./pages/b2b/B2BRecommendations"));
 const B2BActivation = lazy(() => import("./pages/b2b/B2BActivation"));
 
-import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import WelcomeBonusManager from "./components/WelcomeBonusManager";
@@ -120,7 +119,6 @@ const App = () => (
         <LanguageProvider>
           <TooltipProvider>
             <Toaster />
-            <PWAUpdatePrompt />
             <BrowserRouter>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
