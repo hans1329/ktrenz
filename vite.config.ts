@@ -15,12 +15,12 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      // Keep the generated SW in the normal "waiting" phase until the app's
-      // update prompt calls updateServiceWorker(true). With `autoUpdate`,
-      // vite-plugin-pwa overrides workbox.skipWaiting/clientsClaim to true,
-      // which can make iOS Safari swap service workers while the page is still
-      // loading and leave it with mismatched HTML/chunk caches.
-      registerType: "prompt",
+      // Emergency Safari recovery: existing iOS users can be stuck behind the
+      // old active SW before React boots, so the update prompt never runs.
+      // Let the SW activate immediately, while keeping the safer navigation
+      // caching below so it fetches fresh HTML instead of timing out to stale
+      // cached HTML.
+      registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
         id: "/ktrenz-pwa",
@@ -72,7 +72,10 @@ export default defineConfig(() => ({
         // the 3s navigation timeout could serve stale cached HTML on slow
         // mobile networks. Rotate caches and let navigations prefer network
         // unless the request actually fails.
-        cacheId: "ktrenz-pwa-v5",
+        // v6 (2026-05-18) — emergency recovery for iOS Safari users whose app
+        // never boots far enough to post SKIP_WAITING to v5. This build lets
+        // the new SW activate immediately and claims a fresh cache namespace.
+        cacheId: "ktrenz-pwa-v6",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // navigateFallback omitted from explicit config, but vite-plugin-pwa
         // still auto-binds /index.html for navigation handling. We must
@@ -103,7 +106,7 @@ export default defineConfig(() => ({
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "ktrenz-pwa-html-v5",
+              cacheName: "ktrenz-pwa-html-v6",
               expiration: { maxEntries: 10, maxAgeSeconds: 24 * 60 * 60 },
             },
           },
@@ -111,7 +114,7 @@ export default defineConfig(() => ({
             urlPattern: /\/assets\/.*\.js$/,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "ktrenz-pwa-lazy-chunks-v5",
+              cacheName: "ktrenz-pwa-lazy-chunks-v6",
               expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
             },
           },
