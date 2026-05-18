@@ -280,6 +280,20 @@ function buildCard(row: NormalizedRow, language: string): DiscoverCard {
   };
 }
 
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function fetchCuratedDrop(): Promise<NormalizedRow[]> {
   const { data, error } = await (supabase as any).rpc("ktrenz_h1_get_today_drop", {
     _region: "global",
@@ -392,10 +406,10 @@ function useDiscoverCards() {
     queryKey: ["h1-discover-cards", language],
     queryFn: async (): Promise<DiscoverCard[]> => {
       // 1. Try server-curated drop (P3 path).
-      let rows = await fetchCuratedDrop();
+      let rows = await withTimeout(fetchCuratedDrop(), [], 2500);
 
       // 2. Fall back to direct b2_items query when drop is empty.
-      if (rows.length === 0) rows = await fetchFallbackPool();
+      if (rows.length === 0) rows = await withTimeout(fetchFallbackPool(), [], 3500);
       if (rows.length === 0) return [];
 
       // 3. Trigger on-demand translation for missing fields in current language.
@@ -1785,7 +1799,7 @@ function DesktopCard({
   );
 }
 
-export { DesktopCard };
+export { DesktopCard, DetailDrawer, paletteFor };
 export type { DiscoverCard, Vouch };
 
 function DesktopVouchBtn({
@@ -1866,12 +1880,6 @@ function DesktopShell({
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative">
-      {/* Ambient brand backdrop (subtle) */}
-      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-        <div className="absolute -top-1/3 -left-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-20 bg-rose-600" />
-        <div className="absolute -bottom-1/3 -right-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-15 bg-orange-500" />
-      </div>
-
       <DesktopHeader vouchedCount={vouchedCount} quotaTarget={quotaTarget} resolutionMs={resolutionAtMs} balance={h1Status.balance} signedIn={h1Status.signed_in} activePicksCount={activePicksCount} />
 
       <div className="max-w-[1400px] mx-auto flex">
@@ -2173,6 +2181,10 @@ export default function H1Discover() {
   // thumbnails were the main remaining lag source).
   useEffect(() => {
     if (cards.length === 0) return;
+    // Mobile Safari is very sensitive to background request bursts during
+    // initial paint. Resolve Instagram media on demand in DetailDrawer
+    // instead of warming every IG card as soon as the page opens.
+    if (window.matchMedia("(max-width: 99999px)").matches) return;
     const igCards = cards.filter((c) => c.source === "instagram" && c.starId && c.url);
     if (igCards.length === 0) return;
     let cancelled = false;

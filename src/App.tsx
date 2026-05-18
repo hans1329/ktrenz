@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Skeleton } from "@/components/ui/skeleton";
+import H1Discover from "./pages/H1Discover";
 
 // Battle was previously sync-imported, which dragged its (very large) page
 // + entire dep tree into the entry bundle even for users who only visit
@@ -23,7 +24,6 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const PitchDeck = lazy(() => import("./pages/PitchDeck"));
 const PitchDeck3 = lazy(() => import("./pages/PitchDeck3"));
-const H1Discover = lazy(() => import("./pages/H1Discover"));
 const H1SharedSlate = lazy(() => import("./pages/H1SharedSlate"));
 const H1History = lazy(() => import("./pages/H1History"));
 const H1Leaderboard = lazy(() => import("./pages/H1Leaderboard"));

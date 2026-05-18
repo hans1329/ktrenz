@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import {
   Sparkles, ArrowRight, LogIn, Music2, Gift,
   Youtube, Music, Newspaper, MessageCircle, Image as ImageIcon,
-  Zap,
+  Zap, Flame, History, Trophy, Check, HelpCircle, TrendingUp,
 } from "lucide-react";
 import H1AppHeader from "@/components/h1/H1AppHeader";
 import {
@@ -17,16 +17,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  BottomNav,
-  DesktopSidebar,
-  DesktopCard,
-  BOTTOM_NAV_H,
-  type DiscoverCard,
-  type Vouch,
-} from "@/pages/H1Discover";
+import type { DiscoverCard, Vouch } from "@/pages/H1Discover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+const LANDING_BOTTOM_NAV_H = 68;
 
 // {key} placeholder substitution — t() in this project is pure dict lookup.
 function tFmt(template: string, vars: Record<string, string>): string {
@@ -63,7 +58,7 @@ export default function H1Landing({
         <H1AppHeader active="discover" signedIn={false} />
         <main
           className="px-5"
-          style={{ paddingTop: 24, paddingBottom: BOTTOM_NAV_H + 32 }}
+          style={{ paddingTop: 24, paddingBottom: LANDING_BOTTOM_NAV_H + 32 }}
         >
           <Hero t={t} />
 
@@ -89,7 +84,7 @@ export default function H1Landing({
           <FAQ t={t} className="mb-8" />
           <CTA t={t} />
         </main>
-        <BottomNav active="discover" position="fixed" signedIn={false} />
+        <LandingBottomNav />
       </div>
     );
   }
@@ -100,7 +95,7 @@ export default function H1Landing({
       <H1AppHeader active="discover" signedIn={false} />
 
       <div className="max-w-[1400px] mx-auto flex">
-        <DesktopSidebar active="discover" showQuota={false} signedIn={false} />
+        <LandingSidebar />
 
         <main className="flex-1 px-5 lg:px-8 py-8 min-w-0">
           <div className="max-w-3xl mx-auto">
@@ -147,15 +142,12 @@ export default function H1Landing({
 type TFn = (key: string) => string;
 
 function Backdrop() {
-  return (
-    <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-      <div className="absolute -top-1/3 -left-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-25 bg-rose-600" />
-      <div className="absolute -bottom-1/3 -right-1/4 w-[60vw] h-[60vh] rounded-full blur-[200px] opacity-20 bg-violet-600" />
-    </div>
-  );
+  return null;
 }
 
 function Hero({ t }: { t: TFn }) {
+  const redirect = encodeURIComponent("/h1");
+  const signInHref = `/login?redirect=${redirect}`;
   return (
     <div className="text-center mb-8">
       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-400/25 text-rose-300 text-[10px] font-black tracking-[0.18em] uppercase mb-4">
@@ -164,9 +156,19 @@ function Hero({ t }: { t: TFn }) {
       <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-[1.05] mb-3 whitespace-nowrap">
         {t("h1.landing.heroHeadline")}
       </h1>
-      <p className="text-sm text-white/65 leading-relaxed">
+      <p className="text-sm text-white/65 leading-relaxed mb-5">
         {t("h1.landing.heroSub")}
       </p>
+      {/* Above-fold CTA — without this the only sign-in affordance is the
+          small chip in the header + a button buried below FAQ. */}
+      <Link
+        to={signInHref}
+        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-sky-400 to-violet-500 text-white font-black text-sm hover:scale-[1.02] transition-transform shadow-[0_8px_24px_-8px_rgba(139,92,246,0.6)]"
+      >
+        <LogIn className="w-4 h-4" />
+        {t("h1.landing.cta.button")}
+        <ArrowRight className="w-4 h-4" />
+      </Link>
     </div>
   );
 }
@@ -193,7 +195,7 @@ function SampleCardSlot({
   emptyLabel: string;
 }) {
   if (isLoading) {
-    return <div className="aspect-[4/5] rounded-2xl bg-white/[0.03] border border-white/10 animate-pulse" />;
+    return <LandingSampleSkeleton />;
   }
   if (!sample) {
     return (
@@ -204,13 +206,201 @@ function SampleCardSlot({
   }
   const handleVouch = (_v: Vouch) => onVouchAttempt();
   return (
-    <DesktopCard
+    <LandingSampleCard
       card={sample}
       vouch={undefined}
       onVouch={handleVouch}
       onOpenDetail={() => onOpenDetail(sample)}
-      onOpenHelp={() => { /* no-op on landing */ }}
     />
+  );
+}
+
+function LandingSampleSkeleton() {
+  return (
+    <div className="aspect-[4/5] rounded-2xl bg-white/[0.04] border border-white/10 overflow-hidden">
+      <div className="h-[52%] bg-white/[0.04]" />
+      <div className="p-4 space-y-3">
+        <div className="h-3 w-1/3 rounded bg-white/10" />
+        <div className="h-4 w-5/6 rounded bg-white/10" />
+        <div className="grid grid-cols-3 gap-2 pt-2">
+          <div className="h-10 rounded-xl bg-white/[0.06]" />
+          <div className="h-10 rounded-xl bg-white/[0.06]" />
+          <div className="h-10 rounded-xl bg-white/[0.06]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LandingSampleCard({
+  card,
+  vouch,
+  onVouch,
+  onOpenDetail,
+}: {
+  card: DiscoverCard;
+  vouch: Vouch | undefined;
+  onVouch: (v: Vouch) => void;
+  onOpenDetail: () => void;
+}) {
+  const { t } = useLanguage();
+  return (
+    <article className="group relative rounded-2xl overflow-hidden bg-neutral-950 border border-white/10">
+      <button
+        type="button"
+        onClick={onOpenDetail}
+        className="block w-full aspect-[4/3] relative text-left bg-neutral-900 overflow-hidden"
+      >
+        {card.thumbnail ? (
+          <img
+            src={card.thumbnail}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            decoding="async"
+            fetchPriority="high"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-neutral-900" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/25" />
+        <div className="absolute top-2.5 inset-x-2.5 z-20 flex items-center justify-between gap-2">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-black/70 border border-white/15 text-white text-[10px] font-black">
+            #1
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/70 border border-white/15 text-white text-[10px] font-semibold">
+            <Flame className="w-2.5 h-2.5" /> {card.source}
+          </span>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={onOpenDetail}
+        className="block w-full text-left px-4 pt-3.5 pb-3 hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          {card.starImage ? (
+            <img
+              src={card.starImage}
+              alt=""
+              className="w-4 h-4 rounded-full object-cover ring-1 ring-white/10"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-4 h-4 rounded-full bg-white/10" />
+          )}
+          <span className="text-[11px] font-bold text-white/55 uppercase tracking-wide truncate">{card.artist}</span>
+        </div>
+        <h3 className="text-[15px] leading-snug font-bold text-white line-clamp-2 min-h-[2.6em]">
+          {card.title || t("h1.landing.sample.empty")}
+        </h3>
+      </button>
+
+      <div className="px-4 pb-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="inline-flex items-center gap-1.5 text-white text-[12px] font-black">
+            <TrendingUp className="w-3 h-3 text-rose-300" />
+            {t("h1.willGoViralFull")}
+          </span>
+          <HelpCircle className="w-3.5 h-3.5 text-white/35" />
+        </div>
+        <div className="flex gap-2">
+          {(["low", "mid", "high"] as const).map((tier, idx) => (
+            <button
+              key={tier}
+              type="button"
+              onClick={() => onVouch(tier)}
+              className={`flex-1 py-3 rounded-xl border text-[13px] font-black transition-colors ${
+                vouch === tier
+                  ? "bg-violet-500/20 border-violet-300/40 text-white"
+                  : "bg-white/[0.04] border-white/10 text-white/85 hover:bg-white/[0.07]"
+              }`}
+            >
+              <span className="font-normal opacity-70">+</span>{[10, 20, 40][idx]}💎
+            </button>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function LandingBottomNav() {
+  const { t } = useLanguage();
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 bg-black/80 border-t border-white/10"
+      style={{ height: LANDING_BOTTOM_NAV_H, paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="grid grid-cols-4 h-full px-2">
+        <LandingNavBtn icon={Flame} label={t("h1.nav.discover")} to="/h1" active />
+        <LandingNavBtn icon={History} label={t("h1.nav.myCalls")} to="/login?redirect=%2Fh1%2Fhistory" />
+        <LandingNavBtn icon={Trophy} label={t("h1.nav.leaderboard")} to="/login?redirect=%2Fh1%2Fleaderboard" />
+        <LandingNavBtn icon={Zap} label={t("h1.nav.pro")} to="/pro" />
+      </div>
+    </nav>
+  );
+}
+
+function LandingSidebar() {
+  const { t } = useLanguage();
+  return (
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-16 h-[calc(100vh-4rem)] border-r border-white/10 px-4 py-6 gap-5">
+      <nav className="flex flex-col gap-0.5">
+        <LandingSideBtn icon={Flame} label={t("h1.nav.discover")} to="/h1" active />
+        <LandingSideBtn icon={History} label={t("h1.nav.myCalls")} to="/login?redirect=%2Fh1%2Fhistory" />
+        <LandingSideBtn icon={Trophy} label={t("h1.nav.leaderboard")} to="/login?redirect=%2Fh1%2Fleaderboard" />
+        <LandingSideBtn icon={Zap} label={t("h1.nav.pro")} to="/pro" />
+      </nav>
+    </aside>
+  );
+}
+
+function LandingNavBtn({
+  icon: Icon,
+  label,
+  to,
+  active = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  to: string;
+  active?: boolean;
+}) {
+  return (
+    <Link to={to} className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors ${active ? "text-white" : "text-white/45 hover:text-white/80"}`}>
+      <Icon className={`w-5 h-5 ${active ? "fill-white/15" : ""}`} strokeWidth={active ? 2.5 : 2} />
+      <span className="text-[9.5px] font-bold tracking-tight">{label}</span>
+    </Link>
+  );
+}
+
+function LandingSideBtn({
+  icon: Icon,
+  label,
+  to,
+  active = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  to: string;
+  active?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+        active ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+      }`}
+    >
+      <span className="flex items-center gap-2.5">
+        <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 2} />
+        {label}
+      </span>
+      {active ? <Check className="w-3 h-3 text-white/45" /> : null}
+    </Link>
   );
 }
 
@@ -471,9 +661,6 @@ function CTA({ t }: { t: TFn }) {
         {t("h1.landing.cta.button")}
         <ArrowRight className="w-4 h-4" />
       </Link>
-      <p className="text-[11px] text-white/40 text-center">
-        {t("h1.landing.cta.fineprint")}
-      </p>
     </div>
   );
 }
