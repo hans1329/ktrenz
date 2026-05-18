@@ -22,5 +22,18 @@ self.addEventListener("activate", (event) => {
     } catch {
       // Older WebKit builds may reject claim after unregister.
     }
+
+    try {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      await Promise.all(clients.map((client) => {
+        const url = new URL(client.url);
+        if (url.origin !== self.location.origin) return undefined;
+        if (url.searchParams.get("__sw_reset") === "1") return undefined;
+        url.searchParams.set("__sw_reset", "1");
+        return client.navigate(url.href);
+      }));
+    } catch {
+      // Navigation is best-effort. The next manual reload will be uncontrolled.
+    }
   })());
 });

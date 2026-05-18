@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="naver-site-verification" content="b9e182ab185380f7cf95c09f94a04cd1cf3b9fe6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        navigator.serviceWorker.getRegistrations()
+          .then(function (registrations) {
+            return Promise.all(registrations.map(function (registration) {
+              return registration.unregister();
+            }));
+          })
+          .then(function () {
+            if (!("caches" in window)) return;
+            return caches.keys().then(function (names) {
+              return Promise.all(names.map(function (name) { return caches.delete(name); }));
+            });
+          })
+          .catch(function () {});
+      })();
+    </script>
 
     <!-- Primary SEO -->
     <title>KTrenZ – K-Star K-Trend Growth Prediction</title>
