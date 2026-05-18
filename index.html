@@ -39,7 +39,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://jguylowswwgjvotdcsfj.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://jguylowswwgjvotdcsfj.supabase.co" />
-    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&display=swap" rel="stylesheet" />
+    <!--
+      Non-render-blocking Google Fonts: `media="print"` makes the stylesheet
+      non-applicable at parse time so it doesn't block first paint; once it
+      loads, the onload handler flips media back to "all" so the fonts apply.
+      Why this matters: iOS Safari with a content blocker (1Blocker / AdGuard
+      / Brave Shields — extremely common on iPhones) silently *stalls* the
+      fonts.googleapis.com request, and a render-blocking <link> there leaves
+      the page on an infinite "loading" spinner until the browser times out
+      (10-30s). The print/all swap defers font application without blocking.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&display=swap" rel="stylesheet" />
+    </noscript>
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Open Graph -->
@@ -59,7 +77,10 @@
     <meta name="twitter:description" content="Join K-Trend growth predictions driven by K-Stars. Pick your winner and prove your fandom insight.">
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/wXvsj6eZbYaEQQgUsiT21k2YrkX2/social-images/social-1773661322665-2bd40ac8-a079-4090-ab21-5f5d3b9d9cf8.webp">
 
-    <link rel="preload" href="/src/assets/logo_col3.webp" as="image" type="image/webp">
+    <!-- Removed broken preload: `/src/assets/...` is the dev-source path; Vite
+         hashes the asset to `/assets/logo_col3-<hash>.webp` in production so
+         the preload 404'd and iOS Safari logged a console warning on every
+         visit. Logo will load through the normal module-imported reference. -->
   </head>
 
   <body>

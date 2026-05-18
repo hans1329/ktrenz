@@ -6,7 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import Battle from "./pages/Battle";
+// Battle was previously sync-imported, which dragged its (very large) page
+// + entire dep tree into the entry bundle even for users who only visit
+// /h1 (the default home post-pivot). Lazy import drops first-paint cost
+// substantially on mobile, especially iOS Safari, where a fat entry bundle
+// makes the "infinite spinner" symptom more likely under flaky networks.
+const Battle = lazy(() => import("./pages/Battle"));
 
 const V3ArtistDetail = lazy(() => import("./pages/V3ArtistDetail"));
 const FesEngine = lazy(() => import("./pages/FesEngine"));
@@ -124,8 +129,8 @@ const App = () => (
                       users. Legacy /h1 path still works (same component) so
                       external share links don't break. */}
                   <Route path="/" element={<Suspense fallback={<H1RouteFallback />}><H1Discover /></Suspense>} />
-                  <Route path="/pro" element={<Battle />} />
-                  <Route path="/pro-battle" element={<Battle />} />
+                  <Route path="/pro" element={<Suspense fallback={<H1RouteFallback />}><Battle /></Suspense>} />
+                  <Route path="/pro-battle" element={<Suspense fallback={<H1RouteFallback />}><Battle /></Suspense>} />
                   <Route path="/discover" element={<TrendDiscovery />} />
                   <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                   <Route path="/fes-engine" element={<FesEngine />} />

@@ -15,7 +15,12 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Keep the generated SW in the normal "waiting" phase until the app's
+      // update prompt calls updateServiceWorker(true). With `autoUpdate`,
+      // vite-plugin-pwa overrides workbox.skipWaiting/clientsClaim to true,
+      // which can make iOS Safari swap service workers while the page is still
+      // loading and leave it with mismatched HTML/chunk caches.
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
         id: "/ktrenz-pwa",
@@ -62,7 +67,12 @@ export default defineConfig(() => ({
         // tabs. v4 disables navigateFallback (see above) and rotates the
         // cache namespace so existing v3 SWs can't keep serving the broken
         // setup.
-        cacheId: "ktrenz-pwa-v4",
+        // v5 (2026-05-18) — iOS Safari deploy hardening. `registerType:
+        // autoUpdate` was silently re-enabling skipWaiting/clientsClaim, and
+        // the 3s navigation timeout could serve stale cached HTML on slow
+        // mobile networks. Rotate caches and let navigations prefer network
+        // unless the request actually fails.
+        cacheId: "ktrenz-pwa-v5",
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // navigateFallback omitted from explicit config, but vite-plugin-pwa
         // still auto-binds /index.html for navigation handling. We must
@@ -93,8 +103,7 @@ export default defineConfig(() => ({
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "ktrenz-pwa-html",
-              networkTimeoutSeconds: 3,
+              cacheName: "ktrenz-pwa-html-v5",
               expiration: { maxEntries: 10, maxAgeSeconds: 24 * 60 * 60 },
             },
           },
@@ -102,7 +111,7 @@ export default defineConfig(() => ({
             urlPattern: /\/assets\/.*\.js$/,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "ktrenz-pwa-lazy-chunks",
+              cacheName: "ktrenz-pwa-lazy-chunks-v5",
               expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
             },
           },
